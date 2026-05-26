@@ -5,8 +5,36 @@
  *   - runAnalysis(items, callbacks) → AnalysisRow[]
  */
 import { sleep } from '../shared/fmt';
+import { send } from '../shared/messaging';
 import { scoreItem } from './score';
 import type { ArbitrageItem, AnalysisRow } from './types';
+
+/**
+ * Ask the service-worker token bucket for permission before each CSFloat
+ * fetch. Returns immediately when a token is available; awaits otherwise.
+ * Tests pass `gateOverride: () => Promise.resolve()` to bypass the SW.
+ */
+async function defaultRequestSlot(): Promise<void> {
+  await send({ type: 'csf:request-slot' });
+}
+async function defaultReport429(): Promise<void> {
+  await send({ type: 'csf:got-429' });
+}
+
+let _requestSlot: () => Promise<void> = defaultRequestSlot;
+let _report429: () => Promise<void> = defaultReport429;
+
+/** Test seam — let unit tests stub the gate without faking chrome.runtime. */
+export function __setCsfGate(slot: () => Promise<void>, report429: () => Promise<void>): void {
+  _requestSlot = slot;
+  _report429 = report429;
+}
+
+/** Reset the gate to its default chrome.runtime-backed implementation. */
+export function __resetCsfGate(): void {
+  _requestSlot = defaultRequestSlot;
+  _report429 = defaultReport429;
+}
 
 interface CsfListing {
   price?: number;
@@ -63,10 +91,14 @@ export async function fetchCsfPrice(
   }
 
   try {
+    await _requestSlot();
     const r = await fetch(url, { credentials: 'include' });
     if (r.status === 429) {
+      await _report429();
       if (retries >= 3) return { price: null, estimated: false };
-      await sleep(2500 * (1 + retries));
+      // SW pause covers the gap; small extra backoff prevents reentry storms
+      // when several content scripts hit 429 in the same window.
+      await sleep(500 * (1 + retries));
       return fetchCsfPrice(item, retries + 1);
     }
     const d = r.ok ? await r.json() : null;
@@ -83,6 +115,7 @@ export async function fetchCsfPrice(
         : 'market_hash_name=' + encodeURIComponent(item.marketName ?? '')) +
       '&' +
       tail1;
+    await _requestSlot();
     const rr = await fetch(refUrl, { credentials: 'include' });
     if (!rr.ok) return { price: null, estimated: false };
     const dd = await rr.json();
@@ -97,25 +130,20 @@ export interface AnalysisCallbacks {
   onProgress?: (done: number, total: number) => void;
   isAborted?: () => boolean;
   /**
-   * Delay between successive items, in ms. CSFloat starts returning 429
-   * around ~100+ requests in quick succession; a steady ~170 req/min keeps
-   * us comfortably below that. The fetchCsfPrice() retry path still handles
-   * burst 429s via exponential backoff (`2500 * (1 + retries)`), so this is
-   * a soft throttle, not the only line of defense.
-   *
-   * Default: 350 ms (≈ 170 req/min). Set to 0 for tests.
+   * Extra delay between successive items, in ms. v0.4 moved throttling to a
+   * shared token bucket in the service worker (45 req/min, burst 10) — see
+   * `modules/shared/throttle.ts`. The bucket already enforces the cadence,
+   * so the default here is `0`. Tests can pass a positive value if they want
+   * to keep their fake-clock advances simple.
    */
   itemDelayMs?: number;
 }
-
-/** Default delay between CSFloat requests. ≈ 170 req/min. */
-export const DEFAULT_CSF_ITEM_DELAY_MS = 350;
 
 export async function runAnalysis(
   items: ArbitrageItem[],
   cb: AnalysisCallbacks = {},
 ): Promise<AnalysisRow[]> {
-  const delay = cb.itemDelayMs ?? DEFAULT_CSF_ITEM_DELAY_MS;
+  const delay = cb.itemDelayMs ?? 0;
   const out: AnalysisRow[] = [];
   for (let i = 0; i < items.length; i++) {
     if (cb.isAborted?.()) return out;

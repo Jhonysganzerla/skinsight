@@ -17,7 +17,11 @@ export type Message =
   | { type: 'arbitrage:ready' }
   | { type: 'arbitrage:payload'; payload: ExportPayload }
   | { type: 'arbitrage:result'; rows: HitRow[] }
-  | { type: 'hit:record'; site: string; name: string; sub: string; profitUsd: number };
+  | { type: 'hit:record'; site: string; name: string; sub: string; profitUsd: number }
+  // CSFloat rate-limit gate (v0.4):
+  // Content script awaits a slot before each fetch; reports 429s back.
+  | { type: 'csf:request-slot' }
+  | { type: 'csf:got-429' };
 
 /** Subset of AnalysisRow we hand back to the SW for the "Today's hits" feed. */
 export interface HitRow {

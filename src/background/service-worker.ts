@@ -24,8 +24,19 @@ import {
   clearPendingArbitrage,
   addHit,
 } from '../modules/shared/storage';
+import { csfloatBucket } from '../modules/shared/throttle';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
+
+/**
+ * Shared CSFloat throttle. Lives at module scope so every CSFloat tab
+ * shares the same budget — opening 3 tabs doesn't multiply the rate.
+ * Empirically CSFloat tolerates ~90 requests before 429ing; 45 req/min
+ * (12% headroom under the steady-state ceiling) keeps the analyzer
+ * stable across long scans.
+ */
+const csfBucket = csfloatBucket();
+const CSF_429_PAUSE_MS = 30_000;
 
 async function findOrOpenCsfloatTab(): Promise<chrome.tabs.Tab | null> {
   const matches = await chrome.tabs.query({
@@ -81,6 +92,17 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
           profitUsd: row.profitUsd,
         });
       }
+      return { ok: true };
+    }
+
+    case 'csf:request-slot': {
+      // Block until a token is available. The await yields to other handlers.
+      await csfBucket.acquire();
+      return { ok: true };
+    }
+
+    case 'csf:got-429': {
+      csfBucket.pause(CSF_429_PAUSE_MS);
       return { ok: true };
     }
 
