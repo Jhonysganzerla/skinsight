@@ -11,7 +11,7 @@
  * Rare DB is injected via the new `mapOverride` parameter so tests stay
  * deterministic (no chrome.runtime.getURL fetch).
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import smPage from '../fixtures/skinsmonkey-page.json';
 import psPage from '../fixtures/pirateswap-page.json';
 import csmPage from '../fixtures/csmoney-page.json';
@@ -45,6 +45,46 @@ const RARE_DB = buildMap([
   ['Sticker | Crown (Foil)', 118.0],
   ['Sticker | Reason Gaming (Holo) | Katowice 2014', 166.0],
 ]);
+
+describe('rare/finder — chunked main-thread yields (v0.4.1)', () => {
+  it('yields ≥ N/100 times for a 2000-item synthetic input', async () => {
+    const items = Array.from({ length: 2000 }, (_, i) => ({
+      id: 'I-' + i,
+      name: 'Synth ' + i,
+      image: null,
+      price: 1,
+      exterior: '',
+      inspectUrl: '',
+      marketHashName: 'Synth ' + i,
+      stickers: [{ name: 'Sticker | None', price: null, image: null }],
+    }));
+    const map = new Map<string, number>();
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    await findRareResults(items, map);
+    // 2000 items / 100 chunk = 19 yields (skips the final tick).
+    const yieldCalls = setTimeoutSpy.mock.calls.filter((c) => c[1] === 0).length;
+    expect(yieldCalls).toBeGreaterThanOrEqual(19);
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('does NOT yield for a small input (no spurious tick)', async () => {
+    const items = Array.from({ length: 30 }, (_, i) => ({
+      id: 'S-' + i,
+      name: 'Tiny ' + i,
+      image: null,
+      price: 1,
+      exterior: '',
+      inspectUrl: '',
+      marketHashName: 'Tiny ' + i,
+      stickers: [],
+    }));
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    await findRareResults(items, new Map());
+    const yieldCalls = setTimeoutSpy.mock.calls.filter((c) => c[1] === 0).length;
+    expect(yieldCalls).toBe(0);
+    setTimeoutSpy.mockRestore();
+  });
+});
 
 describe('rare/finder — SkinsMonkey parity', () => {
   it('normalizeSm maps raw assets to RareItem', () => {

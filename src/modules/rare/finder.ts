@@ -175,9 +175,23 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
 }
 
 /* ── Match + score ──────────────────────────────────────────────────── */
+
+/** How many items to process per main-thread tick before yielding. */
+const FIND_CHUNK_SIZE = 100;
+
+/** Yield control to the event loop so the UI can repaint between chunks. */
+function nextTick(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 /**
  * Build the result set. `mapOverride` lets tests inject a deterministic
  * map without going through chrome.runtime.getURL + fetch.
+ *
+ * v0.4.1: yields to the main thread every `FIND_CHUNK_SIZE` items so a
+ * 2000-item PS scan no longer freezes the overlay for ~hundreds of ms.
+ * The function is genuinely async now — earlier versions declared async
+ * but ran a single synchronous loop.
  */
 export async function findRareResults(
   items: RareItem[],
@@ -185,7 +199,8 @@ export async function findRareResults(
 ): Promise<RareResult[]> {
   const map = mapOverride ?? (await getRareMap());
   const out: RareResult[] = [];
-  for (const it of items) {
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i]!;
     const matches: RareStickerMatch[] = [];
     for (const s of it.stickers) {
       const ref = lookup(map, s.name);
@@ -198,11 +213,15 @@ export async function findRareResults(
         });
       }
     }
-    if (!matches.length) continue;
-    const stickerSum = matches.reduce((sum, m) => sum + (m.refMinPrice || 0), 0);
-    const profit = stickerSum - (it.price || 0);
-    const roi = it.price > 0 ? stickerSum / it.price : 0;
-    out.push({ ...it, matches, stickerSum, profit, roi });
+    if (matches.length) {
+      const stickerSum = matches.reduce((sum, m) => sum + (m.refMinPrice || 0), 0);
+      const profit = stickerSum - (it.price || 0);
+      const roi = it.price > 0 ? stickerSum / it.price : 0;
+      out.push({ ...it, matches, stickerSum, profit, roi });
+    }
+    if ((i + 1) % FIND_CHUNK_SIZE === 0 && i + 1 < items.length) {
+      await nextTick();
+    }
   }
   return out;
 }
