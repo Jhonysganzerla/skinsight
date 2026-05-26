@@ -33,7 +33,10 @@ export function classifyStickerKind(name: string): StickerKind {
 export function renderRareCard(r: RareResult): string {
   const meta: MetaChip[] = [
     { label: 'Listed ' + fmtUsd(r.price) },
-    { label: `${r.matches.length} rare ${r.matches.length === 1 ? 'sticker' : 'stickers'}`, kind: 'warn' },
+    {
+      label: `${r.matches.length} rare ${r.matches.length === 1 ? 'sticker' : 'stickers'}`,
+      kind: 'warn',
+    },
     { label: 'Stickers ' + fmtUsd(r.stickerSum) },
   ];
 

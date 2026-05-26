@@ -26,7 +26,7 @@ src/
 | ----------------------------- | ---------------------- |
 | `modules/shared/*`            | v0.1 (popup + overlay) |
 | `modules/arbitrage/*`         | v0.2 ✅                |
-| `modules/rare/*`              | v0.3                   |
+| `modules/rare/*`              | v0.3 ✅                |
 | `modules/oracles/steam.ts`    | v0.4                   |
 | `modules/oracles/skinport.ts` | v0.5                   |
 
@@ -94,6 +94,60 @@ a new scan on SkinsMonkey.
   the SW writes. Content scripts never `addHit()` directly — they emit
   `arbitrage:result` or `hit:record` and the SW funnels.
 
+## Data flow — Rare (v0.3, wired)
+
+The Rare mode is single-site by design: each tab scans its own inventory
+endpoint, matches against the bundled rare_stickers DB, and renders locally.
+There is **no cross-tab routing**, no SW state, no payload hand-off. The SW
+only sees a single `hit:record` per scan (the top profitable result, fed
+into the popup feed).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Site as Site tab<br/>(SM / PS / CSM content script)
+  participant SW as Service Worker
+  participant Store as chrome.storage.local
+
+  Note over Site: User clicks "Scan" in overlay (mode=Rare)
+  Site->>Site: collectAll(site) — paginate site API
+  Site->>Site: findRareResults(items, RARE_DB)
+  Site->>Site: applyRareFilter() + renderRareCard()
+  Site->>SW: hit:record (top profitable result)
+  SW->>Store: addHit() — popup feed
+```
+
+### Rare DB regeneration (CS.Money only)
+
+CS.Money is the source of truth for the rare-sticker DB. The overlay
+includes a `<details>` drawer with a "Regenerate rare_stickers.json"
+button that fires this local flow:
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant CSM as CS.Money tab
+  participant Disk as User Downloads
+
+  User->>CSM: Open "Rare-DB maintenance" drawer
+  User->>CSM: Click "Regenerate rare_stickers.json"
+  CSM->>CSM: buildRareReport(collectedItems) — infer threshold + classify
+  CSM->>Disk: Blob → a[href][download]="rare_stickers.json"
+  Note over Disk: File saved locally. NOT applied at runtime.<br/>Maintainer reviews & ships in a release.
+```
+
+### Mode mutex
+
+`storage.activeMode` is `'arbitrage' | 'rare' | null`. The popup is the
+only UI that sets it; every content script reads it via
+`isModeActive(mode)` and re-evaluates on `watchSettings()`. Sites that
+don't support a given mode (CSFloat for Rare, PirateSwap/CS.Money for
+Arbitrage) simply don't mount an overlay when their mode is inactive.
+
+The SkinsMonkey content script supports both modes and switches between
+them when the user flips the popup — the old overlay is destroyed (with
+its in-flight scan aborted) and the matching one is mounted.
+
 ## CSS isolation
 
 Overlay class names use the `sh-` prefix and the root container declares
@@ -110,3 +164,7 @@ content scripts can inject it without a bundler chunk).
 | `/api/inventory` returns 429                               | `scanAll()` retries up to 3× per page with 600ms backoff; aborts after 3 consecutive fails. |
 | User closes CSFloat tab mid-analysis                       | Analyzer's `isAborted` flag becomes implicit (no tab). Payload TTL (30 min) cleans up.      |
 | CSFloat overlay loaded but no pending payload (cold start) | Overlay shows "Waiting for items from SkinsMonkey…" idle state; Refresh resends `:ready`.   |
+| User flips popup mid-scan                                  | Old overlay's scan state is aborted; new overlay mounts cleanly (separate state per mode).  |
+| User clicks Regenerate on CS.Money without collecting yet  | Button disabled until first successful scan; status text explains.                          |
+| PirateSwap visited with activeMode='arbitrage'             | Overlay doesn't mount. `console.debug('[Skinsight] loaded on pirateswap')` only.            |
+| Rare DB load fails (web_accessible_resources misconfig)    | `findRareResults` rejects with the fetch error; overlay status shows it.                    |

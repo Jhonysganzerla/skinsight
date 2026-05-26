@@ -244,9 +244,11 @@ Cobre os mesmos cases de `busca_pattern_cs2/tests/score.test.html`: T1 lucro bá
 
 ---
 
-## v0.2 — Modo Arbitrage (em curso)
+## v0.2 — Modo Arbitrage ✅ aprovado (tag local `v0.2.0`)
 
-**Status:** wiring completo, gates verdes. Aguardando teste manual end-to-end + aprovação do reviewer para fechar.
+**Resumo:** SkinsMonkey scanner → service worker → CSFloat analyzer wired end-to-end. Clipboard hand-off do legacy substituído por `chrome.runtime.sendMessage` com payload persistido no `chrome.storage.local` (TTL 30 min). Score migrado verbatim, 7 cases de parity passando. Smoke manual (Jhony) confirmou lista de oportunidades aparecendo no overlay do CSFloat. Post-smoke: `fix(manifest)` expôs chunks do crxjs no WAR (commit `f50534c`); `perf(arbitrage)` adicionou throttle 350 ms entre requests pra evitar 429 (`cba4d8d`).
+
+Detalhe histórico desta fase preservado abaixo para auditoria.
 
 ### Commits (v0.1 baseline → HEAD)
 
@@ -305,7 +307,72 @@ Steam Market price fetch fica desabilitado no `scanner.ts` v0.2 (`steamPrice()`/
 - Ícones PNG 16/32/48/128 (v0.6)
 - Teste manual end-to-end com usuário logado em SM (impossível de automatizar no ambiente atual)
 
-### Aguardando aprovação para iniciar v0.3 (Modo Rare).
+### Aguardando aprovação para iniciar v0.3 (Modo Rare). ✅ aprovado
+
+---
+
+## v0.3 — Modo Rare (em curso)
+
+**Status:** wire-up completo nos 3 sites + mutex de modo. Gates locais verdes. Aguardando smoke manual nos 3 sites para fechar.
+
+### Commits desde `v0.2.0`
+
+```
+f748d83 test(rare): add fixtures and parity tests for 3 sites
+e920702 feat(rare): branch SkinsMonkey content script by activeMode
+aae5033 feat(rare): wire CS.Money content script with Regenerate-DB drawer
+6fea9e3 feat(rare): wire PirateSwap content script (rare mode)
+f612e2f feat(rare): add ItemCard renderer with sticker-breakdown chips
+4549645 refactor(settings): replace 4-boolean modes with mutex activeMode
+cba4d8d perf(arbitrage): throttle CSFloat requests to avoid 429       (post-v0.2.0)
+f50534c fix(manifest): expose content-script chunks via web_accessible_resources  (post-v0.2.0)
+```
+
+### O que foi entregue
+
+- **Mutex de modos:** `Settings.modes{…}` (4 booleans) substituído por `Settings.activeMode: 'arbitrage' | 'rare' | null`. Migração transparente para usuários que já tinham settings v0.2 salvos. Popup renderiza 2 cards mas só um active a cada vez; clicar no active desliga ambos. Sites desabilitam visualmente o modo que não suportam (opacity .45 no `mode-card`).
+- **`src/modules/rare/render.ts`** — adapter `renderRareCard(RareResult)` + `renderCsMoneyCard(CsMoneyItem)`. `classifyStickerKind()` infere `matte/foil/holo/gold/lenticular` por regex no nome.
+- **`src/content/pirateswap.ts`** — overlay completo Rare. Filtros: pages, max price, sort. `collectAll(site:'pirateswap')` → `findRareResults` → `applyRareFilter` → `renderRareCard`. Reporta top hit via `hit:record`.
+- **`src/content/csmoney.ts`** — overlay Rare + `<details>` drawer "Rare-DB maintenance" com botão Regenerate. Filtros: pages, delayMs, sort (4 opções). `collectCsMoney` direto → `renderCsMoneyCard`. Regenerate constrói `buildRareReport` e baixa via Blob+a[download]. Bundle não é substituído em runtime — maintainer revisa antes de release.
+- **`src/content/skinsmonkey.ts`** — dual-mode branch. Estado independente por modo (`arbState`, `rareState`) para evitar corrupção mid-scan quando o user flippa o mutex. Posição do overlay persiste separadamente por modo (`skinsmonkey-arb` / `skinsmonkey-rare`).
+- **`docs/ARCHITECTURE.md`** — mermaid novo para Rare flow + sub-diagrama para Regenerate. Tabela de edge cases estendida.
+- **Tests:** `tests/fixtures/{pirateswap,csmoney}-page.json` + `tests/modules/rare.finder.test.ts` com 13 cases cobrindo normalizadores, match+ROI, threshold edge, filter+sort, rare-report schema completo, classifyStickerKind.
+
+### Gates v0.3
+
+- `npm run lint` → 0 issues
+- `npm run typecheck` → 0 erros (strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes)
+- `npm run format:check` → clean
+- `npm test` → 4 files / 27 tests (smoke 3 + score 7 + arb parity 4 + rare 13)
+- `npm run build` → dist OK
+- `npm run pack` → zip OK
+
+### Edge cases tratados
+
+Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
+
+- User flippa popup mid-scan → overlay antigo aborta, novo monta limpo
+- Regenerate sem coleta → botão disabled
+- PS visitado com Arbitrage ON → overlay não monta
+- Rare DB load fail → erro no overlay status
+
+### Não foi feito (escopo correto v0.3)
+
+- Steam priceoverview (v0.4)
+- Skinport oracle (v0.5)
+- Telegram/Pro (v1.5)
+- Refactor do algoritmo de score / finder (verbatim mantido)
+- i18n (v0.6)
+
+### TODOs persistentes
+
+- Conta GitHub / push / tags remotas
+- Substituir `[YOUR_HANDLE]` em `PRIVACY.md`
+- Pseudônimo Chrome Web Store (v0.7/v1.0)
+- Ícones PNG 16/32/48/128 (v0.6)
+- Smoke manual Jhony nos 3 sites para fechar v0.3
+
+### Aguardando smoke manual + aprovação do reviewer para tagear `v0.3.0` e iniciar v0.4 (Steam Market).
 
 ---
 

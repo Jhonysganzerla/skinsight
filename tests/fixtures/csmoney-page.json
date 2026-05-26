@@ -14,17 +14,13 @@
       "id": 3002,
       "fullName": "AK-47 | Vulcan (Minimal Wear)",
       "price": 75.0,
-      "stickers": [
-        { "name": "Reason Gaming (Holo) | Katowice 2014", "price": 166.0, "wear": 0 }
-      ]
+      "stickers": [{ "name": "Reason Gaming (Holo) | Katowice 2014", "price": 166.0, "wear": 0 }]
     },
     {
       "id": 3003,
       "fullName": "USP-S | Cortex (Field-Tested)",
       "price": 6.0,
-      "stickers": [
-        { "name": "Common Sticker", "price": 0.5, "wear": 80 }
-      ]
+      "stickers": [{ "name": "Common Sticker", "price": 0.5, "wear": 80 }]
     }
   ]
 }

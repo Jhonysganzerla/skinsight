@@ -68,7 +68,12 @@ async function runScan(): Promise<void> {
   const pages = Math.max(1, Math.min(200, parseInt(filters['pages'] ?? '5', 10) || 5));
   const maxPriceRaw = filters['maxPrice'] ?? '';
   const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
-  const sort = (filters['sort'] ?? 'roi') as 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
+  const sort = (filters['sort'] ?? 'roi') as
+    | 'roi'
+    | 'stickerSum'
+    | 'profit'
+    | 'priceAsc'
+    | 'priceDesc';
 
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
   setStatus('Collecting PirateSwap inventory…', 'info');
@@ -90,7 +95,10 @@ async function runScan(): Promise<void> {
     return;
   }
 
-  updateScanBar(overlay.body, { info: `Matching ${items.length} items against rare DB…`, progressPct: 80 });
+  updateScanBar(overlay.body, {
+    info: `Matching ${items.length} items against rare DB…`,
+    progressPct: 80,
+  });
   const results = await findRareResults(items);
   const filtered = applyRareFilter(results, {
     ...(maxPrice !== undefined ? { maxPrice } : {}),
@@ -113,7 +121,10 @@ async function runScan(): Promise<void> {
             <div class="sh-empty-sub">Widen filters or scan more pages.</div>
           </div>`);
   }
-  updateScanBar(overlay.body, { info: `Scan complete — ${filtered.length} hits.`, progressPct: 100 });
+  updateScanBar(overlay.body, {
+    info: `Scan complete — ${filtered.length} hits.`,
+    progressPct: 100,
+  });
   setStatus(`Found ${filtered.length} items with rare stickers.`, 'ok');
 
   // Report the top hit (if any) to the popup feed.

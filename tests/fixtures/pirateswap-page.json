@@ -21,7 +21,10 @@
       "inspectInGameLink": "steam://run/730/PS-2002",
       "icon": "fake-icon-2",
       "stickers": [
-        { "name": "Sticker | Reason Gaming (Holo) | Katowice 2014", "imageUrl": "https://example.invalid/reason.png" }
+        {
+          "name": "Sticker | Reason Gaming (Holo) | Katowice 2014",
+          "imageUrl": "https://example.invalid/reason.png"
+        }
       ]
     },
     {

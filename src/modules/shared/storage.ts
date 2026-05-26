@@ -46,7 +46,12 @@ const KEY_PENDING = 'pending_arbitrage';
  *  4-boolean `modes` shape (any of {arbitrage_sm, arbitrage_csf} truthy → 'arbitrage'). */
 function normalizeSettings(raw: unknown): Settings {
   const obj = (raw ?? {}) as Partial<Settings> & {
-    modes?: { arbitrage_sm?: boolean; arbitrage_csf?: boolean; rare_smps?: boolean; rare_csm?: boolean };
+    modes?: {
+      arbitrage_sm?: boolean;
+      arbitrage_csf?: boolean;
+      rare_smps?: boolean;
+      rare_csm?: boolean;
+    };
   };
   let active: ActiveMode = obj.activeMode ?? null;
   if (active === undefined || (active === null && obj.modes)) {
