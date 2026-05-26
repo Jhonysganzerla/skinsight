@@ -172,10 +172,13 @@ export const OVERLAY_CSS = `
   flex-shrink: 0; overflow: hidden;
 }
 .sh-sticker-mini img { width: 100%; height: 100%; object-fit: contain; }
-.sh-sticker-mini.foil { background: linear-gradient(135deg, #d4af37, #f5a623); }
+/* Four real CS2 sticker tiers. Paper (default, the .sh-sticker-mini base
+   indigo gradient) → Foil (silver) → Holo (rainbow conic) → Gold (gold). */
+.sh-sticker-mini.foil { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); }
 .sh-sticker-mini.holo {
   background: conic-gradient(from 0deg, #ff5555, #f5a623, #4cc870, #3a76ff, #ff5555);
 }
+.sh-sticker-mini.gold { background: linear-gradient(135deg, #facc15 0%, #d4af37 100%); }
 .sh-sticker-price { color: var(--success-bright); font-weight: 600; }
 
 /* Pills */

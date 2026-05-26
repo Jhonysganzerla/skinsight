@@ -222,20 +222,36 @@ describe('rare/csmoney — image extraction', () => {
   });
 });
 
-describe('rare/render — sticker kind heuristic', () => {
-  it('matte by default', () => {
-    expect(classifyStickerKind('Sticker | Howling Dawn')).toBe('matte');
+describe('rare/render — sticker kind heuristic (4 tiers + variants)', () => {
+  // Paper / matte — anything without a tier suffix.
+  it('paper for Howling Dawn (no suffix)', () => {
+    expect(classifyStickerKind('Sticker | Howling Dawn')).toBe('paper');
   });
-  it('foil from (Foil) suffix', () => {
+  it('paper for Crown (no suffix)', () => {
+    expect(classifyStickerKind('Sticker | Crown')).toBe('paper');
+  });
+
+  // Foil — silver visual in v0.4.
+  it('foil for Crown (Foil)', () => {
     expect(classifyStickerKind('Sticker | Crown (Foil)')).toBe('foil');
   });
-  it('foil from (Gold) suffix', () => {
-    expect(classifyStickerKind('Sticker | Some Team (Gold) | Cologne 2014')).toBe('foil');
+  it('foil for kennyS (Foil) | Cologne 2015', () => {
+    expect(classifyStickerKind('Sticker | kennyS (Foil) | Cologne 2015')).toBe('foil');
   });
-  it('holo from (Holo) suffix', () => {
+
+  // Holo — rainbow conic.
+  it('holo for iBUYPOWER (Holo) | Katowice 2014', () => {
     expect(classifyStickerKind('Sticker | iBUYPOWER (Holo) | Katowice 2014')).toBe('holo');
   });
-  it('holo from (Lenticular) suffix', () => {
+  it('holo for (Lenticular) variant', () => {
     expect(classifyStickerKind('Sticker | Foo (Lenticular) | Stockholm 2021')).toBe('holo');
+  });
+
+  // Gold — explicit (Gold) plus (Champion) alias.
+  it('gold for ESPADA (Gold) | 2020 RMR', () => {
+    expect(classifyStickerKind('Sticker | ESPADA (Gold) | 2020 RMR')).toBe('gold');
+  });
+  it('gold for apEX (Champion) | Austin 2025', () => {
+    expect(classifyStickerKind('Sticker | apEX (Champion) | Austin 2025')).toBe('gold');
   });
 });

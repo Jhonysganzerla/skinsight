@@ -199,7 +199,17 @@ export function variantByRoi(roi: number): ItemCardVariant {
 
 /* ───────────────────────────────────────────────── StickerChip ── */
 
-export type StickerKind = 'matte' | 'foil' | 'holo';
+/**
+ * CS2 stickers come in four tiers. v0.4 maps each to a distinct CSS look:
+ *   paper / matte — neutral indigo gradient (default)
+ *   foil          — silver-grey gradient (was incorrectly gold in v0.3)
+ *   holo          — rainbow conic-gradient
+ *   gold          — gold gradient (new; covers "(Gold)" and "(Champion)")
+ *
+ * The CSS class names keep the legacy `foil` / `holo` selectors so existing
+ * markup keeps rendering; `gold` and the explicit `paper` selectors are new.
+ */
+export type StickerKind = 'paper' | 'matte' | 'foil' | 'holo' | 'gold';
 
 export interface StickerChipProps {
   name: string;
@@ -209,7 +219,8 @@ export interface StickerChipProps {
 }
 
 export function renderStickerChip(p: StickerChipProps): string {
-  const kindCls = p.kind && p.kind !== 'matte' ? ' ' + p.kind : '';
+  // 'paper' is an alias for 'matte' (default gradient, no extra class).
+  const kindCls = p.kind && p.kind !== 'matte' && p.kind !== 'paper' ? ' ' + p.kind : '';
   // When the image URL is present, render <img> with onerror=hide so the
   // gradient classified by tier (matte/foil/holo) shows underneath on 404.
   const inner = p.imageUrl

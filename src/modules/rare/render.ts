@@ -19,14 +19,26 @@ import {
 import { fmtUsd, shortExterior, stripStickerPrefix } from '../shared/fmt';
 import type { CsMoneyItem, RareResult } from './types';
 
-/** Heuristic sticker-kind detection. Covers the most common variants. */
+/**
+ * Heuristic sticker-tier detection from the market_hash_name. CS2 stickers
+ * canonically come in four tiers — Paper / Holo / Foil / Gold — plus a
+ * couple of special variants (Lenticular ≈ Holo, Champion ≈ Gold).
+ *
+ *   (Holo)        → holo
+ *   (Lenticular)  → holo
+ *   (Foil)        → foil   (silver visual; v0.4 corrected from gold)
+ *   (Gold)        → gold
+ *   (Champion)    → gold   (Austin 2025 champion stickers are gold-tier)
+ *   anything else → paper  (alias for matte)
+ */
 export function classifyStickerKind(name: string): StickerKind {
   const n = name || '';
   if (/\(\s*Holo(\s*-\s*Foil)?\s*\)/i.test(n)) return 'holo';
-  if (/\(\s*Foil\s*\)/i.test(n)) return 'foil';
-  if (/\(\s*Gold\s*\)/i.test(n)) return 'foil';
   if (/\(\s*Lenticular\s*\)/i.test(n)) return 'holo';
-  return 'matte';
+  if (/\(\s*Foil\s*\)/i.test(n)) return 'foil';
+  if (/\(\s*Gold\s*\)/i.test(n)) return 'gold';
+  if (/\(\s*Champion\s*\)/i.test(n)) return 'gold';
+  return 'paper';
 }
 
 /** Render a SkinsMonkey / PirateSwap rare result. */
