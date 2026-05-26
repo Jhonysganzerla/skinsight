@@ -22,7 +22,7 @@ import {
   type Message,
   type MessageResponse,
 } from '../modules/shared/messaging';
-import { isModeEnabled, watchSettings } from '../modules/shared/settings';
+import { isModeActive, watchSettings } from '../modules/shared/settings';
 import { runAnalysis } from '../modules/arbitrage/analyzer';
 import { buildCsfUrl } from '../modules/arbitrage/csf-url';
 import type { AnalysisRow, ArbitrageItem, ExportPayload } from '../modules/arbitrage/types';
@@ -209,9 +209,9 @@ function handleIncoming(msg: Message): MessageResponse {
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on csfloat');
   onMessage(handleIncoming);
-  if (await isModeEnabled('arbitrage_csf')) mount();
+  if (await isModeActive('arbitrage')) mount();
   watchSettings((s) => {
-    if (s.modes.arbitrage_csf) mount();
+    if (s.activeMode === 'arbitrage') mount();
     else unmount();
   });
 }

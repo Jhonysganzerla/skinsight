@@ -21,7 +21,7 @@ import {
   type FilterField,
 } from '../modules/shared/ui';
 import { send } from '../modules/shared/messaging';
-import { isModeEnabled, watchSettings } from '../modules/shared/settings';
+import { isModeActive, watchSettings } from '../modules/shared/settings';
 import {
   buildExportPayload,
   getCsrf,
@@ -191,9 +191,9 @@ function unmount(): void {
 
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
-  if (await isModeEnabled('arbitrage_sm')) mount();
+  if (await isModeActive('arbitrage')) mount();
   watchSettings((s) => {
-    if (s.modes.arbitrage_sm) mount();
+    if (s.activeMode === 'arbitrage') mount();
     else unmount();
   });
 }

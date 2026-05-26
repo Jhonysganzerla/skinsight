@@ -6,11 +6,15 @@
  *
  * No scan UI here — scan lives in the overlay injected on each site.
  * Mockup reference: C:\Users\Windows 11\Desktop\mockup-ui-skinsight.html
+ *
+ * v0.3: the two mode cards are mutually exclusive. Clicking the inactive
+ * card switches `activeMode`; clicking the active card disables both.
  */
 import {
   getSettings,
   patchSettings,
   getHits,
+  type ActiveMode,
   type Settings,
   type TodayHit,
 } from '../modules/shared/storage';
@@ -28,6 +32,8 @@ interface SiteDef {
   url: string;
   iconBg: string;
   iconFg: string;
+  /** Which modes this site supports. */
+  supports: Array<'arbitrage' | 'rare'>;
 }
 
 const SITES: SiteDef[] = [
@@ -39,6 +45,7 @@ const SITES: SiteDef[] = [
     url: 'https://skinsmonkey.com/',
     iconBg: '#3a76ff',
     iconFg: '#fff',
+    supports: ['arbitrage', 'rare'],
   },
   {
     key: 'csfloat',
@@ -48,6 +55,7 @@ const SITES: SiteDef[] = [
     url: 'https://csfloat.com/',
     iconBg: '#d4af37',
     iconFg: '#000',
+    supports: ['arbitrage'],
   },
   {
     key: 'pirateswap',
@@ -57,6 +65,7 @@ const SITES: SiteDef[] = [
     url: 'https://pirateswap.com/',
     iconBg: '#7e3a3a',
     iconFg: '#fff',
+    supports: ['rare'],
   },
   {
     key: 'csmoney',
@@ -66,6 +75,7 @@ const SITES: SiteDef[] = [
     url: 'https://cs.money/',
     iconBg: '#2c8a4a',
     iconFg: '#fff',
+    supports: ['rare'],
   },
 ];
 
@@ -104,23 +114,22 @@ function siteForHost(host: string | null): SiteDef | null {
 }
 
 function renderModesSection(s: Settings, active: SiteDef | null): string {
-  const arbitrageOn = s.modes.arbitrage_sm || s.modes.arbitrage_csf;
-  const rareOn = s.modes.rare_smps || s.modes.rare_csm;
-  // Active site dim hint: italicize the matching mode for arbitrage if SM/CSF, rare otherwise.
-  const arbHint = 'SM ↔ CSFloat';
-  const rareHint = 'SM, PS, CSM';
-  void active;
+  const arbActive = s.activeMode === 'arbitrage';
+  const rareActive = s.activeMode === 'rare';
+  // Dim the mode a site doesn't support to set expectations.
+  const arbDim = active && !active.supports.includes('arbitrage') ? ' style="opacity:.45"' : '';
+  const rareDim = active && !active.supports.includes('rare') ? ' style="opacity:.45"' : '';
   return `
     <div class="popup-section">
-      <div class="section-label">Modes</div>
+      <div class="section-label">Modes <span style="font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">— pick one</span></div>
       <div class="mode-row">
-        <button class="mode-card ${arbitrageOn ? 'active' : ''}" data-mode="arbitrage" type="button">
+        <button class="mode-card ${arbActive ? 'active' : ''}" data-mode="arbitrage" type="button"${arbDim}>
           <div class="mode-card-title"><span class="toggle-dot"></span> Arbitrage</div>
-          <div class="mode-card-meta">${escHtml(arbHint)}</div>
+          <div class="mode-card-meta">SM ↔ CSFloat</div>
         </button>
-        <button class="mode-card ${rareOn ? 'active' : ''}" data-mode="rare" type="button">
+        <button class="mode-card ${rareActive ? 'active' : ''}" data-mode="rare" type="button"${rareDim}>
           <div class="mode-card-title"><span class="toggle-dot"></span> Rare</div>
-          <div class="mode-card-meta">${escHtml(rareHint)}</div>
+          <div class="mode-card-meta">SM, PS, CSM</div>
         </button>
       </div>
     </div>
@@ -232,17 +241,13 @@ function renderSupported(state: PopupState, active: SiteDef): string {
   ].join('');
 }
 
-async function toggleMode(mode: 'arbitrage' | 'rare'): Promise<void> {
+/** Click-handler logic for a mode card.
+ *  - Clicking the currently-active card → deactivate (activeMode = null).
+ *  - Clicking the other card → switch to it (mutex). */
+async function toggleMode(clicked: 'arbitrage' | 'rare'): Promise<void> {
   const cur = await getSettings();
-  if (mode === 'arbitrage') {
-    const on = cur.modes.arbitrage_sm || cur.modes.arbitrage_csf;
-    const next = !on;
-    await patchSettings({ modes: { ...cur.modes, arbitrage_sm: next, arbitrage_csf: next } });
-  } else {
-    const on = cur.modes.rare_smps || cur.modes.rare_csm;
-    const next = !on;
-    await patchSettings({ modes: { ...cur.modes, rare_smps: next, rare_csm: next } });
-  }
+  const next: ActiveMode = cur.activeMode === clicked ? null : clicked;
+  await patchSettings({ activeMode: next });
   await render();
 }
 
@@ -274,13 +279,13 @@ function wireUp(root: HTMLElement): void {
     const modeBtn = t.closest<HTMLElement>('.mode-card[data-mode]');
     if (modeBtn) {
       e.preventDefault();
-      void toggleMode(modeBtn.dataset.mode as 'arbitrage' | 'rare');
+      void toggleMode(modeBtn.dataset['mode'] as 'arbitrage' | 'rare');
       return;
     }
     const opener = t.closest<HTMLElement>('[data-open]');
-    if (opener && opener.dataset.open) {
+    if (opener && opener.dataset['open']) {
       e.preventDefault();
-      void openTab(opener.dataset.open);
+      void openTab(opener.dataset['open']);
       return;
     }
     if (t.id === 'btn-kofi') {

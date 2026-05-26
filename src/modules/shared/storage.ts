@@ -2,24 +2,23 @@
 
 import type { ExportPayload } from '../arbitrage/types';
 
+/** Mutually exclusive — the user runs Arbitrage *or* Rare, never both. */
+export type ActiveMode = 'arbitrage' | 'rare' | null;
+
 export interface Settings {
-  modes: {
-    arbitrage_sm: boolean;
-    arbitrage_csf: boolean;
-    rare_smps: boolean;
-    rare_csm: boolean;
-  };
+  /**
+   * The mode the user opted into globally. v0.3 enforces mutex: the popup
+   * has two cards but only one is `active` at a time. Per-site relevance is
+   * handled by the content scripts (e.g. CSFloat ignores `rare`, PirateSwap
+   * ignores `arbitrage`).
+   */
+  activeMode: ActiveMode;
   /** Overlay state per hostname — minimized + remembered position. */
   overlay: Record<string, { minimized?: boolean; left?: number; top?: number } | undefined>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  modes: {
-    arbitrage_sm: true,
-    arbitrage_csf: true,
-    rare_smps: true,
-    rare_csm: true,
-  },
+  activeMode: 'arbitrage',
   overlay: {},
 };
 
@@ -43,13 +42,28 @@ const KEY_SETTINGS = 'settings';
 const KEY_HITS = 'hits';
 const KEY_PENDING = 'pending_arbitrage';
 
+/** Read settings, applying defaults + a one-time migration from v0.2's
+ *  4-boolean `modes` shape (any of {arbitrage_sm, arbitrage_csf} truthy → 'arbitrage'). */
+function normalizeSettings(raw: unknown): Settings {
+  const obj = (raw ?? {}) as Partial<Settings> & {
+    modes?: { arbitrage_sm?: boolean; arbitrage_csf?: boolean; rare_smps?: boolean; rare_csm?: boolean };
+  };
+  let active: ActiveMode = obj.activeMode ?? null;
+  if (active === undefined || (active === null && obj.modes)) {
+    const m = obj.modes ?? {};
+    if (m.arbitrage_sm || m.arbitrage_csf) active = 'arbitrage';
+    else if (m.rare_smps || m.rare_csm) active = 'rare';
+    else active = DEFAULT_SETTINGS.activeMode;
+  }
+  return {
+    activeMode: active,
+    overlay: obj.overlay ?? {},
+  };
+}
+
 export async function getSettings(): Promise<Settings> {
   const r = (await chrome.storage.local.get(KEY_SETTINGS)) as Partial<Pick<StoreShape, 'settings'>>;
-  const s: Partial<Settings> = r.settings ?? {};
-  return {
-    modes: { ...DEFAULT_SETTINGS.modes, ...(s.modes ?? {}) },
-    overlay: s.overlay ?? {},
-  };
+  return normalizeSettings(r.settings);
 }
 
 export async function setSettings(s: Settings): Promise<void> {
@@ -59,7 +73,7 @@ export async function setSettings(s: Settings): Promise<void> {
 export async function patchSettings(patch: Partial<Settings>): Promise<Settings> {
   const cur = await getSettings();
   const next: Settings = {
-    modes: { ...cur.modes, ...(patch.modes ?? {}) },
+    activeMode: patch.activeMode !== undefined ? patch.activeMode : cur.activeMode,
     overlay: { ...cur.overlay, ...(patch.overlay ?? {}) },
   };
   await setSettings(next);
@@ -102,13 +116,7 @@ export async function clearPendingArbitrage(): Promise<void> {
 export function onSettingsChanged(cb: (next: Settings) => void): () => void {
   const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
     if (area !== 'local' || !changes[KEY_SETTINGS]) return;
-    cb({
-      modes: {
-        ...DEFAULT_SETTINGS.modes,
-        ...((changes[KEY_SETTINGS].newValue?.modes as Settings['modes']) ?? {}),
-      },
-      overlay: (changes[KEY_SETTINGS].newValue?.overlay as Settings['overlay']) ?? {},
-    });
+    cb(normalizeSettings(changes[KEY_SETTINGS].newValue));
   };
   chrome.storage.onChanged.addListener(listener);
   return () => chrome.storage.onChanged.removeListener(listener);

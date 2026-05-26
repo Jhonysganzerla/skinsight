@@ -1,7 +1,5 @@
 /** Convenience accessors over the typed settings store. */
-import { getSettings, onSettingsChanged, type Settings } from './storage';
-
-export type ModeKey = keyof Settings['modes'];
+import { getSettings, onSettingsChanged, type ActiveMode, type Settings } from './storage';
 
 let _cache: Settings | null = null;
 
@@ -11,9 +9,15 @@ export async function loadSettings(): Promise<Settings> {
   return _cache;
 }
 
-export async function isModeEnabled(mode: ModeKey): Promise<boolean> {
+/** Returns the currently active mode, or null if the user disabled both. */
+export async function getActiveMode(): Promise<ActiveMode> {
   const s = await loadSettings();
-  return !!s.modes[mode];
+  return s.activeMode;
+}
+
+/** True when `mode` is the currently active mode. */
+export async function isModeActive(mode: 'arbitrage' | 'rare'): Promise<boolean> {
+  return (await getActiveMode()) === mode;
 }
 
 /** Subscribe to live settings changes; updates the cache and fires `cb`. */
