@@ -53,7 +53,16 @@ export default defineManifest({
   web_accessible_resources: [
     {
       resources: ['rare_stickers.json'],
-      matches: ['<all_urls>'],
+      matches: [
+        'https://skinsmonkey.com/*',
+        'https://*.skinsmonkey.com/*',
+        'https://csfloat.com/*',
+        'https://*.csfloat.com/*',
+        'https://*.pirateswap.com/*',
+        'https://pirateswap.com/*',
+        'https://cs.money/*',
+        'https://*.cs.money/*',
+      ],
     },
   ],
 });
