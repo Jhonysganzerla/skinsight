@@ -51,10 +51,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198308229445/inventory#730_2_51798976963",
       "seller": "CS.MONEY",
       "shortSlug": "awp-medusa",
-      "floatRange": [
-        0,
-        1
-      ],
+      "floatRange": [0, 1],
       "collection": "Gods and Monsters",
       "collectionInfo": {
         "img": "https://wiki.cs.money/images/collections/the-gods-and-monsters-collection.png",
@@ -114,10 +111,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198452860750/inventory#730_2_51851488371",
       "seller": "CS.MONEY",
       "shortSlug": "awp-the-prince",
-      "floatRange": [
-        0,
-        0.6
-      ],
+      "floatRange": [0, 0.6],
       "collection": "Canals",
       "collectionInfo": {
         "img": "https://wiki.cs.money/images/collections/the-canals-collection.png",
@@ -374,10 +368,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198453799303/inventory#730_2_51768057592",
       "seller": "CS.MONEY",
       "shortSlug": "sport-gloves-hedge-maze",
-      "floatRange": [
-        0.06,
-        0.8
-      ],
+      "floatRange": [0.06, 0.8],
       "collection": null,
       "collectionInfo": null,
       "case": {
@@ -421,10 +412,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198308378455/inventory#730_2_51906917024",
       "seller": "CS.MONEY",
       "shortSlug": "ak-47-fire-serpent",
-      "floatRange": [
-        0.06,
-        0.76
-      ],
+      "floatRange": [0.06, 0.76],
       "collection": "Bravo",
       "collectionInfo": {
         "img": "https://wiki.cs.money/images/collections/the-bravo-collection.png",
@@ -484,10 +472,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198311026203/inventory#730_2_51723685067",
       "seller": "CS.MONEY",
       "shortSlug": "awp-medusa",
-      "floatRange": [
-        0,
-        1
-      ],
+      "floatRange": [0, 1],
       "collection": "Gods and Monsters",
       "collectionInfo": {
         "img": "https://wiki.cs.money/images/collections/the-gods-and-monsters-collection.png",
@@ -530,10 +515,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198796418948/inventory#730_2_51514347958",
       "seller": "CS.MONEY",
       "shortSlug": "sport-gloves-slingshot",
-      "floatRange": [
-        0.06,
-        0.8
-      ],
+      "floatRange": [0.06, 0.8],
       "collection": null,
       "collectionInfo": null,
       "case": {
@@ -577,10 +559,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198311338812/inventory#730_2_51776467181",
       "seller": "CS.MONEY",
       "shortSlug": "sport-gloves-slingshot",
-      "floatRange": [
-        0.06,
-        0.8
-      ],
+      "floatRange": [0.06, 0.8],
       "collection": null,
       "collectionInfo": null,
       "case": {
@@ -627,10 +606,7 @@
       "bot": "https://steamcommunity.com/profiles/76561198739860497/inventory#730_2_51888513635",
       "seller": "CS.MONEY",
       "shortSlug": "awp-the-prince",
-      "floatRange": [
-        0,
-        0.6
-      ],
+      "floatRange": [0, 0.6],
       "collection": "Canals",
       "collectionInfo": {
         "img": "https://wiki.cs.money/images/collections/the-canals-collection.png",

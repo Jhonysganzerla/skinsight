@@ -372,7 +372,96 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 - Ícones PNG 16/32/48/128 (v0.6)
 - Smoke manual Jhony nos 3 sites para fechar v0.3
 
-### Aguardando smoke manual + aprovação do reviewer para tagear `v0.3.0` e iniciar v0.4 (Steam Market).
+### v0.3 aprovada pelo reviewer · tag local `v0.3.0` criada · smoke do Jhony confirmou os 3 sites + não-regressão Arbitrage.
+
+---
+
+## v0.4 — Bug fixes + Rare-first repositioning (em curso, aguardando smoke)
+
+**Status:** wiring completo. Gates locais verdes. Aguardando smoke do Jhony.
+
+> O Steam Market foi adiado para v0.5 e o Skinport para v0.6. Renumeração refletida em `plano-monetizar-jhony.md`. Razão: o smoke da v0.3 revelou bugs e questões de posicionamento que não dava pra adiar até v0.7.
+
+### Commits desde `v0.3.0`
+
+```
+45d7e93 feat(rare): 4 sticker tiers — Paper/Holo/Foil/Gold with corrected foil
+948bb4e feat(popup): rare-first repositioning — tagline, default mode, card order
+8fb3b48 refactor(settings): per-site mutex via skinsmonkeyMode + always-on others
+5060f26 feat(rare): render real sticker images in chips with gradient fallback
+7bebce7 fix(rare/csmoney): extract weapon image from item.img with fallback chain
+64294fa feat(storage): 24h sliding TTL for Today's hits + SW garbage collection
+5cdd306 perf(arbitrage): SW-side token-bucket gate for CSFloat (45/min + 30s 429 pause)
+068a460 fix(rare/pirateswap): raise max-pages default to 50 with select preset
+```
+
+8 commits Conventional, um por unidade lógica.
+
+### O que foi entregue
+
+**Fase B — bugs:**
+
+- `B2 fix(rare/pirateswap)`: filtro "Max pages" trocado de input number default=5 para `<select>` com presets `[10, 25, 50, 100, 200]`, default 50 (= 2000 itens, equivalente ao SAFETY_CAP legacy). Tooltip via `FilterField.hint`.
+- `B3 perf(arbitrage)`: token bucket no SW (45 req/min, burst 10) substitui o sleep 350 ms por-item; `csf:request-slot` + `csf:got-429` (pause 30s). Test cobre 5 cenários com fake timers.
+- `B4 feat(storage)`: TTL 24h sliding nos hits (era midnight cutoff), `runHitsGc()` na inicialização do SW. `filterHits` puro exportado pra teste.
+- `B1 fix(rare/csmoney)`: `extractCsMoneyImageUrl(item)` com fallback chain `img → steamImg → preview → screenshot`. `CsMoneyItem.imageUrl: string | null`. Fixture trocada pelo HAR real (10 items). Render do card usa `<img>` + onerror + `.sh-item-thumb-fallback` (placeholder ⌖ atrás do gradiente).
+- `B1.2 feat(rare)`: chips de sticker passam a renderizar a imagem real (Steam icons CDN) dentro do gradiente circular. Onerror cai pro gradiente classificado por tier.
+
+**Fase C — mutex per-site:**
+
+- `Settings.activeMode` (global) → `Settings.skinsmonkeyMode: 'arbitrage' | 'rare'` (default `'rare'`). Migrações de v0.2 (`modes.*`) e v0.3 (`activeMode`).
+- PS / CS.Money / CSFloat removeram `watchSettings`/`isModeActive` — montam **always-on** no carregamento. Scan rodando nessas abas sobrevive a qualquer toggle no popup.
+- Popup ganha section "SkinsMonkey mode" (só relevante quando aba ativa é SM, escurece nos outros sites) + sub-label "Always-on Rare/Arbitrage oracle/Mode toggle above" em cada site row.
+
+**Fase D — Rare-first repositioning:**
+
+- Default `skinsmonkeyMode='rare'` (era 'arbitrage' na v0.3).
+- Card Rare renderizado **acima** do Arbitrage no popup.
+- Tagline curta no header: "Rare sticker scanner for CS2 skin trading."
+- README primeira frase reescrita: "Skinsight is a CS2 **rare sticker scanner** that catches items where the stickers are worth more than the listing price. It also does cross-site price **arbitrage** as a secondary feature." Sites table reordenada (Rare antes de Arbitrage).
+- `mockup-ui-skinsight.html` no Desktop atualizado in-place: tagline no header + ordem dos cards + section label.
+
+**Fase E — 4 tiers de sticker:**
+
+- `StickerKind` ganha `'gold'` e `'paper'` (alias de `matte`). 4 tiers reais: Paper (indigo, default) / Holo (rainbow conic) / Foil (silver `#e4e4e7 → #a1a1aa` — corrigido de gold) / Gold (`#facc15 → #d4af37`, novo).
+- `classifyStickerKind`: `(Holo)|(Lenticular)` → holo, `(Foil)` → foil, `(Gold)|(Champion)` → gold, default → paper.
+- Mockup §3 mostra 1 chip por tier.
+
+### Gates v0.4
+
+- `npm run lint` → 0 issues
+- `npm run typecheck` → 0 errors
+- `npm run format:check` → clean
+- `npm test` → **8 files / 54 tests** (smoke 3, score 7, arb parity 4, rare 19, throttle 5, sticker-chip 6, settings mutex 6, hits 4)
+- `npm run build` → dist OK
+- `npm run pack` → zip OK
+
+### Não foi feito (escopo correto v0.4)
+
+- Steam priceoverview integration (v0.5)
+- Skinport oracle (v0.6)
+- i18n / options / icons / onboarding (v0.7)
+- Refactor de score / finder (verbatim mantido)
+
+### TODOs persistentes
+
+- Smoke manual do Jhony (cenários abaixo)
+- Conta GitHub remota / push / tags
+- `[YOUR_HANDLE]` em PRIVACY.md
+- Pseudônimo Chrome Web Store (v0.8/v1.0)
+- Ícones PNG 16/32/48/128 (v0.7)
+
+### Smoke v0.4 — cenários novos a confirmar
+
+1. **CS.Money image:** abrir cs.money, Scan, confirmar cards mostrando weapon image real (não emoji ⌖).
+2. **PS pagination:** abrir pirateswap.com, Scan com default (50 pages), confirmar volume razoável (~ algumas centenas a 2000 items, função do inventário).
+3. **CSFloat throttle:** Arbitrage scan SM → CSFloat com 100+ items. Esperado: cadence visivelmente mais lenta (~1.3s/item após burst inicial), **sem** 429 ou só raros pontuais (com pause de 30s automática).
+4. **Mutex per-site:** abrir scan no PS, abrir popup, mudar SkinsMonkey mode de Rare → Arbitrage. Scan PS continua rolando intacto.
+5. **Sticker tiers:** confirmar visualmente que foil = silver, gold = dourado (não trocados). Verificar com Sticker | kennyS (Foil) (silver) vs ESPADA (Gold) (dourado) no fixture HAR.
+6. **Cards CSM com sticker images:** chips dos stickers mostram a foto real da Steam (não placeholder).
+7. **Não-regressão:** smoke v0.2 e v0.3 ainda funcionam (SM Rare default, troca para Arbitrage, scan completo).
+
+### Aguardando smoke do Jhony para tagear `v0.4.0` e iniciar v0.5 (Steam Market on-demand).
 
 ---
 

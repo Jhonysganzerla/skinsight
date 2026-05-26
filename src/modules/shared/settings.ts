@@ -1,10 +1,5 @@
 /** Convenience accessors over the typed settings store. */
-import {
-  getSettings,
-  onSettingsChanged,
-  type Settings,
-  type SkinsmonkeyMode,
-} from './storage';
+import { getSettings, onSettingsChanged, type Settings, type SkinsmonkeyMode } from './storage';
 
 let _cache: Settings | null = null;
 

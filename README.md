@@ -41,14 +41,14 @@ For Firefox: same flow via `about:debugging#/runtime/this-firefox` → _Load Tem
 
 ## Sites covered
 
-| Site                      | Mode(s)                            | Phase wired |
-| ------------------------- | ---------------------------------- | ----------- |
-| skinsmonkey.com           | Rare (default) + Arbitrage         | v0.2 / v0.3 |
-| pirateswap.com            | Rare (always-on)                   | v0.3        |
-| cs.money                  | Rare (always-on) + DB regenerator  | v0.3        |
-| csfloat.com               | Arbitrage oracle (always-on)       | v0.2        |
-| steamcommunity.com/market | Per-item Steam price (on-demand)   | v0.5        |
-| api.skinport.com          | Skinport oracle                    | v0.6        |
+| Site                      | Mode(s)                           | Phase wired |
+| ------------------------- | --------------------------------- | ----------- |
+| skinsmonkey.com           | Rare (default) + Arbitrage        | v0.2 / v0.3 |
+| pirateswap.com            | Rare (always-on)                  | v0.3        |
+| cs.money                  | Rare (always-on) + DB regenerator | v0.3        |
+| csfloat.com               | Arbitrage oracle (always-on)      | v0.2        |
+| steamcommunity.com/market | Per-item Steam price (on-demand)  | v0.5        |
+| api.skinport.com          | Skinport oracle                   | v0.6        |
 
 UI text is English. Visual reference: `mockup-ui-skinsight.html`.
 

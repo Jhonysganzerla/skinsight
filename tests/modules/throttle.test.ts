@@ -25,9 +25,7 @@ describe('TokenBucket', () => {
   it('burst: capacity tokens acquire immediately', async () => {
     const b = new TokenBucket({ refillPerMs: RATE_PER_MS, capacity: 10 });
     const acquired: number[] = [];
-    const promises = Array.from({ length: 10 }, (_, i) =>
-      b.acquire().then(() => acquired.push(i)),
-    );
+    const promises = Array.from({ length: 10 }, (_, i) => b.acquire().then(() => acquired.push(i)));
     await vi.advanceTimersByTimeAsync(1);
     await Promise.all(promises);
     expect(acquired).toHaveLength(10);

@@ -159,9 +159,7 @@ describe('rare/csmoney — Regenerate report', () => {
     const names = report.rare_stickers.map((s) => s.name);
     // kennyS (Foil) is the clearest rare; BLAST.tv (Gold) sits exactly at the
     // threshold and qualifies as well.
-    expect(names).toEqual(
-      expect.arrayContaining(['Sticker | kennyS (Foil) | Cologne 2015']),
-    );
+    expect(names).toEqual(expect.arrayContaining(['Sticker | kennyS (Foil) | Cologne 2015']));
   });
 
   it('output schema matches the legacy rare_stickers.json shape', () => {
