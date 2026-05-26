@@ -64,5 +64,25 @@ export default defineManifest({
         'https://*.cs.money/*',
       ],
     },
+    {
+      // Vite/Rollup splits shared imports (csf-url, messaging, storage, …) into
+      // chunk files under dist/assets/. Content scripts dynamically import them
+      // at runtime, which means Chrome must classify those chunks as
+      // web-accessible from the same host set the content scripts run on.
+      // crxjs 2.0.0-beta.25 normally auto-populates this list, but our narrow
+      // override for rare_stickers.json above replaced its auto-entry — we have
+      // to declare the chunks ourselves.
+      resources: ['assets/*.js', 'assets/*.css'],
+      matches: [
+        'https://skinsmonkey.com/*',
+        'https://*.skinsmonkey.com/*',
+        'https://csfloat.com/*',
+        'https://*.csfloat.com/*',
+        'https://*.pirateswap.com/*',
+        'https://pirateswap.com/*',
+        'https://cs.money/*',
+        'https://*.cs.money/*',
+      ],
+    },
   ],
 });
