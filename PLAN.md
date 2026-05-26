@@ -240,7 +240,72 @@ Cobre os mesmos cases de `busca_pattern_cs2/tests/score.test.html`: T1 lucro bá
 - Substituir `[YOUR_HANDLE]` em `PRIVACY.md` quando o GitHub for definido.
 - Atualizar `docs/ARCHITECTURE.md` quando v0.2 wire-up acontecer (substitui "v0.2 design, not yet wired" pelo real).
 
-### Aguardando aprovação do reviewer para iniciar v0.2.
+### v0.1 aprovado pelo reviewer. Fix obrigatório aplicado em `60c08cc`.
+
+---
+
+## v0.2 — Modo Arbitrage (em curso)
+
+**Status:** wiring completo, gates verdes. Aguardando teste manual end-to-end + aprovação do reviewer para fechar.
+
+### Commits (v0.1 baseline → HEAD)
+
+```
+a1e660b docs(architecture): document SM → SW → CSFloat data flow with mermaid
+4883dab style: apply prettier formatting to v0.2 sources
+1e6f99a test(arbitrage): add SM + CSFloat fixtures and end-to-end parity test
+874311c feat(arbitrage): wire analyzer into CSFloat content script
+186eb97 feat(arbitrage): wire scanner into SkinsMonkey content script
+069ee56 refactor(messaging): switch arbitrage flow to start/ready/payload/result taxonomy
+c5e4be0 feat(shared): add UI primitives — FilterGrid, ScanBar, ItemCard, StickerChip
+60c08cc fix(manifest): narrow web_accessible_resources to supported hosts
+```
+
+8 commits, Conventional Commits style, todos por unidade lógica conforme o exemplo do reviewer.
+
+### O que foi entregue
+
+- **`src/modules/shared/ui.ts`** — primitives `renderFilterGrid`, `renderScanBar` + `updateScanBar`, `renderItemCard` com variantes `hot|warm|neutral`, `renderStickerChip` (matte/foil/holo), `variantByProfitPct`, `variantByRoi`, `renderBanner`. Pure HTML builders.
+- **`src/modules/shared/messaging.ts`** — taxonomy `arbitrage:start | :ready | :payload | :result` + `hit:record`. Helper `hitRowFromAnalysisRow`. `sendToTab` para SW.
+- **`src/background/service-worker.ts`** — router completo: persiste payload com TTL 30 min, abre/foca tab CSFloat, encaminha payload no `:ready`, agrega hits no `:result`.
+- **`src/content/skinsmonkey.ts`** — overlay com FilterGrid (search, max pages, exteriors preset) + ScanBar com progresso live + AbortController. Mount/unmount reativos a `watchSettings`.
+- **`src/content/csfloat.ts`** — overlay com idle/running/done states. `analyzer.runAnalysis` com `isAborted`. `ItemCard` por linha com meta chips (SM/CSF prices, estimated, lock, sticker/charm flags) + Open CSFloat ↗ via `buildCsfUrl`. Reporta `arbitrage:result` ao final.
+- **`docs/ARCHITECTURE.md`** — mermaid sequenceDiagram do fluxo real + tabela de message taxonomy + tabela de edge cases.
+- **`tests/fixtures/{skinsmonkey-page,csfloat-response}.json`** + **`tests/modules/arbitrage.parity.test.ts`** — 4 cases validando schema mapping e cálculos de score com fixtures sanitizadas.
+
+### Edge cases endereçados em código
+
+Vide `docs/ARCHITECTURE.md` §"Edge cases". Os 4 cenários do reviewer (sem CSRF, CSF em página errada, 429 no SM, tab CSF fechada mid-scan) estão tratados — sem CSRF mostra mensagem clara, 429 retenta 3× com backoff 600 ms, fechar tab faz o TTL de 30 min cobrir.
+
+### Gates v0.2
+
+- `npm run lint` → 0 issues
+- `npm run typecheck` → 0 erros
+- `npm run format:check` → clean
+- `npm test` → 3 files / 14 tests passed (smoke 3 + score 7 + parity 4)
+- `npm run build` → dist OK
+- `npm run pack` → `skinsight-0.1.0.zip` regenerado
+
+### Limitação intencional
+
+Steam Market price fetch fica desabilitado no `scanner.ts` v0.2 (`steamPrice()`/`fetchAccessoryPrices()` existem mas o content script não as chama). Habilita em v0.4 via service worker com rate-limit guard (briefing §7 + §9 DON'T #4).
+
+### Não foi feito (escopo correto v0.2)
+
+- Steam priceoverview (v0.4)
+- Skinport oracle (v0.5)
+- Modo Rare wire-up (v0.3)
+- Refactor do algoritmo de score (até v1.0+)
+
+### TODOs persistentes
+
+- Conta GitHub remota / push / tags
+- Substituir `[YOUR_HANDLE]` em `PRIVACY.md`
+- Pseudônimo Chrome Web Store (v0.7/v1.0)
+- Ícones PNG 16/32/48/128 (v0.6)
+- Teste manual end-to-end com usuário logado em SM (impossível de automatizar no ambiente atual)
+
+### Aguardando aprovação para iniciar v0.3 (Modo Rare).
 
 ---
 
