@@ -61,7 +61,8 @@ function bodyHtmlDone(rows: AnalysisRow[]): string {
   return [
     renderScanBar({ info: `Analysis complete — ${rows.length} listings.`, actionLabel: 'Rescan' }),
     renderResultsHeader('Item · price · stickers', 'Profit'),
-    rows.map(itemCardForRow).join('') || `<div class="sh-empty">
+    rows.map(itemCardForRow).join('') ||
+      `<div class="sh-empty">
       <div class="sh-empty-icon">⌖</div>
       <div class="sh-empty-title">No opportunities</div>
       <div class="sh-empty-sub">Try widening the filters on SkinsMonkey and rescan.</div>
@@ -85,7 +86,12 @@ function itemCardForRow(row: AnalysisRow): string {
   const profitPct = row.result.profitPct;
   const profitFraction = profitPct / 100;
   const variant = variantByProfitPct(profitPct);
-  const openUrl = buildCsfUrl(row.item.paintSeed, row.item.marketName, row.item.defIndex, row.item.paintIndex);
+  const openUrl = buildCsfUrl(
+    row.item.paintSeed,
+    row.item.marketName,
+    row.item.defIndex,
+    row.item.paintIndex,
+  );
   const props: ItemCardProps = {
     id: row.item.assetId || row.item.marketName,
     imageUrl: row.item.imageUrl || null,
@@ -130,7 +136,10 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
 
   overlay.body.innerHTML = bodyHtmlDone(rows);
   wireScanBar();
-  setStatus(`Found ${rows.length} listings. ${rows.filter((r) => r.result.grossProfit > 0).length} profitable.`, 'ok');
+  setStatus(
+    `Found ${rows.length} listings. ${rows.filter((r) => r.result.grossProfit > 0).length} profitable.`,
+    'ok',
+  );
 
   // Report hits back to the SW so the popup feed updates.
   const hitRows = rows

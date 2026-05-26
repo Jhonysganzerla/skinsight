@@ -12,7 +12,12 @@
  *   5. CSFloat content script runs analyzer → sends `arbitrage:result` with
  *      the scored rows. SW writes each row into the "Today's hits" feed.
  */
-import { onMessage, sendToTab, type Message, type MessageResponse } from '../modules/shared/messaging';
+import {
+  onMessage,
+  sendToTab,
+  type Message,
+  type MessageResponse,
+} from '../modules/shared/messaging';
 import {
   setPendingArbitrage,
   getPendingArbitrage,

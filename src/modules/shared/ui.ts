@@ -139,13 +139,11 @@ export interface ItemCardProps {
 
 export function renderItemCard(p: ItemCardProps): string {
   const variantCls = p.variant === 'hot' ? ' hot' : p.variant === 'warm' ? ' warm' : '';
-  const profitCls =
-    p.variant === 'hot' ? '' : p.variant === 'warm' ? ' warm' : ' neutral';
+  const profitCls = p.variant === 'hot' ? '' : p.variant === 'warm' ? ' warm' : ' neutral';
   const profitSign = p.profitUsd >= 0 ? '+' : '−';
   const profitAbs = Math.abs(p.profitUsd);
   const profitText = profitSign + fmtUsd(profitAbs);
-  const pctText =
-    (p.profitFraction >= 0 ? '+' : '−') + fmtPct(Math.abs(p.profitFraction));
+  const pctText = (p.profitFraction >= 0 ? '+' : '−') + fmtPct(Math.abs(p.profitFraction));
   const chips = p.meta
     .map((m) => {
       const k = m.kind ? ' sh-pill-mini sh-pill-' + m.kind : '';
@@ -204,9 +202,7 @@ export function renderStickerChip(p: StickerChipProps): string {
   const kindCls = p.kind && p.kind !== 'matte' ? ' ' + p.kind : '';
   const inner = p.imageUrl ? `<img src="${safeUrl(p.imageUrl)}" alt="" />` : '';
   const price =
-    p.priceUsd != null
-      ? `<span class="sh-sticker-price">${fmtUsd(p.priceUsd)}</span>`
-      : '';
+    p.priceUsd != null ? `<span class="sh-sticker-price">${fmtUsd(p.priceUsd)}</span>` : '';
   return `
     <div class="sh-sticker-chip">
       <div class="sh-sticker-mini${kindCls}">${inner}</div>
