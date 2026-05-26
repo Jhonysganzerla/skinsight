@@ -55,7 +55,7 @@ async function fetchSm(offset: number, limit = 120): Promise<SmInventoryResp> {
   return res.json();
 }
 
-function normalizeSm(json: SmInventoryResp): RareItem[] {
+export function normalizeSm(json: SmInventoryResp): RareItem[] {
   const out: RareItem[] = [];
   for (const a of json.assets ?? []) {
     const it = a.item ?? {};
@@ -103,7 +103,7 @@ async function fetchPs(page: number, results = 40): Promise<PsResp> {
   return res.json();
 }
 
-function normalizePs(json: PsResp): RareItem[] {
+export function normalizePs(json: PsResp): RareItem[] {
   const out: RareItem[] = [];
   for (const it of json.items ?? []) {
     const stickers = (it.stickers ?? []).map((s) => ({
@@ -175,8 +175,15 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
 }
 
 /* ── Match + score ──────────────────────────────────────────────────── */
-export async function findRareResults(items: RareItem[]): Promise<RareResult[]> {
-  const map = await getRareMap();
+/**
+ * Build the result set. `mapOverride` lets tests inject a deterministic
+ * map without going through chrome.runtime.getURL + fetch.
+ */
+export async function findRareResults(
+  items: RareItem[],
+  mapOverride?: Map<string, number>,
+): Promise<RareResult[]> {
+  const map = mapOverride ?? (await getRareMap());
   const out: RareResult[] = [];
   for (const it of items) {
     const matches: RareStickerMatch[] = [];

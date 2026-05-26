@@ -1,0 +1,37 @@
+{
+  "_comment": "Sanitized excerpt of web.pirateswap.com/inventory/v2/ExchangerInventory response. Same shape that finder.normalizePs reads. PS does not surface sticker prices; the normalizer leaves price=null and lookup happens via the bundled rare DB.",
+  "items": [
+    {
+      "id": "PS-2001",
+      "marketHashName": "AK-47 | Redline (Field-Tested)",
+      "price": 17.5,
+      "exterior": "Field-Tested",
+      "inspectInGameLink": "steam://run/730/PS-2001",
+      "icon": "fake-icon-1",
+      "stickers": [
+        { "name": "Sticker | Howling Dawn", "imageUrl": "https://example.invalid/howling.png" },
+        { "name": "Sticker | Crown (Foil)", "imageUrl": "https://example.invalid/crown.png" }
+      ]
+    },
+    {
+      "id": "PS-2002",
+      "marketHashName": "AWP | Asiimov (Field-Tested)",
+      "price": 95.0,
+      "exterior": "Field-Tested",
+      "inspectInGameLink": "steam://run/730/PS-2002",
+      "icon": "fake-icon-2",
+      "stickers": [
+        { "name": "Sticker | Reason Gaming (Holo) | Katowice 2014", "imageUrl": "https://example.invalid/reason.png" }
+      ]
+    },
+    {
+      "id": "PS-2003",
+      "marketHashName": "Glock-18 | Water Elemental (Minimal Wear)",
+      "price": 8.0,
+      "exterior": "Minimal Wear",
+      "inspectInGameLink": "steam://run/730/PS-2003",
+      "icon": "fake-icon-3",
+      "stickers": []
+    }
+  ]
+}

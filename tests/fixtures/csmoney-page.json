@@ -1,0 +1,30 @@
+{
+  "_comment": "Sanitized excerpt of cs.money/5.0/load_bots_inventory/730?hasRareStickers=true. Shape matches what csmoney.collectCsMoney reads (item.fullName, item.price, item.stickers[].name/price/wear).",
+  "items": [
+    {
+      "id": 3001,
+      "fullName": "M4A1-S | Hot Rod (Factory New)",
+      "price": 28.5,
+      "stickers": [
+        { "name": "Howling Dawn", "price": 210.0, "wear": 5 },
+        { "name": "Crown (Foil)", "price": 118.0, "wear": 10 }
+      ]
+    },
+    {
+      "id": 3002,
+      "fullName": "AK-47 | Vulcan (Minimal Wear)",
+      "price": 75.0,
+      "stickers": [
+        { "name": "Reason Gaming (Holo) | Katowice 2014", "price": 166.0, "wear": 0 }
+      ]
+    },
+    {
+      "id": 3003,
+      "fullName": "USP-S | Cortex (Field-Tested)",
+      "price": 6.0,
+      "stickers": [
+        { "name": "Common Sticker", "price": 0.5, "wear": 80 }
+      ]
+    }
+  ]
+}
