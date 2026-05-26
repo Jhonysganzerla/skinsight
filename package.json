@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "CS2 skin arbitrage + rare sticker scanner for SkinsMonkey, CSFloat, PirateSwap and CS.Money.",
+  "author": "Sganzerla",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "scripts": {
     "predev": "node scripts/build-rare-data.mjs && node scripts/build-icons.mjs",

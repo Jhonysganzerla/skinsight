@@ -25,4 +25,4 @@ The extension contains a bundled database of rare CS2 stickers
 (`rare_stickers.json`), updated via extension releases.
 
 If you have questions, open an issue at
-`https://github.com/[YOUR_HANDLE]/skinsight`.
+`https://github.com/sganzerla/skinsight`.
