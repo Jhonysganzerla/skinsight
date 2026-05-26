@@ -18,7 +18,6 @@ import {
   updateScanBar,
   type FilterField,
 } from '../modules/shared/ui';
-import { isModeActive, watchSettings } from '../modules/shared/settings';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { send } from '../modules/shared/messaging';
@@ -229,19 +228,11 @@ function mount(): void {
   });
 }
 
-function unmount(): void {
-  abort();
-  overlay?.destroy();
-  overlay = null;
-}
-
 async function bootstrap(): Promise<void> {
+  // CS.Money is always-on Rare. The popup's mode toggle only affects
+  // SkinsMonkey; a scan running here survives any change there.
   console.debug('[Skinsight] loaded on cs.money');
-  if (await isModeActive('rare')) mount();
-  watchSettings((s) => {
-    if (s.activeMode === 'rare') mount();
-    else unmount();
-  });
+  mount();
 }
 
 void bootstrap();

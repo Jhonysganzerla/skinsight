@@ -22,7 +22,6 @@ import {
   type Message,
   type MessageResponse,
 } from '../modules/shared/messaging';
-import { isModeActive, watchSettings } from '../modules/shared/settings';
 import { runAnalysis } from '../modules/arbitrage/analyzer';
 import { buildCsfUrl } from '../modules/arbitrage/csf-url';
 import type { AnalysisRow, ArbitrageItem, ExportPayload } from '../modules/arbitrage/types';
@@ -192,12 +191,6 @@ function mount(): void {
   void send({ type: 'arbitrage:ready' });
 }
 
-function unmount(): void {
-  aborted = true;
-  overlay?.destroy();
-  overlay = null;
-}
-
 function handleIncoming(msg: Message): MessageResponse {
   if (msg.type === 'arbitrage:payload') {
     void analyzePayload(msg.payload);
@@ -207,13 +200,11 @@ function handleIncoming(msg: Message): MessageResponse {
 }
 
 async function bootstrap(): Promise<void> {
+  // CSFloat is the always-on Arbitrage oracle. Mode toggle in the popup
+  // only affects SkinsMonkey; this overlay is mounted unconditionally.
   console.debug('[Skinsight] loaded on csfloat');
   onMessage(handleIncoming);
-  if (await isModeActive('arbitrage')) mount();
-  watchSettings((s) => {
-    if (s.activeMode === 'arbitrage') mount();
-    else unmount();
-  });
+  mount();
 }
 
 void bootstrap();

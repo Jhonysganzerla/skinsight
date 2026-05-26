@@ -1,5 +1,10 @@
 /** Convenience accessors over the typed settings store. */
-import { getSettings, onSettingsChanged, type ActiveMode, type Settings } from './storage';
+import {
+  getSettings,
+  onSettingsChanged,
+  type Settings,
+  type SkinsmonkeyMode,
+} from './storage';
 
 let _cache: Settings | null = null;
 
@@ -9,15 +14,15 @@ export async function loadSettings(): Promise<Settings> {
   return _cache;
 }
 
-/** Returns the currently active mode, or null if the user disabled both. */
-export async function getActiveMode(): Promise<ActiveMode> {
+/**
+ * The mode SkinsMonkey should operate in. Other sites ignore this and
+ * always behave per their fixed role:
+ *   - PirateSwap / CS.Money: always-on Rare
+ *   - CSFloat:               always-on Arbitrage oracle
+ */
+export async function getSkinsmonkeyMode(): Promise<SkinsmonkeyMode> {
   const s = await loadSettings();
-  return s.activeMode;
-}
-
-/** True when `mode` is the currently active mode. */
-export async function isModeActive(mode: 'arbitrage' | 'rare'): Promise<boolean> {
-  return (await getActiveMode()) === mode;
+  return s.skinsmonkeyMode;
 }
 
 /** Subscribe to live settings changes; updates the cache and fires `cb`. */

@@ -7,15 +7,18 @@
  * No scan UI here — scan lives in the overlay injected on each site.
  * Mockup reference: C:\Users\Windows 11\Desktop\mockup-ui-skinsight.html
  *
- * v0.3: the two mode cards are mutually exclusive. Clicking the inactive
- * card switches `activeMode`; clicking the active card disables both.
+ * v0.4: per-site mutex. The mode toggle controls SkinsMonkey only;
+ * PirateSwap and CS.Money are always-on Rare, CSFloat is always-on Arbitrage
+ * oracle. The two cards in the popup are mutually exclusive (mutex), and
+ * clicking the active card is a no-op (we don't let the user disable
+ * SkinsMonkey entirely — they can just close the overlay there).
  */
 import {
   getSettings,
   patchSettings,
   getHits,
-  type ActiveMode,
   type Settings,
+  type SkinsmonkeyMode,
   type TodayHit,
 } from '../modules/shared/storage';
 
@@ -114,26 +117,34 @@ function siteForHost(host: string | null): SiteDef | null {
 }
 
 function renderModesSection(s: Settings, active: SiteDef | null): string {
-  const arbActive = s.activeMode === 'arbitrage';
-  const rareActive = s.activeMode === 'rare';
-  // Dim the mode a site doesn't support to set expectations.
-  const arbDim = active && !active.supports.includes('arbitrage') ? ' style="opacity:.45"' : '';
-  const rareDim = active && !active.supports.includes('rare') ? ' style="opacity:.45"' : '';
+  const rareActive = s.skinsmonkeyMode === 'rare';
+  const arbActive = s.skinsmonkeyMode === 'arbitrage';
+  // Dim the entire section when the active tab isn't SkinsMonkey — the mutex
+  // only governs SkinsMonkey, so showing toggles on PS/CSM/CSFloat is
+  // misleading. (We still render them for context; just at lower opacity.)
+  const sectionDim = active && active.key !== 'skinsmonkey' ? ' style="opacity:.55"' : '';
+  // Rare first — v0.4 repositioning. Skinsight is primarily a rare scanner.
   return `
-    <div class="popup-section">
-      <div class="section-label">Modes <span style="font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">— pick one</span></div>
+    <div class="popup-section"${sectionDim}>
+      <div class="section-label">SkinsMonkey mode <span style="font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">— pick one</span></div>
       <div class="mode-row">
-        <button class="mode-card ${arbActive ? 'active' : ''}" data-mode="arbitrage" type="button"${arbDim}>
+        <button class="mode-card ${rareActive ? 'active' : ''}" data-mode="rare" type="button">
+          <div class="mode-card-title"><span class="toggle-dot"></span> Rare stickers</div>
+          <div class="mode-card-meta">Default · catches under-listed items</div>
+        </button>
+        <button class="mode-card ${arbActive ? 'active' : ''}" data-mode="arbitrage" type="button">
           <div class="mode-card-title"><span class="toggle-dot"></span> Arbitrage</div>
           <div class="mode-card-meta">SM ↔ CSFloat</div>
-        </button>
-        <button class="mode-card ${rareActive ? 'active' : ''}" data-mode="rare" type="button"${rareDim}>
-          <div class="mode-card-title"><span class="toggle-dot"></span> Rare</div>
-          <div class="mode-card-meta">SM, PS, CSM</div>
         </button>
       </div>
     </div>
   `;
+}
+
+function siteSubtitle(site: SiteDef): string {
+  if (site.key === 'skinsmonkey') return 'Mode toggle above';
+  if (site.key === 'csfloat') return 'Always-on Arbitrage oracle';
+  return 'Always-on Rare';
 }
 
 function renderSitesSection(activeHost: string | null): string {
@@ -147,7 +158,10 @@ function renderSitesSection(activeHost: string | null): string {
     return `
       <a class="site-status" href="${site.url}" data-open="${site.url}">
         <div class="site-icon" style="background:${site.iconBg};color:${site.iconFg};">${site.short}</div>
-        <div class="site-name">${escHtml(site.label)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="site-name">${escHtml(site.label)}</div>
+          <div style="font-size:10.5px;color:var(--text-dim);">${escHtml(siteSubtitle(site))}</div>
+        </div>
         ${pill}
       </a>
     `;
@@ -241,13 +255,12 @@ function renderSupported(state: PopupState, active: SiteDef): string {
   ].join('');
 }
 
-/** Click-handler logic for a mode card.
- *  - Clicking the currently-active card → deactivate (activeMode = null).
- *  - Clicking the other card → switch to it (mutex). */
-async function toggleMode(clicked: 'arbitrage' | 'rare'): Promise<void> {
+/** Click-handler logic for a SkinsMonkey mode card.
+ *  Mutex: clicking the active card is a no-op; clicking the other switches. */
+async function toggleMode(clicked: SkinsmonkeyMode): Promise<void> {
   const cur = await getSettings();
-  const next: ActiveMode = cur.activeMode === clicked ? null : clicked;
-  await patchSettings({ activeMode: next });
+  if (cur.skinsmonkeyMode === clicked) return;
+  await patchSettings({ skinsmonkeyMode: clicked });
   await render();
 }
 

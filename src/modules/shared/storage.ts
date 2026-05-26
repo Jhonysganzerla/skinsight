@@ -2,23 +2,25 @@
 
 import type { ExportPayload } from '../arbitrage/types';
 
-/** Mutually exclusive — the user runs Arbitrage *or* Rare, never both. */
-export type ActiveMode = 'arbitrage' | 'rare' | null;
+/** The two modes the extension exposes. */
+export type SkinsmonkeyMode = 'arbitrage' | 'rare';
 
 export interface Settings {
   /**
-   * The mode the user opted into globally. v0.3 enforces mutex: the popup
-   * has two cards but only one is `active` at a time. Per-site relevance is
-   * handled by the content scripts (e.g. CSFloat ignores `rare`, PirateSwap
-   * ignores `arbitrage`).
+   * SkinsMonkey is the only site that supports both modes; the popup lets
+   * the user pick. PirateSwap and CS.Money are always Rare; CSFloat is
+   * always the Arbitrage oracle. Those content scripts ignore this setting.
+   *
+   * Default 'rare' — v0.4 repositioning: Skinsight is primarily a rare
+   * sticker scanner, arbitrage is a secondary feature.
    */
-  activeMode: ActiveMode;
+  skinsmonkeyMode: SkinsmonkeyMode;
   /** Overlay state per hostname — minimized + remembered position. */
   overlay: Record<string, { minimized?: boolean; left?: number; top?: number } | undefined>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  activeMode: 'arbitrage',
+  skinsmonkeyMode: 'rare',
   overlay: {},
 };
 
@@ -42,10 +44,18 @@ const KEY_SETTINGS = 'settings';
 const KEY_HITS = 'hits';
 const KEY_PENDING = 'pending_arbitrage';
 
-/** Read settings, applying defaults + a one-time migration from v0.2's
- *  4-boolean `modes` shape (any of {arbitrage_sm, arbitrage_csf} truthy → 'arbitrage'). */
+/**
+ * Read settings, applying defaults + migrations:
+ *   - v0.4 (now): `skinsmonkeyMode: 'arbitrage' | 'rare'`, default 'rare'.
+ *   - v0.3:       `activeMode: 'arbitrage' | 'rare' | null`. Migrated below.
+ *   - v0.2:       `modes: { arbitrage_sm, arbitrage_csf, rare_*, ... }`.
+ *
+ * Migration cascade picks the most-recent shape it can read; if `activeMode`
+ * was `null` (user had both disabled in v0.3) we fall to the default 'rare'.
+ */
 function normalizeSettings(raw: unknown): Settings {
   const obj = (raw ?? {}) as Partial<Settings> & {
+    activeMode?: 'arbitrage' | 'rare' | null;
     modes?: {
       arbitrage_sm?: boolean;
       arbitrage_csf?: boolean;
@@ -53,15 +63,18 @@ function normalizeSettings(raw: unknown): Settings {
       rare_csm?: boolean;
     };
   };
-  let active: ActiveMode = obj.activeMode ?? null;
-  if (active === undefined || (active === null && obj.modes)) {
-    const m = obj.modes ?? {};
-    if (m.arbitrage_sm || m.arbitrage_csf) active = 'arbitrage';
-    else if (m.rare_smps || m.rare_csm) active = 'rare';
-    else active = DEFAULT_SETTINGS.activeMode;
+  let mode: SkinsmonkeyMode = DEFAULT_SETTINGS.skinsmonkeyMode;
+  if (obj.skinsmonkeyMode === 'arbitrage' || obj.skinsmonkeyMode === 'rare') {
+    mode = obj.skinsmonkeyMode;
+  } else if (obj.activeMode === 'arbitrage' || obj.activeMode === 'rare') {
+    mode = obj.activeMode;
+  } else if (obj.modes) {
+    const m = obj.modes;
+    if (m.arbitrage_sm || m.arbitrage_csf) mode = 'arbitrage';
+    else if (m.rare_smps || m.rare_csm) mode = 'rare';
   }
   return {
-    activeMode: active,
+    skinsmonkeyMode: mode,
     overlay: obj.overlay ?? {},
   };
 }
@@ -78,7 +91,8 @@ export async function setSettings(s: Settings): Promise<void> {
 export async function patchSettings(patch: Partial<Settings>): Promise<Settings> {
   const cur = await getSettings();
   const next: Settings = {
-    activeMode: patch.activeMode !== undefined ? patch.activeMode : cur.activeMode,
+    skinsmonkeyMode:
+      patch.skinsmonkeyMode !== undefined ? patch.skinsmonkeyMode : cur.skinsmonkeyMode,
     overlay: { ...cur.overlay, ...(patch.overlay ?? {}) },
   };
   await setSettings(next);

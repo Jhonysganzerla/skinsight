@@ -19,8 +19,7 @@ import {
   type FilterField,
 } from '../modules/shared/ui';
 import { send } from '../modules/shared/messaging';
-import { watchSettings } from '../modules/shared/settings';
-import { getActiveMode } from '../modules/shared/settings';
+import { getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
 import {
   applyFilter,
   buildExportPayload,
@@ -330,11 +329,10 @@ function unmount(): void {
 
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
-  const initial = await getActiveMode();
-  if (initial === 'arbitrage' || initial === 'rare') mount(initial);
+  mount(await getSkinsmonkeyMode());
   watchSettings((s) => {
-    if (s.activeMode === 'arbitrage' || s.activeMode === 'rare') mount(s.activeMode);
-    else unmount();
+    // Only SkinsMonkey reacts to the per-site mode toggle.
+    mount(s.skinsmonkeyMode);
   });
 }
 

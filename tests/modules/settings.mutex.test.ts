@@ -1,0 +1,86 @@
+/**
+ * Per-site mutex (v0.4) + migration from v0.2/v0.3 settings shapes.
+ *
+ * The Settings type changed three times:
+ *   v0.2: { modes: { arbitrage_sm, arbitrage_csf, rare_smps, rare_csm } }
+ *   v0.3: { activeMode: 'arbitrage' | 'rare' | null }
+ *   v0.4: { skinsmonkeyMode: 'arbitrage' | 'rare' }
+ *
+ * normalizeSettings() is exercised here via a tiny in-memory stub of
+ * chrome.storage.local so we don't need a real Chrome runtime.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  DEFAULT_SETTINGS,
+  getSettings,
+  patchSettings,
+  type Settings,
+} from '../../src/modules/shared/storage';
+
+// Minimal in-memory chrome.storage.local stub.
+type StorageBag = Record<string, unknown>;
+let bag: StorageBag = {};
+
+const stubChrome = {
+  storage: {
+    local: {
+      async get(key: string): Promise<StorageBag> {
+        return key in bag ? { [key]: bag[key] } : {};
+      },
+      async set(items: StorageBag): Promise<void> {
+        Object.assign(bag, items);
+      },
+      async remove(key: string): Promise<void> {
+        delete bag[key];
+      },
+    },
+    onChanged: { addListener() {}, removeListener() {} },
+  },
+};
+
+beforeEach(() => {
+  bag = {};
+  (globalThis as unknown as { chrome: typeof stubChrome }).chrome = stubChrome;
+});
+
+describe('settings — v0.4 per-site mutex', () => {
+  it('default is Rare (v0.4 repositioning)', async () => {
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('rare');
+    expect(DEFAULT_SETTINGS.skinsmonkeyMode).toBe('rare');
+  });
+
+  it('patchSettings flips skinsmonkeyMode without touching overlay', async () => {
+    await patchSettings({ overlay: { 'foo.com': { minimized: true } } });
+    await patchSettings({ skinsmonkeyMode: 'arbitrage' });
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+    expect(s.overlay['foo.com']?.minimized).toBe(true);
+  });
+
+  it('reads v0.3 activeMode as the migration source', async () => {
+    bag['settings'] = { activeMode: 'arbitrage', overlay: {} };
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+
+  it('reads v0.3 activeMode=null and falls to default', async () => {
+    bag['settings'] = { activeMode: null, overlay: {} };
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('rare'); // default
+  });
+
+  it('reads v0.2 modes shape as the deeper migration source', async () => {
+    bag['settings'] = {
+      modes: { arbitrage_sm: true, arbitrage_csf: true, rare_smps: false, rare_csm: false },
+    };
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+
+  it('preserves a valid v0.4 skinsmonkeyMode untouched', async () => {
+    bag['settings'] = { skinsmonkeyMode: 'arbitrage', overlay: {} } satisfies Settings;
+    const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+});

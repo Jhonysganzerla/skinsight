@@ -15,7 +15,6 @@ import {
   updateScanBar,
   type FilterField,
 } from '../modules/shared/ui';
-import { isModeActive, watchSettings } from '../modules/shared/settings';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { send } from '../modules/shared/messaging';
@@ -193,19 +192,12 @@ function mount(): void {
   });
 }
 
-function unmount(): void {
-  abort();
-  overlay?.destroy();
-  overlay = null;
-}
-
 async function bootstrap(): Promise<void> {
+  // PirateSwap is always-on Rare. It ignores any popup-driven mode toggle —
+  // the user's choice over there only affects SkinsMonkey. A scan running
+  // here therefore survives any setting change in another tab.
   console.debug('[Skinsight] loaded on pirateswap');
-  if (await isModeActive('rare')) mount();
-  watchSettings((s) => {
-    if (s.activeMode === 'rare') mount();
-    else unmount();
-  });
+  mount();
 }
 
 void bootstrap();
