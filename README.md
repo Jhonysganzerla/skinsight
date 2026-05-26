@@ -2,10 +2,12 @@
 
 > See what others miss.
 
-Opportunity scanner extension for CS2 skin trading. Two modes:
+Skinsight is a CS2 **rare sticker scanner** that catches items where the
+stickers are worth more than the listing price. It also does cross-site
+price **arbitrage** as a secondary feature.
 
-- **Arbitrage** — scans SkinsMonkey listings, cross-checks real CSFloat prices, ranks by profit.
-- **Rare** — finds items on SkinsMonkey, PirateSwap, and CS.Money whose stickers or charms are worth more than the listing.
+- **Rare stickers** (primary) — finds items on SkinsMonkey, PirateSwap, and CS.Money whose stickers or charms are worth more than the listing.
+- **Arbitrage** (secondary) — scans SkinsMonkey listings and cross-checks real CSFloat prices to rank by profit.
 
 Manifest V3, TypeScript strict, Vite + `@crxjs/vite-plugin`.
 
@@ -39,14 +41,14 @@ For Firefox: same flow via `about:debugging#/runtime/this-firefox` → _Load Tem
 
 ## Sites covered
 
-| Site                      | Mode(s)                          | Phase wired |
-| ------------------------- | -------------------------------- | ----------- |
-| skinsmonkey.com           | Arbitrage + Rare                 | v0.2 / v0.3 |
-| csfloat.com               | Arbitrage (oracle)               | v0.2        |
-| pirateswap.com            | Rare                             | v0.3        |
-| cs.money                  | Rare + rare-data regenerator     | v0.3        |
-| steamcommunity.com/market | Per-item Steam price (on-demand) | v0.4        |
-| api.skinport.com          | Skinport oracle                  | v0.5        |
+| Site                      | Mode(s)                            | Phase wired |
+| ------------------------- | ---------------------------------- | ----------- |
+| skinsmonkey.com           | Rare (default) + Arbitrage         | v0.2 / v0.3 |
+| pirateswap.com            | Rare (always-on)                   | v0.3        |
+| cs.money                  | Rare (always-on) + DB regenerator  | v0.3        |
+| csfloat.com               | Arbitrage oracle (always-on)       | v0.2        |
+| steamcommunity.com/market | Per-item Steam price (on-demand)   | v0.5        |
+| api.skinport.com          | Skinport oracle                    | v0.6        |
 
 UI text is English. Visual reference: `mockup-ui-skinsight.html`.
 

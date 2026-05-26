@@ -68,12 +68,24 @@ button {
 .logo-text {
   font-weight: 700;
   font-size: 14px;
+}
+.logo-stack {
   flex: 1;
+  min-width: 0;
+}
+.logo-tagline {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .version-tag {
   font-size: 10.5px;
   color: var(--text-dim);
   font-family: ui-monospace, monospace;
+  align-self: flex-start;
 }
 
 .popup-section {
