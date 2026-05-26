@@ -6,10 +6,20 @@ export default defineManifest({
   name: 'Skinsight',
   version: pkg.version,
   description: pkg.description,
-  // Icons added in v0.6 (Polish phase). Chrome shows default puzzle icon meanwhile.
+  icons: {
+    16: 'icons/icon-16.png',
+    32: 'icons/icon-32.png',
+    48: 'icons/icon-48.png',
+    128: 'icons/icon-128.png',
+  },
   action: {
     default_title: 'Skinsight',
     default_popup: 'src/popup/popup.html',
+    default_icon: {
+      16: 'icons/icon-16.png',
+      32: 'icons/icon-32.png',
+      48: 'icons/icon-48.png',
+    },
   },
   background: {
     service_worker: 'src/background/service-worker.ts',
