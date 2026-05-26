@@ -1,0 +1,11 @@
+{
+  "_comment": "Sanitized excerpt of CSFloat /api/v1/listings response. Schema matches what analyzer.fetchCsfPrice reads (data[].price in cents; data[].reference.predicted_price for the estimated fallback). Real captures live in busca_pattern_cs2/samples/.",
+  "byAssetId": {
+    "FIXTURE-1001": {
+      "data": [{ "price": 6500, "reference": { "predicted_price": 6300 } }]
+    },
+    "FIXTURE-1002": {
+      "data": [{ "price": 4100, "reference": { "predicted_price": 4000 } }]
+    }
+  }
+}

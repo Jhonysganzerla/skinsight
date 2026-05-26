@@ -1,0 +1,71 @@
+{
+  "_comment": "Sanitized excerpt of SkinsMonkey /api/inventory response. Schema matches the live one used by scanner.fetchPage; identifiers were rewritten and long image URLs replaced with stable placeholders. The legacy capture lives in busca_pattern_cs2/samples/fetch-responses-skinsmonkey.txt — refer to that for the full original shape.",
+  "assets": [
+    {
+      "assetId": "FIXTURE-1001",
+      "imageUrl": "https://example.invalid/img/m4a1s-solitude.png",
+      "tradeLock": false,
+      "tradableAfter": null,
+      "item": {
+        "marketName": "M4A1-S | Solitude (Factory New)",
+        "price": 5080,
+        "imageUrl": "https://example.invalid/img/m4a1s-solitude.png",
+        "details": {
+          "exterior": "FACTORY_NEW",
+          "statTrak": false,
+          "souvenir": false
+        }
+      },
+      "game730": {
+        "paintWear": 0.05997928977013,
+        "paintIndex": 1338,
+        "paintSeed": 898,
+        "inspectUrl": "steam://run/730//+csgo_econ_action_preview FIXTURE-1001",
+        "screenshotUrl": "https://example.invalid/ss/1001",
+        "stickers": [],
+        "keychains": []
+      }
+    },
+    {
+      "assetId": "FIXTURE-1002",
+      "imageUrl": "https://example.invalid/img/ak-redline.png",
+      "tradeLock": true,
+      "tradableAfter": "2026-06-10T07:00:00.000Z",
+      "item": {
+        "marketName": "AK-47 | Redline (Field-Tested)",
+        "price": 1850,
+        "imageUrl": "https://example.invalid/img/ak-redline.png",
+        "details": {
+          "exterior": "FIELD_TESTED",
+          "statTrak": false,
+          "souvenir": false
+        }
+      },
+      "game730": {
+        "paintWear": 0.2341,
+        "paintIndex": 316,
+        "paintSeed": 321,
+        "inspectUrl": "steam://run/730//+csgo_econ_action_preview FIXTURE-1002",
+        "screenshotUrl": "https://example.invalid/ss/1002",
+        "stickers": [
+          {
+            "marketName": "Sticker | Howling Dawn",
+            "imageUrl": "https://example.invalid/stk/howling.png"
+          },
+          {
+            "marketName": "Sticker | Crown (Foil)",
+            "imageUrl": "https://example.invalid/stk/crown.png"
+          }
+        ],
+        "keychains": [
+          {
+            "marketName": "Charm | Lil' Squirt",
+            "pattern": 12345,
+            "imageUrl": "https://example.invalid/charm/lilsquirt.png"
+          }
+        ]
+      }
+    }
+  ],
+  "total": 2
+}
