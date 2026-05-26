@@ -96,12 +96,26 @@ export async function fetchCsfPrice(
 export interface AnalysisCallbacks {
   onProgress?: (done: number, total: number) => void;
   isAborted?: () => boolean;
+  /**
+   * Delay between successive items, in ms. CSFloat starts returning 429
+   * around ~100+ requests in quick succession; a steady ~170 req/min keeps
+   * us comfortably below that. The fetchCsfPrice() retry path still handles
+   * burst 429s via exponential backoff (`2500 * (1 + retries)`), so this is
+   * a soft throttle, not the only line of defense.
+   *
+   * Default: 350 ms (≈ 170 req/min). Set to 0 for tests.
+   */
+  itemDelayMs?: number;
 }
+
+/** Default delay between CSFloat requests. ≈ 170 req/min. */
+export const DEFAULT_CSF_ITEM_DELAY_MS = 350;
 
 export async function runAnalysis(
   items: ArbitrageItem[],
   cb: AnalysisCallbacks = {},
 ): Promise<AnalysisRow[]> {
+  const delay = cb.itemDelayMs ?? DEFAULT_CSF_ITEM_DELAY_MS;
   const out: AnalysisRow[] = [];
   for (let i = 0; i < items.length; i++) {
     if (cb.isAborted?.()) return out;
@@ -112,6 +126,10 @@ export async function runAnalysis(
       out.push({ item, result: scoreItem(item, price, estimated) });
     }
     cb.onProgress?.(i + 1, items.length);
+    // Throttle: skip the wait on the last item to avoid a wasted tick at end.
+    if (delay > 0 && i < items.length - 1) {
+      await sleep(delay);
+    }
   }
   out.sort((a, b) => b.result.score - a.result.score);
   return out;
