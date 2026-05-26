@@ -253,6 +253,95 @@ export function renderResultsHeader(left: string, right: string): string {
   `;
 }
 
+/* ───────────────────────────────────────────────── Chunked render ── */
+
+interface ChunkedRenderHandle {
+  /** Resolves when every chunk has been appended or the controller aborts. */
+  done: Promise<void>;
+  /** Aborts the render at the next chunk boundary. */
+  abort(): void;
+}
+
+interface ChunkedRenderOpts<T> {
+  container: HTMLElement;
+  items: readonly T[];
+  /** Pure HTML producer per item. */
+  render: (item: T, index: number) => string;
+  /** Static HTML prepended before the first chunk (e.g. results header). */
+  prefixHtml?: string;
+  /** Items per chunk. Default 50 — balances paint cadence with overhead. */
+  chunkSize?: number;
+}
+
+/**
+ * Render `items` into `container` in chunks, yielding the main thread
+ * between batches via `requestIdleCallback` (or `setTimeout(0)` fallback).
+ *
+ * Returns a handle whose `abort()` lets a caller interrupt mid-render —
+ * essential for reactive filters that re-render as the user types.
+ *
+ * Uses a DocumentFragment + `Range#createContextualFragment` to append
+ * each chunk without re-parsing the full HTML buffer. Empty `items`
+ * still writes the `prefixHtml` if provided.
+ */
+export function renderChunked<T>(opts: ChunkedRenderOpts<T>): ChunkedRenderHandle {
+  const { container, items, render, prefixHtml = '', chunkSize = 50 } = opts;
+  let aborted = false;
+  let resolve: () => void;
+  const done = new Promise<void>((r) => {
+    resolve = r;
+  });
+
+  container.innerHTML = prefixHtml;
+
+  let cursor = 0;
+  const schedule: (cb: () => void) => void =
+    typeof (globalThis as { requestIdleCallback?: (cb: () => void) => unknown })
+      .requestIdleCallback === 'function'
+      ? (cb) =>
+          (
+            globalThis as {
+              requestIdleCallback: (cb: () => void) => unknown;
+            }
+          ).requestIdleCallback(cb)
+      : (cb) => setTimeout(cb, 0);
+
+  const range = container.ownerDocument.createRange();
+  range.selectNodeContents(container);
+  range.collapse(false);
+
+  function step(): void {
+    if (aborted) {
+      resolve();
+      return;
+    }
+    if (cursor >= items.length) {
+      resolve();
+      return;
+    }
+    const end = Math.min(cursor + chunkSize, items.length);
+    let buf = '';
+    for (let i = cursor; i < end; i++) buf += render(items[i]!, i);
+    const fragment = range.createContextualFragment(buf);
+    container.appendChild(fragment);
+    cursor = end;
+    if (cursor >= items.length) {
+      resolve();
+      return;
+    }
+    schedule(step);
+  }
+
+  // Kick off without yielding first so the user sees the first chunk asap.
+  step();
+  return {
+    done,
+    abort() {
+      aborted = true;
+    },
+  };
+}
+
 /* ───────────────────────────────────────────────── Banner ──────── */
 
 export function renderBanner(html: string, ctaLabel?: string): string {

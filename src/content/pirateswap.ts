@@ -1,14 +1,14 @@
 /**
- * PirateSwap content script — Rare mode (v0.3).
+ * PirateSwap content script — Rare mode (v0.3 + v0.4.1).
  *
- * Only supports the Rare mode; the popup hides Arbitrage on PS.
- * Pages through web.pirateswap.com/inventory/v2/ExchangerInventory,
- * runs findRareResults against the bundled rare_stickers DB, renders
- * sticker-breakdown cards.
+ * Always-on Rare overlay. Pages /inventory/v2/ExchangerInventory, matches
+ * against the bundled rare_stickers DB, renders sticker-breakdown cards
+ * with chunked render + reactive filters (v0.4.1).
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
   readFilterValues,
+  renderChunked,
   renderFilterGrid,
   renderResultsHeader,
   renderScanBar,
@@ -18,9 +18,13 @@ import {
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { send } from '../modules/shared/messaging';
+import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-ps-overlay';
 const PERSIST_KEY = 'pirateswap';
+const FILTER_DEBOUNCE_MS = 250;
+
+type SortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
 
 const FILTERS: FilterField[] = [
   {
@@ -55,10 +59,23 @@ const FILTERS: FilterField[] = [
 interface State {
   running: boolean;
   aborted: { aborted: boolean };
+  /** Last collected match set — kept in memory so reactive filters can
+   *  re-apply + re-render without a fresh network scan. */
+  results: RareResult[];
+  /** Active chunked-render handle, so a filter change can cancel it. */
+  renderAbort: (() => void) | null;
+  /** Pending debounce timer for filter inputs. */
+  debounce: ReturnType<typeof setTimeout> | null;
 }
 
 let overlay: OverlayHandle | null = null;
-const state: State = { running: false, aborted: { aborted: false } };
+const state: State = {
+  running: false,
+  aborted: { aborted: false },
+  results: [],
+  renderAbort: null,
+  debounce: null,
+};
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
@@ -72,20 +89,71 @@ function bodyHtml(): string {
   ].join('');
 }
 
+const EMPTY_HTML = `<div class="sh-empty">
+  <div class="sh-empty-icon">⌖</div>
+  <div class="sh-empty-title">No rare stickers found</div>
+  <div class="sh-empty-sub">Widen filters or scan more pages.</div>
+</div>`;
+
+/** Read filter values + apply the current ones to `state.results`. */
+function currentFilterOpts(): { maxPrice?: number; sort: SortKey } {
+  if (!overlay) return { sort: 'roi' };
+  const filters = readFilterValues(overlay.body);
+  const maxPriceRaw = filters['maxPrice'] ?? '';
+  const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
+  const sort = (filters['sort'] ?? 'roi') as SortKey;
+  return maxPrice !== undefined ? { maxPrice, sort } : { sort };
+}
+
+/** Apply filters + render via the chunked renderer; cancels any in-flight render. */
+function applyAndRender(): void {
+  if (!overlay) return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list) return;
+  // Cancel any in-flight render before starting a new one.
+  state.renderAbort?.();
+  state.renderAbort = null;
+
+  const filtered = applyRareFilter(state.results, currentFilterOpts());
+  const header = renderResultsHeader('Item · stickers detected', 'Worth');
+  if (!filtered.length) {
+    list.innerHTML = header + EMPTY_HTML;
+    return;
+  }
+  const handle = renderChunked({
+    container: list,
+    items: filtered,
+    render: renderRareCard,
+    prefixHtml: header,
+  });
+  state.renderAbort = handle.abort;
+  void handle.done.then(() => {
+    if (state.renderAbort === handle.abort) state.renderAbort = null;
+  });
+}
+
+/** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
+function scheduleFilterApply(instant: boolean): void {
+  if (state.debounce !== null) {
+    clearTimeout(state.debounce);
+    state.debounce = null;
+  }
+  if (instant) {
+    applyAndRender();
+    return;
+  }
+  state.debounce = setTimeout(() => {
+    state.debounce = null;
+    applyAndRender();
+  }, FILTER_DEBOUNCE_MS);
+}
+
 async function runScan(): Promise<void> {
   if (!overlay || state.running) return;
   state.running = true;
   state.aborted = { aborted: false };
   const filters = readFilterValues(overlay.body);
   const pages = Math.max(1, Math.min(200, parseInt(filters['pages'] ?? '50', 10) || 50));
-  const maxPriceRaw = filters['maxPrice'] ?? '';
-  const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
-  const sort = (filters['sort'] ?? 'roi') as
-    | 'roi'
-    | 'stickerSum'
-    | 'profit'
-    | 'priceAsc'
-    | 'priceDesc';
 
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
   setStatus('Collecting PirateSwap inventory…', 'info');
@@ -111,36 +179,20 @@ async function runScan(): Promise<void> {
     info: `Matching ${items.length} items against rare DB…`,
     progressPct: 80,
   });
-  const results = await findRareResults(items);
-  const filtered = applyRareFilter(results, {
-    ...(maxPrice !== undefined ? { maxPrice } : {}),
-    sort,
-  });
+  state.results = await findRareResults(items);
 
   if (!overlay) {
     finish();
     return;
   }
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (list) {
-    list.innerHTML =
-      renderResultsHeader('Item · stickers detected', 'Worth') +
-      (filtered.length
-        ? filtered.map(renderRareCard).join('')
-        : `<div class="sh-empty">
-            <div class="sh-empty-icon">⌖</div>
-            <div class="sh-empty-title">No rare stickers found</div>
-            <div class="sh-empty-sub">Widen filters or scan more pages.</div>
-          </div>`);
-  }
+  applyAndRender();
   updateScanBar(overlay.body, {
-    info: `Scan complete — ${filtered.length} hits.`,
+    info: `Scan complete — ${state.results.length} hits.`,
     progressPct: 100,
   });
-  setStatus(`Found ${filtered.length} items with rare stickers.`, 'ok');
+  setStatus(`Found ${state.results.length} items with rare stickers.`, 'ok');
 
-  // Report the top hit (if any) to the popup feed.
-  const top = filtered[0];
+  const top = applyRareFilter(state.results, currentFilterOpts())[0];
   if (top) {
     void send({
       type: 'hit:record',
@@ -159,6 +211,12 @@ function formatUsd(n: number): string {
 
 function abort(): void {
   state.aborted.aborted = true;
+  state.renderAbort?.();
+  state.renderAbort = null;
+  if (state.debounce !== null) {
+    clearTimeout(state.debounce);
+    state.debounce = null;
+  }
 }
 
 function finish(): void {
@@ -190,12 +248,25 @@ function mount(): void {
     if (state.running) abort();
     else void runScan();
   });
+
+  // Reactive filters (B1.d): re-apply + re-render in place when the user
+  // changes any filter. Inputs get a 250 ms debounce; selects are instant.
+  overlay.body.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    if (!t.matches('[data-filter]')) return;
+    // Don't re-render before there's anything to render.
+    if (!state.results.length) return;
+    scheduleFilterApply(false);
+  });
+  overlay.body.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    if (!t.matches('[data-filter]')) return;
+    if (!state.results.length) return;
+    scheduleFilterApply(true);
+  });
 }
 
 async function bootstrap(): Promise<void> {
-  // PirateSwap is always-on Rare. It ignores any popup-driven mode toggle —
-  // the user's choice over there only affects SkinsMonkey. A scan running
-  // here therefore survives any setting change in another tab.
   console.debug('[Skinsight] loaded on pirateswap');
   mount();
 }
