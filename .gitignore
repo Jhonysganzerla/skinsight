@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.zip
+.vite/
+.DS_Store
+*.log
+public/rare_stickers.json
+coverage/
+.vitest/

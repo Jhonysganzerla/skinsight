@@ -1,0 +1,5 @@
+dist/
+node_modules/
+public/rare_stickers.json
+*.zip
+package-lock.json
