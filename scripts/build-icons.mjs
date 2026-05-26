@@ -22,7 +22,10 @@ const svg = fs.readFileSync(src);
 await Promise.all(
   SIZES.map(async (size) => {
     const out = path.join(outDir, `icon-${size}.png`);
-    await sharp(svg).resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toFile(out);
+    await sharp(svg)
+      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toFile(out);
     const bytes = fs.statSync(out).size;
     console.log(`[build-icons] ${path.relative(root, out)}  ${bytes} bytes`);
   }),

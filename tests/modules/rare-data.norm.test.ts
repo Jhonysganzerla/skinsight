@@ -14,9 +14,7 @@ beforeEach(() => {
 
 describe('rare-data/norm — memoization', () => {
   it('strips "Sticker | " prefix, trims, lowercases', () => {
-    expect(norm('Sticker | kennyS (Foil) | Cologne 2015')).toBe(
-      'kennys (foil) | cologne 2015',
-    );
+    expect(norm('Sticker | kennyS (Foil) | Cologne 2015')).toBe('kennys (foil) | cologne 2015');
     expect(norm('  Sticker |   Howling Dawn  ')).toBe('howling dawn');
     expect(norm('NoPrefix Name')).toBe('noprefix name');
     expect(norm(null)).toBe('');
