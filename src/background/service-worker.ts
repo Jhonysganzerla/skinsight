@@ -23,6 +23,7 @@ import {
   getPendingArbitrage,
   clearPendingArbitrage,
   addHit,
+  runHitsGc,
 } from '../modules/shared/storage';
 import { csfloatBucket } from '../modules/shared/throttle';
 
@@ -122,6 +123,12 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
   }
 });
 
+/** Drop expired "Today's hits" on both onStartup (cold boot, browser open)
+ *  and onInstalled (extension install / update). Either fires before the
+ *  popup can request the feed, so users never see stale entries. */
+chrome.runtime.onStartup.addListener(() => {
+  void runHitsGc();
+});
 chrome.runtime.onInstalled.addListener(() => {
-  // Reserved for future onboarding.
+  void runHitsGc();
 });
