@@ -174,7 +174,7 @@ Vide `plano-monetizar-jhony.md` §v0.4, v0.5, v0.6. Resumo:
 
 ## v0.7 → v2.0
 
-Vide briefing §8 + `plano-monetizar-jhony.md`. Beta privado → public launch → mais markets → FGE → csmoneycharms → Pro → Platform.
+Vide briefing §8 + `plano-monetizar-jhony.md`. Beta privado → public launch → mais markets → csmoneycharms → Pro → Platform.
 
 ---
 
