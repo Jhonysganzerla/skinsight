@@ -76,7 +76,7 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     name: stripStickerPrefix(s.name),
     priceUsd: s.priceUsd,
     kind: classifyStickerKind(s.name),
-    imageUrl: null,
+    imageUrl: s.imageUrl,
   }));
 
   // CS.Money has no ROI metric; classify by margin relative to listing.
@@ -85,7 +85,7 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
 
   const props: ItemCardProps = {
     id: String(it.id) || it.name,
-    imageUrl: null,
+    imageUrl: it.imageUrl,
     thumbEmoji: '⌖',
     name: shortExterior(it.name || '—'),
     meta,

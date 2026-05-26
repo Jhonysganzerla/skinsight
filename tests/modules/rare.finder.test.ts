@@ -21,7 +21,7 @@ import {
   normalizePs,
   normalizeSm,
 } from '../../src/modules/rare/finder';
-import { buildRareReport } from '../../src/modules/rare/csmoney';
+import { buildRareReport, extractCsMoneyImageUrl } from '../../src/modules/rare/csmoney';
 import { classifyStickerKind } from '../../src/modules/rare/render';
 import type { CsMoneyItem } from '../../src/modules/rare/types';
 
@@ -113,18 +113,29 @@ describe('rare/finder — PirateSwap parity', () => {
 
 describe('rare/csmoney — Regenerate report', () => {
   // Reuse the CSM fixture as a stand-in for what collectCsMoney would produce.
-  const items: CsMoneyItem[] = csmPage.items
-    .filter((i) => i.stickers.length > 0)
+  // Fixture is the real v0.4 HAR capture: 10 items, 4 with stickers, 6 without.
+  type RawSticker = { name: string; price: number; wear: number; img?: string };
+  type RawItem = {
+    id: number;
+    fullName: string;
+    price: number;
+    img?: string;
+    stickers: (RawSticker | null)[];
+  };
+  const items: CsMoneyItem[] = (csmPage.items as RawItem[])
+    .filter((i) => (i.stickers ?? []).filter(Boolean).length > 0)
     .map((raw) => {
-      const stickers = raw.stickers.map((s) => ({
+      const stickers = (raw.stickers.filter(Boolean) as RawSticker[]).map((s) => ({
         name: s.name,
         priceUsd: s.price,
         wear: s.wear,
+        imageUrl: s.img ?? null,
       }));
       const stickersTotalUsd = stickers.reduce((acc, s) => acc + s.priceUsd, 0);
       return {
         id: raw.id,
         name: raw.fullName,
+        imageUrl: raw.img ?? null,
         weaponPriceUsd: raw.price,
         stickersTotalUsd,
         netUsd: stickersTotalUsd - raw.price,
@@ -134,16 +145,23 @@ describe('rare/csmoney — Regenerate report', () => {
 
   it('infers threshold = min(max sticker price per item)', () => {
     const report = buildRareReport(items);
-    // perItemMax: [Crown(Foil)=118, Reason(Holo)=166, Common=0.5] → min = 0.5
-    expect(report.inferred_threshold_usd).toBeCloseTo(0.5, 4);
-    expect(report.items_with_stickers).toBe(3);
+    // v0.4 fixture: 4 items × max sticker prices = [58.12, 1.61, 2.30, 2.30]
+    //   AWP Medusa     → kennyS (Foil) Cologne 2015 = 58.12 (max)
+    //   AWP The Prince → BLAST.tv (Gold) Austin 2025 = 1.61 (min of the maxes)
+    //   AK Gold Arabesque (×2) → BLAST.tv (Gold) = 2.30
+    expect(report.inferred_threshold_usd).toBeCloseTo(1.61, 2);
+    expect(report.items_with_stickers).toBe(4);
   });
 
   it('classifies rare candidates above threshold', () => {
     const report = buildRareReport(items);
-    expect(report.rare_count).toBeGreaterThanOrEqual(3);
+    expect(report.rare_count).toBeGreaterThanOrEqual(2);
     const names = report.rare_stickers.map((s) => s.name);
-    expect(names).toEqual(expect.arrayContaining(['Howling Dawn', 'Crown (Foil)']));
+    // kennyS (Foil) is the clearest rare; BLAST.tv (Gold) sits exactly at the
+    // threshold and qualifies as well.
+    expect(names).toEqual(
+      expect.arrayContaining(['Sticker | kennyS (Foil) | Cologne 2015']),
+    );
   });
 
   it('output schema matches the legacy rare_stickers.json shape', () => {
@@ -169,6 +187,38 @@ describe('rare/csmoney — Regenerate report', () => {
         is_rare_candidate: true,
       });
     }
+  });
+});
+
+describe('rare/csmoney — image extraction', () => {
+  it('extracts item.img for every item in the fixture (10/10)', () => {
+    // The fixture's JSON includes `stickers: null` on some items (CS.Money
+    // returns null when there are no stickers), which strict TS can't unify
+    // with RawCsmItem.stickers?: (RawCsmSticker | null)[]. The function only
+    // touches image fields, so a wide cast is safe here.
+    const urls = (csmPage.items as unknown as Array<never>).map(extractCsMoneyImageUrl);
+    expect(urls).toHaveLength(10);
+    for (const u of urls) {
+      expect(typeof u).toBe('string');
+      expect(u).toMatch(/^https?:\/\//);
+    }
+  });
+
+  it('falls back through steamImg → preview → screenshot when img is missing', () => {
+    expect(extractCsMoneyImageUrl({ img: 'https://a/' } as never)).toBe('https://a/');
+    expect(extractCsMoneyImageUrl({ steamImg: 'https://b/' } as never)).toBe('https://b/');
+    expect(extractCsMoneyImageUrl({ preview: 'https://c/' } as never)).toBe('https://c/');
+    expect(extractCsMoneyImageUrl({ screenshot: 'https://d/' } as never)).toBe('https://d/');
+    expect(extractCsMoneyImageUrl({} as never)).toBeNull();
+    expect(extractCsMoneyImageUrl({ img: '' } as never)).toBeNull();
+  });
+
+  it('prefers img over steamImg even when both are present', () => {
+    const url = extractCsMoneyImageUrl({
+      img: 'https://primary/',
+      steamImg: 'https://secondary/',
+    } as never);
+    expect(url).toBe('https://primary/');
   });
 });
 

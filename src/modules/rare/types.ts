@@ -32,8 +32,18 @@ export interface RareResult extends RareItem {
 export interface CsMoneyItem {
   id: string | number;
   name: string;
+  /** Weapon thumbnail URL. Resolved via the v0.4 fallback chain
+   *  (item.img → steamImg → preview → screenshot). May be null if all are
+   *  missing — UI falls back to an inline SVG placeholder. */
+  imageUrl: string | null;
   weaponPriceUsd: number;
   stickersTotalUsd: number;
   netUsd: number;
-  stickers: Array<{ name: string; priceUsd: number; wear: number }>;
+  stickers: Array<{
+    name: string;
+    priceUsd: number;
+    wear: number;
+    /** Sticker icon URL (Steam CDN). Null when the API omitted it. */
+    imageUrl: string | null;
+  }>;
 }

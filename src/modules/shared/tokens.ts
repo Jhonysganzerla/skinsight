@@ -123,12 +123,17 @@ export const OVERLAY_CSS = `
 .sh-item-card.hot { border-color: var(--success); box-shadow: inset 3px 0 0 0 var(--success-bright); }
 .sh-item-card.warm { border-color: var(--warn); box-shadow: inset 3px 0 0 0 var(--warn); }
 .sh-item-thumb {
+  position: relative;
   width: 56px; height: 42px;
   background: linear-gradient(135deg, #2b2438 0%, #1d2336 100%);
   border-radius: 4px; display: flex; align-items: center; justify-content: center;
   font-size: 18px; color: var(--text-dim); overflow: hidden;
 }
-.sh-item-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.sh-item-thumb img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
+.sh-item-thumb-fallback {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; font-size: 18px; color: var(--text-dim);
+}
 .sh-item-info { min-width: 0; }
 .sh-item-name {
   font-size: 12.5px; font-weight: 600; margin-bottom: 3px;

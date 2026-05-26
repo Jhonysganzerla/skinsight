@@ -13,6 +13,7 @@ interface RawCsmSticker {
   name?: string;
   price?: number;
   wear?: number;
+  img?: string;
 }
 interface RawCsmItem {
   id?: string | number;
@@ -22,6 +23,12 @@ interface RawCsmItem {
   price?: number;
   pricing?: { computed?: number; default?: number };
   stickers?: (RawCsmSticker | null)[];
+  /** Image fields, in fallback order. v0.4 HAR confirmed `img` is the
+   *  primary; the others exist as defense against API changes. */
+  img?: string;
+  steamImg?: string;
+  preview?: string;
+  screenshot?: string;
 }
 interface CsmResp {
   items?: RawCsmItem[];
@@ -35,6 +42,26 @@ const getItemName = (item: RawCsmItem): string =>
   item?.fullName || item?.name || item?.asset?.names?.full || item?.asset?.names?.short || '';
 const getWeaponPrice = (item: RawCsmItem): number =>
   toNumber(item?.price ?? item?.pricing?.computed ?? item?.pricing?.default ?? 0);
+
+/**
+ * Resolve the weapon thumbnail URL from a CS.Money inventory item.
+ *
+ * v0.4 HAR (10 items across 5 weapon types) confirmed `item.img` is always
+ * present and points at the Steam economy CDN. The fallback chain — steamImg
+ * (duplicate of img in current API), preview (csmoney screenshot CDN),
+ * screenshot (csmoney HD screenshot) — exists so a future schema change
+ * doesn't strand the UI with blank thumbnails.
+ *
+ * Returns null when every candidate is missing or empty; callers render the
+ * inline SVG placeholder.
+ */
+export function extractCsMoneyImageUrl(item: RawCsmItem): string | null {
+  const candidates = [item.img, item.steamImg, item.preview, item.screenshot];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.length > 0) return c;
+  }
+  return null;
+}
 
 export interface CsmCollectOpts {
   maxPages: number;
@@ -74,12 +101,14 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
           name: s.name || 'Sticker',
           priceUsd: toNumber(s.price),
           wear: toNumber(s.wear),
+          imageUrl: typeof s.img === 'string' && s.img.length > 0 ? s.img : null,
         }));
         const stickersTotalUsd = stickers.reduce((a, s) => a + s.priceUsd, 0);
         const netUsd = stickersTotalUsd - weaponPriceUsd;
         out.push({
           id: item.id ?? '',
           name: itemName,
+          imageUrl: extractCsMoneyImageUrl(item),
           weaponPriceUsd,
           stickersTotalUsd,
           netUsd,
