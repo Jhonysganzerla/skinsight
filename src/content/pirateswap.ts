@@ -24,7 +24,20 @@ const ROOT_ID = 'skinsight-ps-overlay';
 const PERSIST_KEY = 'pirateswap';
 
 const FILTERS: FilterField[] = [
-  { id: 'pages', label: 'Pages', type: 'number', value: '5' },
+  {
+    id: 'pages',
+    label: 'Max pages',
+    type: 'select',
+    value: '50',
+    options: [
+      { value: '10', label: '10' },
+      { value: '25', label: '25' },
+      { value: '50', label: '50' },
+      { value: '100', label: '100' },
+      { value: '200', label: '200' },
+    ],
+    hint: 'Max pages to scan. Each page is 40 items. PirateSwap inventory rotates — 50 covers a typical session well.',
+  },
   { id: 'maxPrice', label: 'Max price ($)', type: 'number', placeholder: 'none' },
   {
     id: 'sort',
@@ -65,7 +78,7 @@ async function runScan(): Promise<void> {
   state.running = true;
   state.aborted = { aborted: false };
   const filters = readFilterValues(overlay.body);
-  const pages = Math.max(1, Math.min(200, parseInt(filters['pages'] ?? '5', 10) || 5));
+  const pages = Math.max(1, Math.min(200, parseInt(filters['pages'] ?? '50', 10) || 50));
   const maxPriceRaw = filters['maxPrice'] ?? '';
   const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
   const sort = (filters['sort'] ?? 'roi') as

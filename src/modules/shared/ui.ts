@@ -16,6 +16,8 @@ export interface FilterField {
   value?: string;
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
+  /** Optional native tooltip rendered as `title` on the field wrapper. */
+  hint?: string;
 }
 
 /** Renders a 3-column grid. Caller reads values via root.querySelector. */
@@ -23,12 +25,16 @@ export function renderFilterGrid(fields: FilterField[]): string {
   const cells = fields
     .map((f) => {
       const id = 'sh-f-' + esc(f.id);
+      const titleAttr = f.hint ? ` title="${esc(f.hint)}"` : '';
       if (f.type === 'select') {
         const opts = (f.options ?? [])
-          .map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`)
+          .map((o) => {
+            const sel = f.value != null && o.value === f.value ? ' selected' : '';
+            return `<option value="${esc(o.value)}"${sel}>${esc(o.label)}</option>`;
+          })
           .join('');
         return `
-          <div class="sh-field">
+          <div class="sh-field"${titleAttr}>
             <label for="${id}">${esc(f.label)}</label>
             <select id="${id}" class="sh-select" data-filter="${esc(f.id)}">${opts}</select>
           </div>`;
@@ -37,7 +43,7 @@ export function renderFilterGrid(fields: FilterField[]): string {
       const val = f.value != null ? ` value="${esc(f.value)}"` : '';
       const t = f.type;
       return `
-        <div class="sh-field">
+        <div class="sh-field"${titleAttr}>
           <label for="${id}">${esc(f.label)}</label>
           <input id="${id}" type="${t}" class="sh-input" data-filter="${esc(f.id)}"${val}${ph} />
         </div>`;
