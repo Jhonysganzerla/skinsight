@@ -180,23 +180,26 @@ Vide briefing §8 + `plano-monetizar-jhony.md`. Beta privado → public launch �
 
 ## Decisões fixadas até agora
 
-| #   | Decisão                                                                          | Fonte                       |
-| --- | -------------------------------------------------------------------------------- | --------------------------- |
-| 1   | Nome: **Skinsight**                                                              | briefing §1                 |
-| 2   | Stack: Vite + crxjs + TS strict + Vitest + ESLint/Prettier + GitHub Actions      | briefing §4                 |
-| 3   | Sem backend no v1; tudo em `chrome.storage.local`                                | briefing §4                 |
-| 4   | `host_permissions` exatos (vide briefing §7)                                     | briefing §7                 |
-| 5   | Algoritmo de score migrado verbatim, não refactor                                | briefing §9 DON'T #1        |
-| 6   | Clipboard substituído por `chrome.runtime.sendMessage`                           | briefing §9 DON'T #3        |
-| 7   | Steam Market só on-demand (v0.4), não scan massivo                               | briefing §9 DON'T #4        |
-| 8   | Skinport cache 5min hard (v0.5)                                                  | briefing §9 DON'T #5        |
-| 9   | UI em inglês; mockup `mockup-ui-skinsight.html` é o alvo                         | briefing §10                |
-| 10  | LICENSE = **PolyForm Noncommercial 1.0.0** (protege monetização v1.5)            | review override do reviewer |
-| 11  | Ko-fi `https://ko-fi.com/sganzerla`; Pix `ac344236-c335-4f89-aee2-e671101d4619`  | confirmado pelo user        |
-| 12  | Identidade real do autor **não** vai no listing público                          | briefing §11                |
-| 13  | `tsconfig.json` com `noUncheckedIndexedAccess` e `exactOptionalPropertyTypes`    | review override             |
-| 14  | ESLint `@typescript-eslint/no-explicit-any` como `error` (escape via comentário) | briefing §9 DO #8 + review  |
-| 15  | `PRIVACY.md` é a versão final de `assets-lancamento.md` §3 (placeholder GitHub)  | review override             |
+| #   | Decisão                                                                                                                                                                                                                          | Fonte                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 1   | Nome: **Skinsight**                                                                                                                                                                                                              | briefing §1                 |
+| 2   | Stack: Vite + crxjs + TS strict + Vitest + ESLint/Prettier + GitHub Actions                                                                                                                                                      | briefing §4                 |
+| 3   | Sem backend no v1; tudo em `chrome.storage.local`                                                                                                                                                                                | briefing §4                 |
+| 4   | `host_permissions` exatos (vide briefing §7)                                                                                                                                                                                     | briefing §7                 |
+| 5   | Algoritmo de score migrado verbatim, não refactor                                                                                                                                                                                | briefing §9 DON'T #1        |
+| 6   | Clipboard substituído por `chrome.runtime.sendMessage`                                                                                                                                                                           | briefing §9 DON'T #3        |
+| 7   | Steam Market só on-demand (v0.4), não scan massivo                                                                                                                                                                               | briefing §9 DON'T #4        |
+| 8   | Skinport cache 5min hard (v0.5)                                                                                                                                                                                                  | briefing §9 DON'T #5        |
+| 9   | UI em inglês; mockup `mockup-ui-skinsight.html` é o alvo                                                                                                                                                                         | briefing §10                |
+| 10  | LICENSE = **PolyForm Noncommercial 1.0.0** (protege monetização v1.5)                                                                                                                                                            | review override do reviewer |
+| 11  | Ko-fi `https://ko-fi.com/sganzerla`; Pix `ac344236-c335-4f89-aee2-e671101d4619`                                                                                                                                                  | confirmado pelo user        |
+| 12  | Identidade real do autor **não** vai no listing público                                                                                                                                                                          | briefing §11                |
+| 13  | `tsconfig.json` com `noUncheckedIndexedAccess` e `exactOptionalPropertyTypes`                                                                                                                                                    | review override             |
+| 14  | ESLint `@typescript-eslint/no-explicit-any` como `error` (escape via comentário)                                                                                                                                                 | briefing §9 DO #8 + review  |
+| 15  | `PRIVACY.md` é a versão final de `assets-lancamento.md` §3 (placeholder GitHub)                                                                                                                                                  | review override             |
+| 16  | **Filter freeze → virtualização (F4)**. F1+F2+F3 (memoize + chunk + chunked render + reactive filters) não bastou em smoke real; v0.4.1 vai pra IntersectionObserver-based virtualization                                        | reviewer pós smoke v0.4.1   |
+| 17  | **`rare_stickers.json` regenerated via CS.Money** com `hasRareStickers=true` como oráculo canônico de "raro". O endpoint `cs.money/5.0/load_bots_inventory/730?hasRareStickers=true` define o universo; nosso bundle deriva dele | reviewer pós B5 do v0.4.1   |
+| 18  | GitHub handle real: **`jhonysganzerla`** (display: `Jhonysganzerla`). Repo: `github.com/Jhonysganzerla/skinsight` (público). Web Store pseudônimo: `Sganzerla` (display)                                                         | reviewer + gh status        |
 
 ---
 
@@ -461,12 +464,160 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 6. **Cards CSM com sticker images:** chips dos stickers mostram a foto real da Steam (não placeholder).
 7. **Não-regressão:** smoke v0.2 e v0.3 ainda funcionam (SM Rare default, troca para Arbitrage, scan completo).
 
-### Aguardando smoke do Jhony para tagear `v0.4.0` e iniciar v0.5 (Steam Market on-demand).
+### v0.4 aprovada · tag local `v0.4.0` criada (no remoto também — push `gh repo create` + `git push`).
+
+---
+
+## v0.4.1 — Bug fixes pós-smoke + perf + repo público (em curso)
+
+**Status:** B1–B4 entregues; Issue 1 (filter freeze) ainda persiste após F1+F2+F3 → próxima rodada vai pra **virtualização (F4)**; Issue 2 (PS scan-to-empty) ✓ entregue; Issue 3 (GitHub remote) ✓ remoto criado + push completo (main + 3 tags). Sem tag `v0.4.1` enquanto Issue 1 não fechar.
+
+### Commits desde `v0.4.0` (10)
+
+```
+d257719 chore(repo): point public URLs at github.com/jhonysganzerla/skinsight
+49937e0 fix(rare/pirateswap): scan to inventory end instead of page cap
+e57690c chore(perf): instrument PS filter→render path with dev marks
+1aa6a96 style: prettier on B1+B3 additions
+f054664 chore(brand): apply Sganzerla pseudonym to public-facing strings
+174a43c feat(icon): rasterize SVG → PNG, wire manifest + popup logo
+e117963 chore(plan): drop FGE/FireGames out-of-scope references
+125cfdb perf(rare): chunked DOM render + reactive filters in PirateSwap overlay
+e7339a6 perf(rare): chunk findRareResults — yield to main thread every 100 items
+e6b9951 perf(rare): memoize norm() sticker-name normalizer
+```
+
+### B1 — Perf (F1+F2+F3 entregues; F4 pendente)
+
+| Sub  | Commit    | O que ficou                                                                                                                                                                            |
+| ---- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1.a | `e6b9951` | `norm()` memoized em `rare-data.ts`. Spy prova ≤60 regex calls em 10000 invocações.                                                                                                    |
+| B1.b | `e7339a6` | `findRareResults` cede main thread a cada 100 items. Tests cobrem yields≥19 em 2000 e =0 em 30.                                                                                        |
+| B1.c | `125cfdb` | `renderChunked()` em `shared/ui.ts`: 50-item batches via `requestIdleCallback` + fallback `setTimeout(0)`. Range.createContextualFragment delta-parse. abort() flag em chunk boundary. |
+| B1.d | `125cfdb` | PS overlay: input debounce 250ms, change instant; `state.results` em memória, filtro re-aplica + re-renderiza; abort do render em curso.                                               |
+
+### Issue 1 — Filter freeze ainda persiste após B1
+
+Investigação read-only + instrumentation em `e57690c` (DEV-only `performance.mark`/`measure` em `applyAndRender` + cada chunk de `renderChunked`). Diagnóstico do code-review:
+
+| Suspeito                            | Veredito                                                                                                                      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| c1 cancelamento quebrado            | parcial — flag só checada em chunk boundary; chunk em curso completa (~1 chunk de trabalho desperdiçado, latência detectável) |
+| c2 debounce sync                    | NÃO — handler trivial                                                                                                         |
+| c3 rIC callbacks ainda disparam     | confirmado mas inofensivo (1 function call + early return)                                                                    |
+| c4 image decode síncrono            | **MUITO PROVÁVEL** — `loading="lazy"` defere fetch mas decode é eager no scroll. 600 cards × ~2 stickers = ~1800 `<img>`.     |
+| c5 conic-gradient GPU layer blow-up | possível — ~1200 mini-elementos com gradient promovem layers extras                                                           |
+
+**Decisão #16:** v0.4.1 vai direto pra **virtualização (F4)** que antes tinha sido adiada. Fix incremental (chunkSize menor, IntersectionObserver pra imagens) não é suficiente — o reviewer cobrou a opção mais robusta. Plano de F4 no NEXT UP abaixo.
+
+### Issue 2 — PS scan-to-empty ✓ entregue (`49937e0`)
+
+- `PS_SAFETY_CAP_PAGES = 250` (10k items, dobro da estimativa máxima).
+- Trust `empty:true` server-flag. `totalResults`/`totalPages` lidos em DEV mas ignorados (sempre 0 nas capturas).
+- 250ms entre páginas (antes 400ms).
+- "Max pages" filter removido da UI; ScanBar indeterminate.
+- 5 tests cobrem: small inventory + trailing partial batch + safety cap + abort mid-scan + transient fetch error.
+
+### Issue 3 — GitHub remote ✓ completo
+
+- Repo criado: `https://github.com/Jhonysganzerla/skinsight` (público).
+- `origin` configurado, `main` pushed.
+- Tags pushed: `v0.2.0`, `v0.3.0`, `v0.4.0`. **`v0.1.0` nunca foi criada localmente** — v0.1 não chegou a ser tagueada (decisão histórica do reviewer; v0.1 fechou direto sem tag separada, foi absorvida pelo trabalho de v0.2).
+- LICENSE, PRIVACY.md, popup.ts, package.json (`homepage`/`repository`/`bugs`) com URLs reais apontando pro repo.
+- Token gh ganhou scope `workflow` (necessário pra `.github/workflows/ci.yml`).
+
+### Gates v0.4.1 (parciais — pré-F4)
+
+- `npm run lint` → 0
+- `npm run typecheck` → 0
+- `npm run format:check` → clean
+- `npm test` → 11 files / **68 tests** (smoke 3, score 7, arb parity 4, rare finder 21, PS-scan 5, throttle 5, sticker-chip 6, settings mutex 6, hits 4, norm 3, renderChunked 4)
+- `npm run build` → dist OK, ícones PNG presentes, manifest com `icons`+`action.default_icon`
+- `npm run pack` → `skinsight-0.1.0.zip` (~124 KB)
+
+---
+
+## APIs descobertas (referência rápida — atualizar `docs/API-NOTES.md` na próxima rodada)
+
+### PirateSwap `/inventory/v2/ExchangerInventory`
+
+- **`totalResults` e `totalPages` sempre `0`** nas capturas. Não confiar.
+- **`itemWithSticker=true` é no-op server-side** (não filtra). Param morto — pode ser removido (Plano A do NEXT UP).
+- **`sortOrder=ASC`/`DESC` funcionam** corretamente sobre `orderBy=price`.
+- **`empty:true`** é a sinalização canônica de fim de inventário; aparece em última página com items E em página trailer vazia.
+- **Curva de preço fortemente caudada:** $0.15 nos primeiros 100 pages (ASC), $17k+ nas últimas. Inventário total ~4000–8000 items.
+- **Sem rate limit observado** com 250ms entre páginas (250 pages cap = ~63s).
+
+### CS.Money `/5.0/load_bots_inventory/730`
+
+- **Weapon image:** `item.img` é o campo correto (URL Steam economy CDN). Fallback chain: `img → steamImg → preview → screenshot`.
+- **Sticker image:** `item.stickers[i].img` (Steam icons CDN, PNG).
+- **`hasRareStickers=true`** é a definição **canônica** de "raro" segundo o próprio CS.Money. Decisão #17: usar como oráculo do `rare_stickers.json`.
+- `stickers` array tem `null`s para slots vazios — filter(Boolean).
+
+### CSFloat `/api/v1/listings`
+
+- Same-origin only (CSFloat tab é content script). Rate ~90 req antes de 429.
+- v0.4: SW token bucket 45/min + 30s pause em 429. Estável.
+
+### SkinsMonkey `/api/inventory`
+
+- CSRF token obrigatório (cookie). 4 fallbacks pra detecção (cookie/meta/Nuxt/inline script).
+- Aceita `withCharm=true` pra incluir dados de keychain.
+
+### Steam Market `/market/priceoverview` (v0.5)
+
+- Cross-origin → fetch precisa rodar em service worker (host_permissions allow).
+- Rate hard ~20/min/IP. **Não fazer scan massivo** — só on-demand per-item.
+
+### Skinport `/v1/items` (v0.6)
+
+- `Accept-Encoding: br` (brotli) obrigatório.
+- Cache 5min hard. Não chamar mais.
+
+---
+
+## NEXT UP (próxima sessão pós-`/compact`)
+
+Ordem de execução:
+
+1. **F4 — Virtualização do PS overlay** (resolve Issue 1 do v0.4.1)
+   - `src/modules/shared/virtual-list.ts` novo: IntersectionObserver + sentinel rows pra renderizar só viewport ± buffer.
+   - Substitui `renderChunked` no PS quando `filtered.length > VIRT_THRESHOLD` (sugerido 200).
+   - Mantém `renderChunked` pra payloads pequenos (overhead da virt não compensa).
+   - Aplica também no SM rare branch e CS.Money se filter freeze aparecer lá.
+   - Testes: jsdom-style stub do IntersectionObserver + assertions de "only N+buffer DOM nodes for M items".
+
+2. **Plano A — remover `itemWithSticker=true` do PS URL** (param morto descoberto no B5)
+   - 1-line change em `fetchPs` de `finder.ts:97`.
+   - Não muda comportamento porque é no-op no server, mas limpa lixo.
+   - Commit isolado `chore(rare/pirateswap): drop no-op itemWithSticker param`.
+
+3. **Regenerador do `rare_stickers.json` via CS.Money `hasRareStickers=true`** (decisão #17)
+   - `src/content/csmoney.ts` já tem o drawer "Rare-DB maintenance" + botão Regenerate.
+   - Hoje a função `buildRareReport` infere threshold via `min(max sticker price per item)`. Trocar pra: **todos os items retornados por `?hasRareStickers=true` definem o universo de rare candidates**, sem inferência de threshold.
+   - Output JSON mantém shape compatível com `rare-data.ts` slim format (`[name, min_price][]`).
+   - Testes: re-aplicar no fixture HAR, valida que rare_count >= número de items distintos do fixture.
+
+4. **Fechar v0.4.1 — smoke do Jhony + tag `v0.4.1`**
+   - Smoke cenários:
+     - PS scan completo (100-200 pages, ~60s, sem freeze visível no overlay durante render)
+     - Filtros reativos em ≤250ms sem freeze mesmo com 5k+ items virtualizados
+     - CS.Money Regenerate → JSON com schema OK
+     - Não-regressão: v0.2 (Arb SM↔CSF), v0.3 (Rare 3 sites), v0.4 (CSM images, 4 tiers, mutex)
+   - Se passar: `git tag v0.4.1 -m "..."` + `git push origin v0.4.1`.
+
+---
+
+## Pendências para Jhony (não bloqueia)
+
+- **Smoke v0.4.1** depois do F4 + regenerator (será triggered pelo agente próximo).
+- **Pseudônimo Chrome Web Store**: `sganzerla` (display name `Sganzerla`). Não bloqueia até v0.8/v1.0.
+- **CI badge no README** após primeiro push de workflow (GitHub Actions rodar uma vez).
 
 ---
 
 ## Em aberto (perguntar quando necessário)
 
-- Conta GitHub do projeto (precisa de um nome de org/user para push de tag e CI). Default por enquanto: configurar local; remote fica para usuário definir.
-- Pseudônimo para Chrome Web Store (briefing §11 alerta sobre brand isolation). Não bloqueia v0.1.
-- Ícones SVG profissionais — placeholder em v0.1, profissional em v0.6.
+- Ícones SVG profissionais (não placeholder) — v0.7 polish.
+- Source SVG do ícone hoje é simples (1.1 KB); pode ser refinado por designer no v0.7.
