@@ -217,7 +217,7 @@ function renderDonateSection(): string {
         <button class="donate-btn" id="btn-pix" type="button">📱 Copy Pix</button>
       </div>
       <div class="footer-links">
-        <a href="https://github.com/sganzerla/skinsight" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/jhonysganzerla/skinsight" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
   `;

@@ -6,6 +6,14 @@
   "description": "CS2 skin arbitrage + rare sticker scanner for SkinsMonkey, CSFloat, PirateSwap and CS.Money.",
   "author": "Sganzerla",
   "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://github.com/jhonysganzerla/skinsight",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhonysganzerla/skinsight.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhonysganzerla/skinsight/issues"
+  },
   "type": "module",
   "scripts": {
     "predev": "node scripts/build-rare-data.mjs && node scripts/build-icons.mjs",
