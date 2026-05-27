@@ -105,6 +105,8 @@ function currentFilterOpts(): { maxPrice?: number; sort: SortKey } {
   return maxPrice !== undefined ? { maxPrice, sort } : { sort };
 }
 
+const DEV_PERF = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+
 /** Apply filters + render via the chunked renderer; cancels any in-flight render. */
 function applyAndRender(): void {
   if (!overlay) return;
@@ -114,7 +116,24 @@ function applyAndRender(): void {
   state.renderAbort?.();
   state.renderAbort = null;
 
+  if (DEV_PERF) performance.mark('ps applyAndRender start');
   const filtered = applyRareFilter(state.results, currentFilterOpts());
+  if (DEV_PERF) {
+    performance.mark('ps applyRareFilter end');
+    try {
+      const m = performance.measure(
+        'ps applyRareFilter',
+        'ps applyAndRender start',
+        'ps applyRareFilter end',
+      );
+      console.debug(
+        `[Skinsight perf] PS applyRareFilter ${state.results.length}→${filtered.length} items in ${m.duration.toFixed(1)} ms`,
+      );
+    } catch {
+      /* non-fatal */
+    }
+  }
+
   const header = renderResultsHeader('Item · stickers detected', 'Worth');
   if (!filtered.length) {
     list.innerHTML = header + EMPTY_HTML;

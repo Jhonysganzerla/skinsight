@@ -310,8 +310,14 @@ export function renderChunked<T>(opts: ChunkedRenderOpts<T>): ChunkedRenderHandl
   range.selectNodeContents(container);
   range.collapse(false);
 
+  const DEV = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+  const sessionId = DEV ? `rc-${Math.random().toString(36).slice(2, 8)}` : '';
+  let chunkN = 0;
+
   function step(): void {
     if (aborted) {
+      if (DEV)
+        console.debug(`[Skinsight perf] ${sessionId} aborted at cursor=${cursor}/${items.length}`);
       resolve();
       return;
     }
@@ -320,12 +326,27 @@ export function renderChunked<T>(opts: ChunkedRenderOpts<T>): ChunkedRenderHandl
       return;
     }
     const end = Math.min(cursor + chunkSize, items.length);
+    const chunkLabel = DEV ? `${sessionId} chunk#${++chunkN} [${cursor}-${end})` : '';
+    if (DEV) performance.mark(`${chunkLabel} start`);
     let buf = '';
     for (let i = cursor; i < end; i++) buf += render(items[i]!, i);
     const fragment = range.createContextualFragment(buf);
     container.appendChild(fragment);
+    if (DEV) {
+      performance.mark(`${chunkLabel} end`);
+      try {
+        const m = performance.measure(chunkLabel, `${chunkLabel} start`, `${chunkLabel} end`);
+        console.debug(`[Skinsight perf] ${chunkLabel} ${m.duration.toFixed(1)} ms`);
+      } catch {
+        /* mark may have been cleared by user; non-fatal */
+      }
+    }
     cursor = end;
     if (cursor >= items.length) {
+      if (DEV)
+        console.debug(
+          `[Skinsight perf] ${sessionId} done — ${chunkN} chunks, ${items.length} items`,
+        );
       resolve();
       return;
     }
