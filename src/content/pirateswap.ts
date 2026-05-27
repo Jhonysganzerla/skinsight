@@ -26,21 +26,9 @@ const FILTER_DEBOUNCE_MS = 250;
 
 type SortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
 
+// v0.4.1: page-count filter removed. Scan walks the inventory to the end
+// (PS reports `empty=true` on the trailing page). Safety cap 250 pages.
 const FILTERS: FilterField[] = [
-  {
-    id: 'pages',
-    label: 'Max pages',
-    type: 'select',
-    value: '50',
-    options: [
-      { value: '10', label: '10' },
-      { value: '25', label: '25' },
-      { value: '50', label: '50' },
-      { value: '100', label: '100' },
-      { value: '200', label: '200' },
-    ],
-    hint: 'Max pages to scan. Each page is 40 items. PirateSwap inventory rotates — 50 covers a typical session well.',
-  },
   { id: 'maxPrice', label: 'Max price ($)', type: 'number', placeholder: 'none' },
   {
     id: 'sort',
@@ -171,20 +159,18 @@ async function runScan(): Promise<void> {
   if (!overlay || state.running) return;
   state.running = true;
   state.aborted = { aborted: false };
-  const filters = readFilterValues(overlay.body);
-  const pages = Math.max(1, Math.min(200, parseInt(filters['pages'] ?? '50', 10) || 50));
 
-  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
-  setStatus('Collecting PirateSwap inventory…', 'info');
+  // No progress bar — we don't know the total ahead of time. Indeterminate
+  // status only; the user can Stop at any moment.
+  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Scanning inventory…' });
+  setStatus('Scanning PirateSwap inventory until empty…', 'info');
 
   const items = await collectAll({
     site: 'pirateswap',
-    maxPages: pages,
     signal: state.aborted,
-    onProgress: (msg, collected) => {
+    onProgress: (msg) => {
       if (!overlay) return;
-      const pct = Math.min(70, Math.round((collected / (pages * 40)) * 70));
-      updateScanBar(overlay.body, { info: msg, progressPct: pct });
+      updateScanBar(overlay.body, { info: msg });
     },
   });
 
@@ -196,7 +182,6 @@ async function runScan(): Promise<void> {
 
   updateScanBar(overlay.body, {
     info: `Matching ${items.length} items against rare DB…`,
-    progressPct: 80,
   });
   state.results = await findRareResults(items);
 
@@ -207,7 +192,6 @@ async function runScan(): Promise<void> {
   applyAndRender();
   updateScanBar(overlay.body, {
     info: `Scan complete — ${state.results.length} hits.`,
-    progressPct: 100,
   });
   setStatus(`Found ${state.results.length} items with rare stickers.`, 'ok');
 

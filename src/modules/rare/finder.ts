@@ -91,6 +91,12 @@ interface PsItem {
 }
 interface PsResp {
   items?: PsItem[];
+  /** End-of-inventory signal — PS sets this to true on the page that
+   *  trails the last item-bearing one. Authoritative; we trust it. */
+  empty?: boolean;
+  /** Reported but currently always 0 in our captures; logged in DEV only. */
+  totalResults?: number;
+  totalPages?: number;
 }
 
 async function fetchPs(page: number, results = 40): Promise<PsResp> {
@@ -130,18 +136,29 @@ export function normalizePs(json: PsResp): RareItem[] {
 /* ── Paged collection ───────────────────────────────────────────────── */
 export interface CollectOpts {
   site: RareSite;
-  maxPages: number;
+  /** SkinsMonkey only — ignored for PirateSwap (full-inventory scan). */
+  maxPages?: number;
   onProgress?: (msg: string, collected: number) => void;
   signal?: { aborted: boolean };
 }
 
+/**
+ * Safety cap on PirateSwap page count. Empirically the inventory runs out
+ * between pages 100 and 200 (~4k-8k items); 250 doubles the high estimate
+ * so a runaway server response doesn't pin us forever. We log a warning
+ * if we hit it.
+ */
+export const PS_SAFETY_CAP_PAGES = 250;
+
 export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
   const items: RareItem[] = [];
+  const DEV = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
   if (opts.site === 'skinsmonkey') {
     const limit = 120;
-    for (let i = 0; i < opts.maxPages; i++) {
+    const maxPages = opts.maxPages ?? 80;
+    for (let i = 0; i < maxPages; i++) {
       if (opts.signal?.aborted) break;
-      opts.onProgress?.(`Page ${i + 1}/${opts.maxPages} (offset ${i * limit})…`, items.length);
+      opts.onProgress?.(`Page ${i + 1}/${maxPages} (offset ${i * limit})…`, items.length);
       try {
         const json = await fetchSm(i * limit, limit);
         const page = normalizeSm(json);
@@ -154,21 +171,49 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
       await sleep(400);
     }
   } else {
+    // PirateSwap: scan to inventory end (or SAFETY_CAP), trust `empty` flag.
+    // PS's totalResults / totalPages were observed as `0` in v0.4.1 captures
+    // — we read them only for DEV logging, never for control.
     const results = 40;
-    const cap = Math.min(opts.maxPages || 2000, 2000);
-    for (let p = 1; p <= cap; p++) {
+    const startedAt = Date.now();
+    let p = 1;
+    let loggedHeader = false;
+    for (; p <= PS_SAFETY_CAP_PAGES; p++) {
       if (opts.signal?.aborted) break;
-      opts.onProgress?.(`Page ${p} — ${items.length} collected…`, items.length);
+      opts.onProgress?.(`Scanned ${p - 1} pages (${items.length} items)…`, items.length);
+      let json: PsResp;
       try {
-        const json = await fetchPs(p, results);
-        const page = normalizePs(json);
-        items.push(...page);
-        if (page.length < results) break;
+        json = await fetchPs(p, results);
       } catch (e) {
         opts.onProgress?.('Error: ' + (e as Error).message, items.length);
         break;
       }
-      await sleep(400);
+      if (DEV && !loggedHeader) {
+        console.debug(
+          `[Skinsight] PS scan started — totalResults=${json.totalResults ?? '?'} totalPages=${json.totalPages ?? '?'} (PS often reports 0; ignored)`,
+        );
+        loggedHeader = true;
+      }
+      const page = normalizePs(json);
+      items.push(...page);
+      // Authoritative end signal. Some captures show empty=true *with* items
+      // on the same page; we still treat empty=true as the last batch.
+      const lastBatch = json.empty === true || page.length === 0;
+      if (lastBatch) {
+        p++;
+        break;
+      }
+      await sleep(250);
+    }
+    if (p > PS_SAFETY_CAP_PAGES && DEV) {
+      console.warn(
+        `[Skinsight] PS safety cap (${PS_SAFETY_CAP_PAGES} pages) reached — inventory may be incomplete`,
+      );
+    }
+    if (DEV) {
+      console.debug(
+        `[Skinsight] PS scan completed: ${p - 1} pages, ${items.length} items in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
+      );
     }
   }
   return items;
