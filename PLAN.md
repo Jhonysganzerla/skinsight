@@ -468,9 +468,9 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 
 ---
 
-## v0.4.1 — Bug fixes pós-smoke + perf + repo público (em curso)
+## v0.4.1 — Bug fixes pós-smoke + perf + repo público (READY FOR SMOKE)
 
-**Status:** B1–B4 entregues; Issue 1 (filter freeze) ainda persiste após F1+F2+F3 → próxima rodada vai pra **virtualização (F4)**; Issue 2 (PS scan-to-empty) ✓ entregue; Issue 3 (GitHub remote) ✓ remoto criado + push completo (main + 3 tags). Sem tag `v0.4.1` enquanto Issue 1 não fechar.
+**Status:** ✅ **Todos os itens entregues — pronto para smoke do Jhony + tag `v0.4.1`.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓ entregue; Issue 3 (GitHub remote) ✓ completo. T2 (regenerador `rare_stickers.json` via deep scan CS.Money, `6856aa6`) e T3 (drop `itemWithSticker`, `f370b9e`) fechados. Gates locais verdes (typecheck/lint/prettier/77 tests/build/pack). Tag `v0.4.1` será criada pelo Jhony após smoke.
 
 ### Commits desde `v0.4.0` (10)
 
@@ -496,7 +496,11 @@ e6b9951 perf(rare): memoize norm() sticker-name normalizer
 | B1.c | `125cfdb` | `renderChunked()` em `shared/ui.ts`: 50-item batches via `requestIdleCallback` + fallback `setTimeout(0)`. Range.createContextualFragment delta-parse. abort() flag em chunk boundary. |
 | B1.d | `125cfdb` | PS overlay: input debounce 250ms, change instant; `state.results` em memória, filtro re-aplica + re-renderiza; abort do render em curso.                                               |
 
-### Issue 1 — Filter freeze ainda persiste após B1
+### Issue 1 — Filter freeze ✅ RESOLVIDO via virtualização real (T1 / `97bb7ae`)
+
+**Fechamento (T1):** `src/modules/shared/virtual-list.ts` novo — windowing real com `computeWindow` (math puro, testável sem jsdom) + `renderVirtualList` (padTop/window/padBottom + IntersectionObserver + scroll rAF-throttled). PS usa quando `filtered.length > VIRT_THRESHOLD` (200); abaixo disso mantém `renderChunked`. Só ~17–30 cards no DOM independente de N (testado com 6000 items). Filtro reseta `scrollTop=0`. 8 tests cobrem o math + contrato DOM (fake-DOM stub, sem jsdom). Resolve a raiz das suspeitas c4/c5 (image decode + GPU layers) — os cards off-window simplesmente não existem.
+
+Diagnóstico original (mantido para histórico):
 
 Investigação read-only + instrumentation em `e57690c` (DEV-only `performance.mark`/`measure` em `applyAndRender` + cada chunk de `renderChunked`). Diagnóstico do code-review:
 
@@ -577,33 +581,24 @@ Investigação read-only + instrumentation em `e57690c` (DEV-only `performance.m
 
 ---
 
-## NEXT UP (próxima sessão pós-`/compact`)
+## NEXT UP — v0.4.1 fechado em código; smoke do Jhony pendente
 
-Ordem de execução:
+Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 
-1. **F4 — Virtualização do PS overlay** (resolve Issue 1 do v0.4.1)
-   - `src/modules/shared/virtual-list.ts` novo: IntersectionObserver + sentinel rows pra renderizar só viewport ± buffer.
-   - Substitui `renderChunked` no PS quando `filtered.length > VIRT_THRESHOLD` (sugerido 200).
-   - Mantém `renderChunked` pra payloads pequenos (overhead da virt não compensa).
-   - Aplica também no SM rare branch e CS.Money se filter freeze aparecer lá.
-   - Testes: jsdom-style stub do IntersectionObserver + assertions de "only N+buffer DOM nodes for M items".
+1. ✅ **T1 — Virtualização real do PS overlay** (`97bb7ae`)
+   - `src/modules/shared/virtual-list.ts`: `computeWindow` (math puro) + `renderVirtualList` (padTop/window/padBottom, IntersectionObserver + scroll rAF-throttled). PS usa quando `filtered.length > 200`; abaixo mantém `renderChunked`. ~17–30 cards no DOM para qualquer N. 8 tests.
 
-2. **Plano A — remover `itemWithSticker=true` do PS URL** (param morto descoberto no B5)
-   - 1-line change em `fetchPs` de `finder.ts:97`.
-   - Não muda comportamento porque é no-op no server, mas limpa lixo.
-   - Commit isolado `chore(rare/pirateswap): drop no-op itemWithSticker param`.
+2. ✅ **T3 — remover `itemWithSticker=true` do PS URL** (`f370b9e`)
+   - 1-line change em `fetchPs`. No-op server-side (B5). API-NOTES atualizado + fetch-URL assertion test.
 
-3. **Regenerador do `rare_stickers.json` via CS.Money `hasRareStickers=true`** (decisão #17)
-   - `src/content/csmoney.ts` já tem o drawer "Rare-DB maintenance" + botão Regenerate.
-   - Hoje a função `buildRareReport` infere threshold via `min(max sticker price per item)`. Trocar pra: **todos os items retornados por `?hasRareStickers=true` definem o universo de rare candidates**, sem inferência de threshold.
-   - Output JSON mantém shape compatível com `rare-data.ts` slim format (`[name, min_price][]`).
-   - Testes: re-aplicar no fixture HAR, valida que rare_count >= número de items distintos do fixture.
+3. ✅ **T2 — regenerador `rare_stickers.json` via deep scan CS.Money** (`6856aa6`)
+   - Threshold fixo `RARE_THRESHOLD_USD = 0.50` (decisão #16): sticker entra no DB sse `min_price >= 0.50`. Cada sticker carrega `img`; report ganha `generated_at`. Botão Regenerate faz walk completo (não reusa o Scan raso) com progresso (páginas + elapsed) + Stop. Bundled DB nunca é trocado em runtime.
 
-4. **Fechar v0.4.1 — smoke do Jhony + tag `v0.4.1`**
+4. ⏳ **Fechar v0.4.1 — smoke do Jhony + tag `v0.4.1`** (PENDENTE — só o Jhony)
    - Smoke cenários:
      - PS scan completo (100-200 pages, ~60s, sem freeze visível no overlay durante render)
-     - Filtros reativos em ≤250ms sem freeze mesmo com 5k+ items virtualizados
-     - CS.Money Regenerate → JSON com schema OK
+     - Filtros reativos em ≤250ms sem freeze mesmo com 5k+ items virtualizados (DOM deve ter ~17–30 cards)
+     - CS.Money Regenerate → deep scan com progresso → JSON baixado com schema OK (`inferred_threshold_usd: 0.5`, `generated_at`, stickers com `img`)
      - Não-regressão: v0.2 (Arb SM↔CSF), v0.3 (Rare 3 sites), v0.4 (CSM images, 4 tiers, mutex)
    - Se passar: `git tag v0.4.1 -m "..."` + `git push origin v0.4.1`.
 
@@ -611,7 +606,7 @@ Ordem de execução:
 
 ## Pendências para Jhony (não bloqueia)
 
-- **Smoke v0.4.1** depois do F4 + regenerator (será triggered pelo agente próximo).
+- **Smoke v0.4.1** — código pronto, gates verdes. Aguardando smoke manual + tag.
 - **Pseudônimo Chrome Web Store**: `sganzerla` (display name `Sganzerla`). Não bloqueia até v0.8/v1.0.
 - **CI badge no README** após primeiro push de workflow (GitHub Actions rodar uma vez).
 
