@@ -47,10 +47,23 @@ interface State {
   running: boolean;
   aborted: { aborted: boolean };
   items: CsMoneyItem[];
+  /** Regenerate (deep DB scan) in flight + its own abort signal. */
+  regenerating: boolean;
+  regenAborted: { aborted: boolean };
 }
 
+/** Safety cap for the regenerate deep scan (collector stops earlier on empty). */
+const REGEN_MAX_PAGES = 250;
+const REGEN_DELAY_MS = 900;
+
 let overlay: OverlayHandle | null = null;
-const state: State = { running: false, aborted: { aborted: false }, items: [] };
+const state: State = {
+  running: false,
+  aborted: { aborted: false },
+  items: [],
+  regenerating: false,
+  regenAborted: { aborted: false },
+};
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
@@ -166,12 +179,47 @@ function toFixed(n: number): string {
   return n.toFixed(2);
 }
 
-function regenerate(): void {
-  if (!state.items.length) {
-    setStatus('Collect first — no items to build report from.', 'err');
+function regenButton(): HTMLButtonElement | null {
+  return overlay?.body.querySelector<HTMLButtonElement>('[data-role=regen]') ?? null;
+}
+
+/**
+ * Deep-scan CS.Money (hasRareStickers=true) and download a fresh
+ * rare_stickers.json. This is a *dedicated* full walk — it does NOT reuse the
+ * shallow page set from the normal Scan — with live progress (pages scanned,
+ * rare stickers found so far) and elapsed time. The bundled DB is never
+ * replaced at runtime; the maintainer commits the downloaded file in a release.
+ */
+async function regenerate(): Promise<void> {
+  if (!overlay || state.regenerating || state.running) return;
+  state.regenerating = true;
+  state.regenAborted = { aborted: false };
+  const t0 = Date.now();
+  const elapsed = (): string => ((Date.now() - t0) / 1000).toFixed(0) + 's';
+
+  const btn = regenButton();
+  if (btn) btn.textContent = 'Stop regenerate';
+  setStatus('Regenerating rare DB — deep-scanning CS.Money…', 'info');
+
+  let pagesSeen = 0;
+  const collected = await collectCsMoney({
+    maxPages: REGEN_MAX_PAGES,
+    delayMs: REGEN_DELAY_MS,
+    signal: state.regenAborted,
+    onStatus: (msg) => {
+      if (!overlay) return;
+      if (/^Collecting page/.test(msg)) pagesSeen += 1;
+      setStatus(`Scanned ${pagesSeen} pages — ${elapsed()} elapsed. ${msg}`, 'info');
+    },
+  });
+
+  if (state.regenAborted.aborted) {
+    setStatus(`Regenerate stopped after ${pagesSeen} pages (${elapsed()}).`, 'info');
+    finishRegen();
     return;
   }
-  const report = buildRareReport(state.items);
+
+  const report = buildRareReport(collected);
   const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -182,13 +230,24 @@ function regenerate(): void {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setStatus(
-    `Downloaded — threshold $${report.inferred_threshold_usd}, ${report.rare_count} rare candidates.`,
+    `Downloaded rare_stickers.json — ${pagesSeen} pages, ${report.rare_count} rare stickers (≥ $${report.inferred_threshold_usd.toFixed(2)}) in ${elapsed()}.`,
     'ok',
   );
+  finishRegen();
+}
+
+function finishRegen(): void {
+  state.regenerating = false;
+  const btn = regenButton();
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Regenerate rare_stickers.json';
+  }
 }
 
 function abort(): void {
   state.aborted.aborted = true;
+  state.regenAborted.aborted = true;
 }
 
 function finish(): void {
@@ -222,7 +281,11 @@ function mount(): void {
     }
     if (t.closest('[data-role=regen]')) {
       e.preventDefault();
-      regenerate();
+      if (state.regenerating) {
+        state.regenAborted.aborted = true;
+      } else {
+        void regenerate();
+      }
       return;
     }
   });

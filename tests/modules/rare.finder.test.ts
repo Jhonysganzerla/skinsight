@@ -183,29 +183,38 @@ describe('rare/csmoney — Regenerate report', () => {
       };
     });
 
-  it('infers threshold = min(max sticker price per item)', () => {
+  it('applies the fixed $0.50 membership floor (decision #16 / T2)', () => {
     const report = buildRareReport(items);
-    // v0.4 fixture: 4 items × max sticker prices = [58.12, 1.61, 2.30, 2.30]
-    //   AWP Medusa     → kennyS (Foil) Cologne 2015 = 58.12 (max)
-    //   AWP The Prince → BLAST.tv (Gold) Austin 2025 = 1.61 (min of the maxes)
-    //   AK Gold Arabesque (×2) → BLAST.tv (Gold) = 2.30
-    expect(report.inferred_threshold_usd).toBeCloseTo(1.61, 2);
+    // The floor is a constant, not inferred per-scan.
+    expect(report.inferred_threshold_usd).toBe(0.5);
+    // All 4 fixture items carry stickers.
     expect(report.items_with_stickers).toBe(4);
   });
 
-  it('classifies rare candidates above threshold', () => {
+  it('classifies a sticker as rare iff its MIN observed price ≥ $0.50', () => {
     const report = buildRareReport(items);
-    expect(report.rare_count).toBeGreaterThanOrEqual(2);
     const names = report.rare_stickers.map((s) => s.name);
-    // kennyS (Foil) is the clearest rare; BLAST.tv (Gold) sits exactly at the
-    // threshold and qualifies as well.
+    // kennyS (Foil) Cologne 2015 = $58.12 — clearly rare.
     expect(names).toEqual(expect.arrayContaining(['Sticker | kennyS (Foil) | Cologne 2015']));
+    // Every rare sticker is at or above the floor by min_price.
+    for (const r of report.rare_stickers) {
+      expect(r.min_price).toBeGreaterThanOrEqual(0.5);
+      expect(r.is_rare_candidate).toBe(true);
+    }
+    // Sub-floor stickers (e.g. the $0.02 Champion / $0 Gold riders) land in
+    // normal_stickers, never rare.
+    for (const n of report.normal_stickers) {
+      expect(n.min_price).toBeLessThan(0.5);
+      expect(n.is_rare_candidate).toBe(false);
+    }
+    expect(report.rare_count + report.normal_count).toBe(report.unique_stickers);
   });
 
-  it('output schema matches the legacy rare_stickers.json shape', () => {
+  it('output schema matches the rare_stickers.json shape (img + generated_at)', () => {
     const report = buildRareReport(items);
     expect(report).toMatchObject({
-      inferred_threshold_usd: expect.any(Number),
+      inferred_threshold_usd: 0.5,
+      generated_at: expect.any(String),
       items_with_stickers: expect.any(Number),
       total_sticker_observations: expect.any(Number),
       unique_stickers: expect.any(Number),
@@ -213,6 +222,8 @@ describe('rare/csmoney — Regenerate report', () => {
       normal_count: expect.any(Number),
       note: expect.any(String),
     });
+    // generated_at is a valid ISO timestamp.
+    expect(new Date(report.generated_at).toISOString()).toBe(report.generated_at);
     expect(Array.isArray(report.rare_stickers)).toBe(true);
     expect(Array.isArray(report.normal_stickers)).toBe(true);
     for (const r of report.rare_stickers) {
@@ -224,6 +235,9 @@ describe('rare/csmoney — Regenerate report', () => {
         avg_price: expect.any(Number),
         is_rare_candidate: true,
       });
+      // img is present as a key: either a URL string or null.
+      expect('img' in r).toBe(true);
+      expect(r.img === null || typeof r.img === 'string').toBe(true);
     }
   });
 });

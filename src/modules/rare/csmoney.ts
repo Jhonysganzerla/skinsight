@@ -126,8 +126,24 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
 }
 
 /* ── Rare stickers report regenerator ───────────────────────────────── */
+
+/**
+ * Fixed membership floor for the rare-sticker DB (decision #16 / prompt T2).
+ *
+ * The collector's `hasRareStickers=true` filter (decision #17) defines the
+ * *universe* of items we scan; this floor defines which aggregated stickers
+ * actually enter the DB. Without it, a cheap sticker that merely rode along on
+ * a rare-flagged item (e.g. a $0.02 Champion sticker next to a Gold) would
+ * pollute the finder. A sticker counts as rare iff its *minimum* observed
+ * market price is at least this value.
+ */
+export const RARE_THRESHOLD_USD = 0.5;
+
 export interface RareReport {
+  /** Membership floor applied to min_price. Constant — see RARE_THRESHOLD_USD. */
   inferred_threshold_usd: number;
+  /** ISO timestamp of generation (so a committed JSON is traceable). */
+  generated_at: string;
   items_with_stickers: number;
   total_sticker_observations: number;
   unique_stickers: number;
@@ -138,12 +154,14 @@ export interface RareReport {
   normal_stickers: RareReportSticker[];
 }
 
-interface RareReportSticker {
+export interface RareReportSticker {
   name: string;
   count: number;
   min_price: number;
   max_price: number;
   avg_price: number;
+  /** Sticker icon URL (first non-empty observed). Null when never present. */
+  img: string | null;
   is_rare_candidate: boolean;
 }
 
@@ -153,22 +171,26 @@ interface Agg {
   min_price: number;
   max_price: number;
   sum: number;
-  is_rare_candidate: boolean;
+  img: string | null;
 }
 
+/**
+ * Aggregate every sticker observation across the scanned CS.Money items into a
+ * rare-sticker report. Stickers are keyed by name; a sticker is a rare
+ * candidate iff its minimum observed price ≥ RARE_THRESHOLD_USD.
+ */
 export function buildRareReport(items: CsMoneyItem[]): RareReport {
-  const perItemMax: number[] = [];
-  const obs: Array<{ name: string; price: number }> = [];
+  const threshold = RARE_THRESHOLD_USD;
+  const obs: Array<{ name: string; price: number; img: string | null }> = [];
+  let itemsWithStickers = 0;
   for (const x of items) {
     const stickers = x.stickers ?? [];
     if (!stickers.length) continue;
-    const prices = stickers.map((s) => toNumber(s.priceUsd));
-    const maxP = Math.max(...prices, 0);
-    if (maxP <= 0) continue;
-    perItemMax.push(maxP);
-    for (const s of stickers) obs.push({ name: s.name, price: toNumber(s.priceUsd) });
+    itemsWithStickers += 1;
+    for (const s of stickers) {
+      obs.push({ name: s.name, price: toNumber(s.priceUsd), img: s.imageUrl ?? null });
+    }
   }
-  const threshold = perItemMax.length ? Math.min(...perItemMax) : 0;
   const agg = new Map<string, Agg>();
   for (const o of obs) {
     if (!o.name) continue;
@@ -178,34 +200,39 @@ export function buildRareReport(items: CsMoneyItem[]): RareReport {
       min_price: o.price,
       max_price: o.price,
       sum: 0,
-      is_rare_candidate: false,
+      img: null,
     };
     a.count += 1;
     a.min_price = Math.min(a.min_price, o.price);
     a.max_price = Math.max(a.max_price, o.price);
     a.sum += o.price;
-    if (o.price >= threshold) a.is_rare_candidate = true;
+    if (a.img === null && o.img) a.img = o.img;
     agg.set(o.name, a);
   }
-  const finalize = (a: Agg): RareReportSticker => ({
-    name: a.name,
-    count: a.count,
-    min_price: +a.min_price.toFixed(4),
-    max_price: +a.max_price.toFixed(4),
-    avg_price: +(a.sum / Math.max(a.count, 1)).toFixed(4),
-    is_rare_candidate: a.is_rare_candidate,
-  });
+  const finalize = (a: Agg): RareReportSticker => {
+    const min_price = +a.min_price.toFixed(4);
+    return {
+      name: a.name,
+      count: a.count,
+      min_price,
+      max_price: +a.max_price.toFixed(4),
+      avg_price: +(a.sum / Math.max(a.count, 1)).toFixed(4),
+      img: a.img,
+      is_rare_candidate: min_price >= threshold,
+    };
+  };
   const all = [...agg.values()].map(finalize);
-  const rare = all.filter((a) => a.is_rare_candidate).sort((a, b) => b.max_price - a.max_price);
-  const normal = all.filter((a) => !a.is_rare_candidate).sort((a, b) => b.max_price - a.max_price);
+  const rare = all.filter((a) => a.is_rare_candidate).sort((a, b) => b.min_price - a.min_price);
+  const normal = all.filter((a) => !a.is_rare_candidate).sort((a, b) => b.min_price - a.min_price);
   return {
-    inferred_threshold_usd: +threshold.toFixed(4),
-    items_with_stickers: perItemMax.length,
+    inferred_threshold_usd: threshold,
+    generated_at: new Date().toISOString(),
+    items_with_stickers: itemsWithStickers,
     total_sticker_observations: obs.length,
     unique_stickers: agg.size,
     rare_count: rare.length,
     normal_count: normal.length,
-    note: 'inferred_threshold_usd = min(max sticker price per item). Stickers ≥ threshold = rare candidates.',
+    note: `Rare candidate iff min observed price ≥ $${threshold.toFixed(2)}. Universe: CS.Money hasRareStickers=true items.`,
     rare_stickers: rare,
     normal_stickers: normal,
   };
