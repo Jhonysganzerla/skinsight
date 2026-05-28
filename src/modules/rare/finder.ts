@@ -100,7 +100,9 @@ interface PsResp {
 }
 
 async function fetchPs(page: number, results = 40): Promise<PsResp> {
-  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=${page}&results=${results}&isSouvenir=false&itemWithSticker=true`;
+  // `itemWithSticker=true` was dropped in v0.4.1: empirically a no-op
+  // server-side (PS ignores it; the response is identical with or without).
+  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=${page}&results=${results}&isSouvenir=false`;
   const res = await fetch(url, {
     credentials: 'omit',
     headers: { Accept: 'application/json, text/plain, */*' },

@@ -111,6 +111,15 @@ describe('collectAll PirateSwap — full-inventory scan', () => {
     expect(items.length).toBeGreaterThanOrEqual(40 * 4);
   });
 
+  it('builds the request URL without the no-op itemWithSticker param (v0.4.1 T3)', async () => {
+    installFetchSequence([pageOf(40, 0), { items: [], empty: true }]);
+    await collectAll({ site: 'pirateswap' });
+    const firstUrl = String(fetchSpy.mock.calls[0]?.[0] ?? '');
+    expect(firstUrl).toContain('/inventory/v2/ExchangerInventory');
+    expect(firstUrl).toContain('isSouvenir=false');
+    expect(firstUrl).not.toContain('itemWithSticker');
+  });
+
   it('breaks on transient fetch error without losing earlier pages', async () => {
     let i = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {

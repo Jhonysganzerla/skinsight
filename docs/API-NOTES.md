@@ -31,10 +31,12 @@ GET https://skinsmonkey.com/api/inventory?limit=120&offset=0&appId=730&sort=rele
 ## PirateSwap — `/inventory/v2/ExchangerInventory`
 
 ```
-GET https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=1&results=40&isSouvenir=false&itemWithSticker=true
+GET https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=1&results=40&isSouvenir=false
 ```
 
 - **Public**, no auth.
+- `itemWithSticker=true` was removed in v0.4.1 — empirically a no-op server-side
+  (PS ignores it; the response is byte-identical with or without).
 - **`credentials: 'omit'`** — do NOT send cookies (briefing §7).
 - Cap iteration at 2000 pages.
 
