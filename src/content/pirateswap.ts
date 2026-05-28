@@ -15,6 +15,7 @@ import {
   updateScanBar,
   type FilterField,
 } from '../modules/shared/ui';
+import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { send } from '../modules/shared/messaging';
@@ -23,6 +24,13 @@ import type { RareResult } from '../modules/rare/types';
 const ROOT_ID = 'skinsight-ps-overlay';
 const PERSIST_KEY = 'pirateswap';
 const FILTER_DEBOUNCE_MS = 250;
+
+/**
+ * Above this many filtered results, switch from `renderChunked` (which still
+ * mounts every card) to true windowing via `renderVirtualList`. Below it, the
+ * windowing overhead (observer + scroll math) isn't worth it. (Issue 1 / #16.)
+ */
+const VIRT_THRESHOLD = 200;
 
 type SortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
 
@@ -50,8 +58,9 @@ interface State {
   /** Last collected match set — kept in memory so reactive filters can
    *  re-apply + re-render without a fresh network scan. */
   results: RareResult[];
-  /** Active chunked-render handle, so a filter change can cancel it. */
-  renderAbort: (() => void) | null;
+  /** Active render handle (chunked or virtualized) so a filter change can
+   *  tear it down before starting a new one. */
+  renderHandle: { destroy(): void } | null;
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
 }
@@ -61,7 +70,7 @@ const state: State = {
   running: false,
   aborted: { aborted: false },
   results: [],
-  renderAbort: null,
+  renderHandle: null,
   debounce: null,
 };
 
@@ -100,9 +109,10 @@ function applyAndRender(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
-  // Cancel any in-flight render before starting a new one.
-  state.renderAbort?.();
-  state.renderAbort = null;
+  // Tear down any in-flight render (chunked) or live virtual list before
+  // starting a new one.
+  state.renderHandle?.destroy();
+  state.renderHandle = null;
 
   if (DEV_PERF) performance.mark('ps applyAndRender start');
   const filtered = applyRareFilter(state.results, currentFilterOpts());
@@ -127,15 +137,33 @@ function applyAndRender(): void {
     list.innerHTML = header + EMPTY_HTML;
     return;
   }
+
+  // Large sets: true windowing — only the viewport (± buffer) is ever in the
+  // DOM. Filter change resets scroll to the top (prompt T1). Small sets: the
+  // cheaper chunked render, whose full DOM cost is negligible at this size.
+  if (filtered.length > VIRT_THRESHOLD) {
+    overlay.body.scrollTop = 0;
+    const vh = renderVirtualList({
+      scrollRoot: overlay.body,
+      container: list,
+      items: filtered,
+      render: renderRareCard,
+      prefixHtml: header,
+    });
+    state.renderHandle = { destroy: vh.destroy };
+    return;
+  }
+
   const handle = renderChunked({
     container: list,
     items: filtered,
     render: renderRareCard,
     prefixHtml: header,
   });
-  state.renderAbort = handle.abort;
+  const chunkHandle = { destroy: handle.abort };
+  state.renderHandle = chunkHandle;
   void handle.done.then(() => {
-    if (state.renderAbort === handle.abort) state.renderAbort = null;
+    if (state.renderHandle === chunkHandle) state.renderHandle = null;
   });
 }
 
@@ -214,8 +242,8 @@ function formatUsd(n: number): string {
 
 function abort(): void {
   state.aborted.aborted = true;
-  state.renderAbort?.();
-  state.renderAbort = null;
+  state.renderHandle?.destroy();
+  state.renderHandle = null;
   if (state.debounce !== null) {
     clearTimeout(state.debounce);
     state.debounce = null;

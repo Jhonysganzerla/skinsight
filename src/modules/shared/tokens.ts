@@ -115,6 +115,11 @@ export const OVERLAY_CSS = `
   font-size: 10.5px; color: var(--text-dim);
   margin: 8px 4px 6px; text-transform: uppercase; letter-spacing: .5px;
 }
+/* Virtualized list (v0.4.1): pads reserve off-window scroll height so the
+   scrollbar matches the full data set while only the window is in the DOM. */
+.sh-vlist { position: relative; }
+.sh-vlist-pad { flex: none; }
+.sh-vlist-window { display: block; }
 .sh-item-card {
   padding: 10px; background: var(--bg-input); border: 1px solid var(--border);
   border-radius: 8px; margin-bottom: 8px;
