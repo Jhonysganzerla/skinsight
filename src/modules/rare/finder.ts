@@ -105,7 +105,14 @@ async function fetchPs(page: number, results = 40): Promise<PsResp> {
   // since 0 hits points at items arriving without stickers we put it back
   // while validating empirically (see the sticker-count diagnostic in the
   // PirateSwap content script). Cheap and reversible.
-  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=${page}&results=${results}&isSouvenir=false&itemWithSticker=true`;
+  //
+  // sortOrder=DESC (most expensive first). PS throttles hard after ~60 pages
+  // (returns HTTP 200 + empty body, no 429) and never clears within a scan, so
+  // we only ever get one ~2.4k-item window. The value lives at the TOP — the
+  // items worth flagging are expensive *because* of their stickers — so we walk
+  // down from the most expensive. Walking up (ASC) burned the whole budget on
+  // sub-$0.30 items and never reached anything valuable.
+  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=DESC&page=${page}&results=${results}&isSouvenir=false&itemWithSticker=true`;
   const res = await fetch(url, {
     credentials: 'omit',
     headers: { Accept: 'application/json, text/plain, */*' },
