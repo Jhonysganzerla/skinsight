@@ -8,6 +8,28 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
+const outDir = path.join(root, 'public');
+const outPath = path.join(outDir, 'rare_stickers.json');
+
+// public/rare_stickers.json is now the authoritative, version-controlled list,
+// maintained additively by the private Python generator (tools/). This legacy
+// slimmer must NOT clobber it on every build — it only runs as a cold-checkout
+// fallback when the file is somehow missing. Skip when a valid list exists.
+if (fs.existsSync(outPath)) {
+  try {
+    const cur = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+    if (Array.isArray(cur) && cur.length > 0) {
+      console.log(
+        `[build-rare-data] public/rare_stickers.json present (${cur.length} entries) — ` +
+          'leaving it untouched (Python generator owns this list).',
+      );
+      process.exit(0);
+    }
+  } catch {
+    // fall through and regenerate from the legacy source
+  }
+}
+
 // Candidates for the source file. Prefer one inside the repo, fall back to
 // the sibling legacy project that ships the latest data.
 const candidates = [
@@ -29,9 +51,7 @@ const slim = list
   .filter((s) => s && typeof s.name === 'string' && typeof s.min_price === 'number')
   .map((s) => [s.name, s.min_price]);
 
-const outDir = path.join(root, 'public');
 fs.mkdirSync(outDir, { recursive: true });
-const outPath = path.join(outDir, 'rare_stickers.json');
 fs.writeFileSync(outPath, JSON.stringify(slim));
 
 console.log(
