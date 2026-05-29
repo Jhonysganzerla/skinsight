@@ -136,8 +136,13 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
  * a rare-flagged item (e.g. a $0.02 Champion sticker next to a Gold) would
  * pollute the finder. A sticker counts as rare iff its *minimum* observed
  * market price is at least this value.
+ *
+ * v0.4.1: raised $0.50 → $1.00. The $0.50 floor still let a lot of low-value
+ * stickers into the DB and diluted the hit list; $1.00 keeps the universe to
+ * stickers actually worth flagging. The remote (Python-generated) list is the
+ * authority going forward — keep this constant in sync with the generator.
  */
-export const RARE_THRESHOLD_USD = 0.5;
+export const RARE_THRESHOLD_USD = 1.0;
 
 export interface RareReport {
   /** Membership floor applied to min_price. Constant — see RARE_THRESHOLD_USD. */

@@ -183,28 +183,29 @@ describe('rare/csmoney — Regenerate report', () => {
       };
     });
 
-  it('applies the fixed $0.50 membership floor (decision #16 / T2)', () => {
+  it('applies the fixed $1.00 membership floor (decision #16 / T2)', () => {
     const report = buildRareReport(items);
     // The floor is a constant, not inferred per-scan.
-    expect(report.inferred_threshold_usd).toBe(0.5);
+    expect(report.inferred_threshold_usd).toBe(1.0);
     // All 4 fixture items carry stickers.
     expect(report.items_with_stickers).toBe(4);
   });
 
-  it('classifies a sticker as rare iff its MIN observed price ≥ $0.50', () => {
+  it('classifies a sticker as rare iff its MIN observed price ≥ $1.00', () => {
     const report = buildRareReport(items);
     const names = report.rare_stickers.map((s) => s.name);
     // kennyS (Foil) Cologne 2015 = $58.12 — clearly rare.
     expect(names).toEqual(expect.arrayContaining(['Sticker | kennyS (Foil) | Cologne 2015']));
     // Every rare sticker is at or above the floor by min_price.
     for (const r of report.rare_stickers) {
-      expect(r.min_price).toBeGreaterThanOrEqual(0.5);
+      expect(r.min_price).toBeGreaterThanOrEqual(1.0);
       expect(r.is_rare_candidate).toBe(true);
     }
-    // Sub-floor stickers (e.g. the $0.02 Champion / $0 Gold riders) land in
+    // Sub-floor stickers (the $0.02 Champion / $0 Gold riders, plus the $0.70
+    // and $0.92 Golds that the old $0.50 floor used to admit) land in
     // normal_stickers, never rare.
     for (const n of report.normal_stickers) {
-      expect(n.min_price).toBeLessThan(0.5);
+      expect(n.min_price).toBeLessThan(1.0);
       expect(n.is_rare_candidate).toBe(false);
     }
     expect(report.rare_count + report.normal_count).toBe(report.unique_stickers);
@@ -213,7 +214,7 @@ describe('rare/csmoney — Regenerate report', () => {
   it('output schema matches the rare_stickers.json shape (img + generated_at)', () => {
     const report = buildRareReport(items);
     expect(report).toMatchObject({
-      inferred_threshold_usd: 0.5,
+      inferred_threshold_usd: 1.0,
       generated_at: expect.any(String),
       items_with_stickers: expect.any(Number),
       total_sticker_observations: expect.any(Number),
