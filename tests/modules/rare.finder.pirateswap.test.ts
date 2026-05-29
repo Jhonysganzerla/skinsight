@@ -120,6 +120,42 @@ describe('collectAll PirateSwap — full-inventory scan', () => {
     expect(firstUrl).toContain('itemWithSticker=true');
   });
 
+  it('retries a flagless-empty page (PS throttle) instead of ending the scan', async () => {
+    // PS throttles by returning HTTP 200 + {items:[]} WITHOUT empty:true. That
+    // must NOT be read as end-of-inventory — back off, retry the same page, and
+    // continue once data flows again. Regression for the "194 hits, max $0.27"
+    // bug where the ASC scan died at the cheap end.
+    installFetchSequence([
+      pageOf(40, 0),
+      { items: [] }, // throttle: flagless empty
+      pageOf(40, 40), // retry of the same page succeeds
+      { items: [], empty: true }, // genuine end
+    ]);
+    const items = await collectAll({ site: 'pirateswap' });
+    expect(items).toHaveLength(80);
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
+  });
+
+  it('bails after exhausting retries when the throttle never clears', async () => {
+    // page 1 ok, then flagless-empty forever. Must terminate (not spin), keeping
+    // page 1, after MAX_EMPTY_RETRIES+1 attempts on the stuck page.
+    let i = 0;
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      i += 1;
+      const body = i === 1 ? pageOf(40, 0) : { items: [] };
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const items = await collectAll({ site: 'pirateswap' });
+    expect(items).toHaveLength(40);
+    // 1 good page + (1 initial + 4 retries) on the stuck page = 6 fetches.
+    expect(fetchSpy).toHaveBeenCalledTimes(6);
+    warn.mockRestore();
+  });
+
   it('breaks on transient fetch error without losing earlier pages', async () => {
     let i = 0;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {

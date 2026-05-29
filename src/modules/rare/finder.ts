@@ -180,35 +180,76 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
     // PS's totalResults / totalPages were observed as `0` in v0.4.1 captures
     // — we read them only for DEV logging, never for control.
     const results = 40;
+    const BASE_DELAY_MS = 600;
+    // PirateSwap throttles silently: when paged too fast it answers HTTP 200
+    // with an empty `items` array and WITHOUT `empty:true`. The old loop read
+    // that flagless-empty page as end-of-inventory and stopped — so an ASC scan
+    // died at the cheap end (~page 65, ~$0.27) and never reached the items that
+    // carry valuable stickers. We now end ONLY on the authoritative `empty:true`
+    // flag (or an HTTP error); a flagless-empty page is treated as a throttle,
+    // so we back off and retry the SAME page. A retry budget prevents an
+    // infinite loop if PS is genuinely down / the throttle never clears.
+    const MAX_EMPTY_RETRIES = 4;
     const startedAt = Date.now();
-    let p = 1;
     let loggedHeader = false;
+    let p = 1;
     for (; p <= PS_SAFETY_CAP_PAGES; p++) {
       if (opts.signal?.aborted) break;
       opts.onProgress?.(`Scanned ${p - 1} pages (${items.length} items)…`, items.length);
-      let json: PsResp;
-      try {
-        json = await fetchPs(p, results);
-      } catch (e) {
-        opts.onProgress?.('Error: ' + (e as Error).message, items.length);
-        break;
+
+      let page: RareItem[] = [];
+      let ended = false;
+      let httpError = false;
+      for (let attempt = 0; attempt <= MAX_EMPTY_RETRIES; attempt++) {
+        let json: PsResp;
+        try {
+          json = await fetchPs(p, results);
+        } catch (e) {
+          opts.onProgress?.('Error: ' + (e as Error).message, items.length);
+          httpError = true;
+          break;
+        }
+        if (DEV && !loggedHeader) {
+          console.debug(
+            `[Skinsight] PS scan started — totalResults=${json.totalResults ?? '?'} totalPages=${json.totalPages ?? '?'} (PS often reports 0; ignored)`,
+          );
+          loggedHeader = true;
+        }
+        page = normalizePs(json);
+        if (json.empty === true) {
+          ended = true; // authoritative last batch (may still carry items)
+          break;
+        }
+        if (page.length > 0) break; // got data — proceed to next page
+        // Flagless empty → PS throttle. Back off (exponential) and retry.
+        if (attempt < MAX_EMPTY_RETRIES) {
+          const backoff = BASE_DELAY_MS * 2 ** (attempt + 1); // 1.2s,2.4s,4.8s,9.6s
+          opts.onProgress?.(
+            `PirateSwap throttling — aguardando ${(backoff / 1000).toFixed(1)}s (página ${p})…`,
+            items.length,
+          );
+          await sleep(backoff);
+        }
       }
-      if (DEV && !loggedHeader) {
-        console.debug(
-          `[Skinsight] PS scan started — totalResults=${json.totalResults ?? '?'} totalPages=${json.totalPages ?? '?'} (PS often reports 0; ignored)`,
-        );
-        loggedHeader = true;
-      }
-      const page = normalizePs(json);
+
+      if (httpError) break;
       items.push(...page);
-      // Authoritative end signal. Some captures show empty=true *with* items
-      // on the same page; we still treat empty=true as the last batch.
-      const lastBatch = json.empty === true || page.length === 0;
-      if (lastBatch) {
+      if (ended) {
         p++;
         break;
       }
-      await sleep(250);
+      // Exhausted retries and still flagless-empty: can't distinguish a stuck
+      // throttle from a true end, so bail (terminates; never spins forever).
+      if (page.length === 0) {
+        if (DEV) {
+          console.warn(
+            `[Skinsight] PS page ${p} still empty after ${MAX_EMPTY_RETRIES} retries — ending scan (persistent throttle or true end).`,
+          );
+        }
+        p++;
+        break;
+      }
+      await sleep(BASE_DELAY_MS);
     }
     if (p > PS_SAFETY_CAP_PAGES && DEV) {
       console.warn(
