@@ -5,4 +5,8 @@ dist/
 .DS_Store
 *.log
 coverage/
+
+# Private rare-list generator (the list it produces is public; the code isn't)
+tools/
+
 .vitest/
