@@ -1,7 +1,14 @@
 /**
- * Loads the slim rare_stickers.json bundled in public/. Format:
+ * Loads the slim rare_stickers list. Format:
  *   [['Sticker | Foo (Holo) | Katowice 2014', 210.5], ...]
+ *
+ * Source preference: the remote-published list cached by the service worker
+ * (`getRareRemoteCache`) wins; if it's absent/empty/unreadable we fall back to
+ * the `rare_stickers.json` bundled in public/. The fallback guarantees the
+ * scanner always has a DB even with no network / a cold install.
  */
+import { getRareRemoteCache } from './remote';
+
 let _map: Map<string, number> | null = null;
 let _loadPromise: Promise<Map<string, number>> | null = null;
 
@@ -32,11 +39,26 @@ export function __resetNormCache(): void {
   _normCache.clear();
 }
 
-async function loadOnce(): Promise<Map<string, number>> {
+/** Remote list cached by the SW, or null if absent/empty/storage-unavailable. */
+async function readRemoteEntries(): Promise<Array<[string, number]> | null> {
+  try {
+    const c = await getRareRemoteCache();
+    return c && c.data.length ? c.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The list bundled in public/ — always present, the ultimate fallback. */
+async function readBundledEntries(): Promise<Array<[string, number]>> {
   const url = chrome.runtime.getURL('rare_stickers.json');
   const res = await fetch(url);
   if (!res.ok) throw new Error('rare_stickers.json HTTP ' + res.status);
-  const arr = (await res.json()) as Array<[string, number]>;
+  return (await res.json()) as Array<[string, number]>;
+}
+
+async function loadOnce(): Promise<Map<string, number>> {
+  const arr = (await readRemoteEntries()) ?? (await readBundledEntries());
   const m = new Map<string, number>();
   for (const [name, price] of arr) m.set(norm(name), price);
   _map = m;

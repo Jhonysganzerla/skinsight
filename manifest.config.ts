@@ -37,6 +37,9 @@ export default defineManifest({
     'https://*.cs.money/*',
     'https://steamcommunity.com/market/*',
     'https://api.skinport.com/*',
+    // Remote rare-list source (public, no auth). Scoped to the repo owner's
+    // path — never a broad raw.githubusercontent.com/* or <all_urls>.
+    'https://raw.githubusercontent.com/Jhonysganzerla/*',
   ],
   content_scripts: [
     {

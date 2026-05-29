@@ -21,7 +21,13 @@ export type Message =
   // CSFloat rate-limit gate (v0.4):
   // Content script awaits a slot before each fetch; reports 429s back.
   | { type: 'csf:request-slot' }
-  | { type: 'csf:got-429' };
+  | { type: 'csf:got-429' }
+  // Remote rare-list refresh (v0.4.1):
+  //   any tab/popup → SW: rares:refresh  (force=true from the popup button;
+  //                                        false from scan-start = TTL-gated)
+  //   popup         → SW: rares:status   (read cached count + fetchedAt)
+  | { type: 'rares:refresh'; force?: boolean }
+  | { type: 'rares:status' };
 
 /** Subset of AnalysisRow we hand back to the SW for the "Today's hits" feed. */
 export interface HitRow {

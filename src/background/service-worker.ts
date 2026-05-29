@@ -26,6 +26,7 @@ import {
   runHitsGc,
 } from '../modules/shared/storage';
 import { csfloatBucket } from '../modules/shared/throttle';
+import { getRareRemoteCache, refreshRareRemote } from '../modules/rare/remote';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
 
@@ -107,6 +108,21 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       return { ok: true };
     }
 
+    case 'rares:refresh': {
+      // force=true (popup button) bypasses the TTL; false (scan-start) only
+      // hits the network if the cache is older than REMOTE_RARE_TTL_MS.
+      const r = await refreshRareRemote(msg.force ?? true);
+      return r.error !== undefined ? { ok: r.ok, error: r.error, data: r } : { ok: r.ok, data: r };
+    }
+
+    case 'rares:status': {
+      const c = await getRareRemoteCache();
+      return {
+        ok: true,
+        data: c ? { count: c.data.length, fetchedAt: c.fetchedAt } : null,
+      };
+    }
+
     case 'hit:record': {
       await addHit({
         ts: Date.now(),
@@ -128,7 +144,11 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
  *  popup can request the feed, so users never see stale entries. */
 chrome.runtime.onStartup.addListener(() => {
   void runHitsGc();
+  void refreshRareRemote(false);
 });
 chrome.runtime.onInstalled.addListener(() => {
   void runHitsGc();
+  // Pull the live rare list once on install/update (force, since a fresh
+  // install has no cache and an update may ship behind the published list).
+  void refreshRareRemote(true);
 });

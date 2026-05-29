@@ -21,6 +21,7 @@ import {
   type SkinsmonkeyMode,
   type TodayHit,
 } from '../modules/shared/storage';
+import { send } from '../modules/shared/messaging';
 
 const KO_FI_URL = 'https://ko-fi.com/sganzerla';
 const PIX_KEY = 'ac344236-c335-4f89-aee2-e671101d4619';
@@ -82,10 +83,36 @@ const SITES: SiteDef[] = [
   },
 ];
 
+interface RareListStatus {
+  count: number;
+  fetchedAt: number;
+}
+
 interface PopupState {
   settings: Settings;
   hits: TodayHit[];
   activeHost: string | null;
+  rareStatus: RareListStatus | null;
+}
+
+async function readRareStatus(): Promise<RareListStatus | null> {
+  try {
+    const r = await send({ type: 'rares:status' });
+    return r.ok && r.data ? (r.data as RareListStatus) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Human-friendly "time since" for the rare-list timestamp (pt-BR). */
+function fmtAgo(ms: number): string {
+  const diff = Date.now() - ms;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'agora mesmo';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `há ${h}h`;
+  return `há ${Math.floor(h / 24)}d`;
 }
 
 function escHtml(s: unknown): string {
@@ -208,6 +235,21 @@ function renderHitsSection(hits: TodayHit[]): string {
   `;
 }
 
+function renderRareListSection(status: RareListStatus | null): string {
+  const meta = status
+    ? `${status.count} stickers · atualizado ${escHtml(fmtAgo(status.fetchedAt))}`
+    : 'Usando lista embutida — clique para buscar a publicada';
+  return `
+    <div class="popup-section">
+      <div class="section-label">Lista de raros</div>
+      <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
+        <div style="font-size:11px;color:var(--text-dim);flex:1;min-width:0;">${meta}</div>
+        <button class="donate-btn" id="btn-refresh-rares" type="button" style="flex:0 0 auto;">↻ Atualizar</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderDonateSection(): string {
   return `
     <div class="popup-section">
@@ -250,6 +292,7 @@ function renderSupported(state: PopupState, active: SiteDef): string {
   return [
     renderModesSection(state.settings, active),
     renderSitesSection(state.activeHost),
+    renderRareListSection(state.rareStatus),
     renderHitsSection(state.hits),
     renderDonateSection(),
   ].join('');
@@ -311,16 +354,45 @@ function wireUp(root: HTMLElement): void {
       void copyPix(t);
       return;
     }
+    if (t.id === 'btn-refresh-rares') {
+      e.preventDefault();
+      void refreshRares(t);
+      return;
+    }
   });
 }
 
+/** Force a remote rare-list refresh via the SW, then re-render the popup. */
+async function refreshRares(btn: HTMLElement): Promise<void> {
+  const original = btn.textContent;
+  btn.textContent = '↻ Atualizando…';
+  (btn as HTMLButtonElement).disabled = true;
+  let r: Awaited<ReturnType<typeof send>>;
+  try {
+    r = await send({ type: 'rares:refresh', force: true });
+  } catch (e) {
+    r = { ok: false, error: String((e as Error)?.message ?? e) };
+  }
+  if (r.ok) {
+    // render() rebuilds the section (and its button) from fresh status.
+    await render();
+    return;
+  }
+  btn.textContent = 'Falhou';
+  setTimeout(() => {
+    btn.textContent = original;
+    (btn as HTMLButtonElement).disabled = false;
+  }, 2000);
+}
+
 async function render(): Promise<void> {
-  const [settings, hits, activeHost] = await Promise.all([
+  const [settings, hits, activeHost, rareStatus] = await Promise.all([
     getSettings(),
     getHits(),
     readActiveHost(),
+    readRareStatus(),
   ]);
-  const state: PopupState = { settings, hits, activeHost };
+  const state: PopupState = { settings, hits, activeHost, rareStatus };
   const active = siteForHost(activeHost);
   const content = document.getElementById('content');
   if (!content) return;
