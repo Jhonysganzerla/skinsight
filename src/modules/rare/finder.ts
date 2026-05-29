@@ -100,9 +100,12 @@ interface PsResp {
 }
 
 async function fetchPs(page: number, results = 40): Promise<PsResp> {
-  // `itemWithSticker=true` was dropped in v0.4.1: empirically a no-op
-  // server-side (PS ignores it; the response is identical with or without).
-  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=${page}&results=${results}&isSouvenir=false`;
+  // `itemWithSticker=true` — restored after a "0 rare hits" report. The B5
+  // investigation had flagged it as a no-op (response byte-identical), but
+  // since 0 hits points at items arriving without stickers we put it back
+  // while validating empirically (see the sticker-count diagnostic in the
+  // PirateSwap content script). Cheap and reversible.
+  const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=ASC&page=${page}&results=${results}&isSouvenir=false&itemWithSticker=true`;
   const res = await fetch(url, {
     credentials: 'omit',
     headers: { Accept: 'application/json, text/plain, */*' },

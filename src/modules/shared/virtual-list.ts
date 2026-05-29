@@ -98,6 +98,22 @@ export interface VirtualListHandle {
 
 const DEV = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 
+/** Build-independent debug gate (mirrors pirateswap.ts): a production build
+ *  compiles `DEV` to false, so the window-size log below never prints for an
+ *  end user. `localStorage['skinsight:debug']='1'` turns it on at runtime —
+ *  the single most useful signal for a "filter freezes" report, since it
+ *  shows exactly how many cards each recompute mounts. */
+function debugEnabled(): boolean {
+  if (DEV) return true;
+  try {
+    return (
+      (globalThis as { localStorage?: Storage }).localStorage?.getItem('skinsight:debug') === '1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 const DEFAULT_ROW_HEIGHT = 88;
 const DEFAULT_BUFFER = 10;
 
@@ -154,9 +170,10 @@ export function renderVirtualList<T>(opts: VirtualListOpts<T>): VirtualListHandl
     let buf = '';
     for (let i = next.start; i < next.end; i++) buf += render(items[i]!, i);
     win.innerHTML = buf;
-    if (DEV) {
+    if (debugEnabled()) {
       console.debug(
-        `[Skinsight perf] vlist window [${next.start}-${next.end}) of ${total} — ${next.end - next.start} cards mounted`,
+        `[Skinsight] vlist window [${next.start}-${next.end}) of ${total} — ` +
+          `${next.end - next.start} cards mounted (viewportH=${viewportH} rowH=${rowHeight})`,
       );
     }
   }

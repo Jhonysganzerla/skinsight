@@ -46,11 +46,17 @@ const FILTERS: FilterField[] = [
 interface State {
   running: boolean;
   aborted: { aborted: boolean };
+  /** Last collected inventory — kept so reactive filters can re-sort +
+   *  re-render in place without a fresh network scan. */
   items: CsMoneyItem[];
+  /** Pending debounce timer for filter inputs. */
+  debounce: ReturnType<typeof setTimeout> | null;
   /** Regenerate (deep DB scan) in flight + its own abort signal. */
   regenerating: boolean;
   regenAborted: { aborted: boolean };
 }
+
+const FILTER_DEBOUNCE_MS = 250;
 
 /** Safety cap for the regenerate deep scan (collector stops earlier on empty). */
 const REGEN_MAX_PAGES = 250;
@@ -61,6 +67,7 @@ const state: State = {
   running: false,
   aborted: { aborted: false },
   items: [],
+  debounce: null,
   regenerating: false,
   regenAborted: { aborted: false },
 };
@@ -104,10 +111,48 @@ function sortItems(arr: CsMoneyItem[], key: string): CsMoneyItem[] {
   return [...arr].sort(cmps[key] ?? cmps['net_desc']!);
 }
 
+/** Re-sort `state.items` by the current Sort filter and (re)render in place.
+ *  Called once after a scan and again on every reactive filter change. */
+function renderResults(): void {
+  if (!overlay) return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list) return;
+  const filters = readFilterValues(overlay.body);
+  const sortKey = filters['sort'] ?? 'net_desc';
+  const sorted = sortItems(state.items, sortKey);
+  list.innerHTML =
+    renderResultsHeader('Item · stickers', 'Net') +
+    (sorted.length
+      ? sorted.map(renderCsMoneyCard).join('')
+      : `<div class="sh-empty">
+          <div class="sh-empty-icon">⌖</div>
+          <div class="sh-empty-title">No items collected</div>
+          <div class="sh-empty-sub">Try increasing pages or check CS.Money rate limit.</div>
+        </div>`);
+}
+
+/** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
+function scheduleFilterApply(instant: boolean): void {
+  if (state.debounce !== null) {
+    clearTimeout(state.debounce);
+    state.debounce = null;
+  }
+  if (instant) {
+    renderResults();
+    return;
+  }
+  state.debounce = setTimeout(() => {
+    state.debounce = null;
+    renderResults();
+  }, FILTER_DEBOUNCE_MS);
+}
+
 async function runScan(): Promise<void> {
   if (!overlay || state.running) return;
   state.running = true;
   state.aborted = { aborted: false };
+  // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
+  void send({ type: 'rares:refresh', force: false });
   const filters = readFilterValues(overlay.body);
   const pages = Math.max(1, Math.min(50, parseInt(filters['pages'] ?? '6', 10) || 6));
   const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
@@ -133,24 +178,12 @@ async function runScan(): Promise<void> {
   }
 
   state.items = collected;
-  const sorted = sortItems(collected, sortKey);
 
   if (!overlay) {
     finish();
     return;
   }
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (list) {
-    list.innerHTML =
-      renderResultsHeader('Item · stickers', 'Net') +
-      (sorted.length
-        ? sorted.map(renderCsMoneyCard).join('')
-        : `<div class="sh-empty">
-            <div class="sh-empty-icon">⌖</div>
-            <div class="sh-empty-title">No items collected</div>
-            <div class="sh-empty-sub">Try increasing pages or check CS.Money rate limit.</div>
-          </div>`);
-  }
+  renderResults();
 
   // Enable the Regenerate button.
   const drawer = overlay.body.querySelector<HTMLElement>('details');
@@ -162,7 +195,7 @@ async function runScan(): Promise<void> {
   });
   setStatus(`Collected ${collected.length} items.`, 'ok');
 
-  const top = sorted[0];
+  const top = sortItems(collected, sortKey)[0];
   if (top && top.netUsd > 0) {
     void send({
       type: 'hit:record',
@@ -289,6 +322,21 @@ function mount(): void {
       return;
     }
   });
+
+  // Reactive filters: re-sort + re-render in place when the user changes a
+  // filter after a scan (no rescan). CS.Money is a React SPA, so — like
+  // PirateSwap — we listen on `document` in the CAPTURE phase scoped to our
+  // overlay: the host framework can swallow bubble-phase change/input events.
+  const onFilterEvent = (instant: boolean) => (e: Event) => {
+    const t = e.target as HTMLElement | null;
+    if (!t || !overlay) return;
+    if (!overlay.root.contains(t) || !t.matches?.('[data-filter]')) return;
+    if (!state.items.length) return;
+    scheduleFilterApply(instant);
+  };
+  // `<select>` → instant; text/number inputs → debounced.
+  document.addEventListener('change', onFilterEvent(true), true);
+  document.addEventListener('input', onFilterEvent(false), true);
 }
 
 async function bootstrap(): Promise<void> {

@@ -35,10 +35,12 @@ GET https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sor
 ```
 
 - **Public**, no auth.
-- `itemWithSticker=true` was removed in v0.4.1 — empirically a no-op server-side
-  (PS ignores it; the response is byte-identical with or without).
+- `itemWithSticker=true`: removed in v0.4.1 (B5 thought it a no-op), then
+  **restored** after a "0 rare hits" report — 0 hits suggests items arriving
+  without stickers, so the param is back pending empirical validation (the PS
+  content script logs a sticker-count diagnostic under `skinsight:debug`).
 - **`credentials: 'omit'`** — do NOT send cookies (briefing §7).
-- Cap iteration at 2000 pages.
+- Cap iteration at 250 pages (SAFETY_CAP; v0.4.1 dropped the user page cap).
 
 ## CS.Money — `/5.0/load_bots_inventory/730`
 

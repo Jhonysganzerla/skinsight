@@ -104,8 +104,77 @@ function currentFilterOpts(): { maxPrice?: number; sort: SortKey } {
 
 const DEV_PERF = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 
-/** Apply filters + render via the chunked renderer; cancels any in-flight render. */
+/**
+ * Diagnostics gate that works in a *production* build too. The DEV flag is
+ * compiled to `false` in the shipped extension, so none of the perf marks
+ * above ever print for an end user. To debug a live page, run
+ *   localStorage.setItem('skinsight:debug', '1')
+ * in the page console and reload — `dbg()` then logs the filter→render path.
+ */
+function debugEnabled(): boolean {
+  if (DEV_PERF) return true;
+  try {
+    return (
+      (globalThis as { localStorage?: Storage }).localStorage?.getItem('skinsight:debug') === '1'
+    );
+  } catch {
+    return false; // some host pages sandbox localStorage and throw on access
+  }
+}
+/**
+ * Freeze-surviving log. A hard tab freeze (main thread blocked) loses console
+ * output, so we persist milestones to a capped ring buffer in localStorage.
+ * After a freeze, reload the tab and read them with `__skinsightLog()` in the
+ * console (or inspect `localStorage['skinsight:log']`). The LAST entry written
+ * before the freeze pinpoints which stage blocked: scan / match / render.
+ * Gated by the same debug flag — enable with
+ *   localStorage.setItem('skinsight:debug','1')
+ * then reload BEFORE scanning.
+ */
+const FLOG_KEY = 'skinsight:log';
+const FLOG_MAX = 300;
+function flog(msg: string): void {
+  if (!debugEnabled()) return;
+  const line = `${new Date().toISOString().slice(11, 23)} ${msg}`;
+  console.debug('[Skinsight]', line);
+  try {
+    const ls = (globalThis as { localStorage?: Storage }).localStorage;
+    if (!ls) return;
+    const prev = ls.getItem(FLOG_KEY);
+    const arr: string[] = prev ? (JSON.parse(prev) as string[]) : [];
+    arr.push(line);
+    if (arr.length > FLOG_MAX) arr.splice(0, arr.length - FLOG_MAX);
+    ls.setItem(FLOG_KEY, JSON.stringify(arr));
+  } catch {
+    /* localStorage may be sandboxed / full — non-fatal */
+  }
+}
+// Console helper to dump the buffer after a freeze+reload: just type
+// `__skinsightLog()` in the page console — the returned string is printed as
+// the expression result (no console.log needed).
+(globalThis as { __skinsightLog?: () => string }).__skinsightLog = () => {
+  try {
+    const raw = (globalThis as { localStorage?: Storage }).localStorage?.getItem(FLOG_KEY);
+    return (JSON.parse(raw ?? '[]') as string[]).join('\n');
+  } catch {
+    return '(no skinsight log)';
+  }
+};
+
+/** Apply filters + render; cancels any in-flight render. Never throws. */
 function applyAndRender(): void {
+  try {
+    applyAndRenderUnsafe();
+  } catch (e) {
+    // A throw here used to silently abort the re-render with no visible
+    // change — looking exactly like "changing the Sort select does nothing".
+    // Surface it instead of swallowing it.
+    console.error('[Skinsight] applyAndRender failed:', e);
+    setStatus('Render error: ' + (e as Error).message, 'err');
+  }
+}
+
+function applyAndRenderUnsafe(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
@@ -114,23 +183,15 @@ function applyAndRender(): void {
   state.renderHandle?.destroy();
   state.renderHandle = null;
 
-  if (DEV_PERF) performance.mark('ps applyAndRender start');
-  const filtered = applyRareFilter(state.results, currentFilterOpts());
-  if (DEV_PERF) {
-    performance.mark('ps applyRareFilter end');
-    try {
-      const m = performance.measure(
-        'ps applyRareFilter',
-        'ps applyAndRender start',
-        'ps applyRareFilter end',
-      );
-      console.debug(
-        `[Skinsight perf] PS applyRareFilter ${state.results.length}→${filtered.length} items in ${m.duration.toFixed(1)} ms`,
-      );
-    } catch {
-      /* non-fatal */
-    }
-  }
+  const t0 = performance.now();
+  const opts = currentFilterOpts();
+  const filtered = applyRareFilter(state.results, opts);
+  flog(
+    `applyAndRender sort=${opts.sort} maxPrice=${opts.maxPrice ?? '∅'} ` +
+      `results=${state.results.length} → filtered=${filtered.length} ` +
+      `filter+sort=${(performance.now() - t0).toFixed(1)}ms ` +
+      `path=${filtered.length > VIRT_THRESHOLD ? 'virtual' : 'chunked'}`,
+  );
 
   const header = renderResultsHeader('Item · stickers detected', 'Worth');
   if (!filtered.length) {
@@ -188,19 +249,41 @@ async function runScan(): Promise<void> {
   state.running = true;
   state.aborted = { aborted: false };
 
+  // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
+  // only hits the network if the cache is older than 24h, and the freshly
+  // cached list applies on the next page load (this scan uses the loaded map).
+  void send({ type: 'rares:refresh', force: false });
+
   // No progress bar — we don't know the total ahead of time. Indeterminate
   // status only; the user can Stop at any moment.
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Scanning inventory…' });
   setStatus('Scanning PirateSwap inventory until empty…', 'info');
+  flog('scan: begin');
 
   const items = await collectAll({
     site: 'pirateswap',
     signal: state.aborted,
-    onProgress: (msg) => {
+    onProgress: (msg, collected) => {
       if (!overlay) return;
       updateScanBar(overlay.body, { info: msg });
+      flog(`scan: ${msg} (collected=${collected})`);
     },
   });
+  // Diagnostic for the "0 rare hits" report: how many scanned items actually
+  // carry stickers, and a few example names to eyeball against the rare DB
+  // (whose keys are norm("Sticker | Name (Variant) | Tournament")). If
+  // withStickers=0 the endpoint isn't returning sticker data at all (param /
+  // endpoint issue); if it's >0 but hits stay 0, it's a name-matching issue.
+  const withStickers = items.filter((it) => it.stickers.length > 0).length;
+  const totalStickers = items.reduce((n, it) => n + it.stickers.length, 0);
+  const sampleNames = items
+    .flatMap((it) => it.stickers.map((s) => s.name))
+    .filter(Boolean)
+    .slice(0, 5);
+  flog(
+    `scan: done — ${items.length} items, ${withStickers} with stickers, ` +
+      `${totalStickers} stickers total; samples=${JSON.stringify(sampleNames)}`,
+  );
 
   if (state.aborted.aborted) {
     setStatus('Scan stopped.', 'info');
@@ -211,13 +294,17 @@ async function runScan(): Promise<void> {
   updateScanBar(overlay.body, {
     info: `Matching ${items.length} items against rare DB…`,
   });
+  flog(`match: begin findRareResults over ${items.length} items`);
   state.results = await findRareResults(items);
+  flog(`match: done — ${state.results.length} hits`);
 
   if (!overlay) {
     finish();
     return;
   }
+  flog('render: begin initial applyAndRender');
   applyAndRender();
+  flog('render: initial applyAndRender returned');
   updateScanBar(overlay.body, {
     info: `Scan complete — ${state.results.length} hits.`,
   });
@@ -282,23 +369,35 @@ function mount(): void {
 
   // Reactive filters (B1.d): re-apply + re-render in place when the user
   // changes any filter. Inputs get a 250 ms debounce; selects are instant.
-  overlay.body.addEventListener('input', (e) => {
-    const t = e.target as HTMLElement;
-    if (!t.matches('[data-filter]')) return;
+  //
+  // PirateSwap is a React SPA. A delegated listener on `overlay.body` (bubble
+  // phase) was unreliable here — the host's framework appears to interfere
+  // with `change`/`input` propagation (the Scan *click* still bubbled, but
+  // filter `change` did not reach us). We therefore listen on `document` in
+  // the CAPTURE phase, which fires on the way down before any host handler can
+  // stop propagation, and scope it to events originating inside our overlay.
+  const onFilterEvent = (instant: boolean) => (e: Event) => {
+    const t = e.target as HTMLElement | null;
+    if (!t || !overlay) return;
+    const inOverlay = overlay.root.contains(t);
+    const isFilter = inOverlay && !!t.matches?.('[data-filter]');
+    flog(
+      `${e.type} event: tag=${t.tagName ?? '∅'} inOverlay=${inOverlay} isFilter=${isFilter} ` +
+        `filter=${t.getAttribute?.('data-filter') ?? '∅'} ` +
+        `value=${(t as HTMLInputElement).value ?? '∅'} hasResults=${state.results.length}`,
+    );
+    if (!isFilter) return;
     // Don't re-render before there's anything to render.
     if (!state.results.length) return;
-    scheduleFilterApply(false);
-  });
-  overlay.body.addEventListener('change', (e) => {
-    const t = e.target as HTMLElement;
-    if (!t.matches('[data-filter]')) return;
-    if (!state.results.length) return;
-    scheduleFilterApply(true);
-  });
+    scheduleFilterApply(instant);
+  };
+  // `<select>` → instant; text/number inputs → debounced.
+  document.addEventListener('change', onFilterEvent(true), true);
+  document.addEventListener('input', onFilterEvent(false), true);
 }
 
 async function bootstrap(): Promise<void> {
-  console.debug('[Skinsight] loaded on pirateswap');
+  console.debug('[Skinsight] loaded on pirateswap (build=diag-capture)');
   mount();
 }
 

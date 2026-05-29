@@ -29,6 +29,7 @@ import {
 } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
+import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-sm-overlay';
 const PERSIST_KEY_ARB = 'skinsmonkey-arb';
@@ -181,9 +182,65 @@ const RARE_FILTERS: FilterField[] = [
 interface RareState {
   running: boolean;
   aborted: { aborted: boolean };
+  /** Last collected match set — kept so reactive filters can re-apply +
+   *  re-render in place without a fresh network scan. */
+  results: RareResult[];
+  /** Pending debounce timer for filter inputs. */
+  debounce: ReturnType<typeof setTimeout> | null;
 }
 
-const rareState: RareState = { running: false, aborted: { aborted: false } };
+const RARE_FILTER_DEBOUNCE_MS = 250;
+const rareState: RareState = {
+  running: false,
+  aborted: { aborted: false },
+  results: [],
+  debounce: null,
+};
+
+type RareSortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
+
+/** Read filter values + build the current rare-filter opts. */
+function currentRareFilterOpts(): { maxPrice?: number; sort: RareSortKey } {
+  if (!overlay) return { sort: 'roi' };
+  const filters = readFilterValues(overlay.body);
+  const maxPriceRaw = filters['maxPrice'] ?? '';
+  const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
+  const sort = (filters['sort'] ?? 'roi') as RareSortKey;
+  return maxPrice !== undefined ? { maxPrice, sort } : { sort };
+}
+
+/** Apply the current filters to `rareState.results` and (re)render in place. */
+function renderRareResults(): void {
+  if (!overlay) return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list) return;
+  const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
+  list.innerHTML =
+    renderResultsHeader('Item · stickers detected', 'Worth') +
+    (filtered.length
+      ? filtered.map(renderRareCard).join('')
+      : `<div class="sh-empty">
+          <div class="sh-empty-icon">⌖</div>
+          <div class="sh-empty-title">No rare stickers found</div>
+          <div class="sh-empty-sub">Widen filters or scan more pages.</div>
+        </div>`);
+}
+
+/** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
+function scheduleRareFilterApply(instant: boolean): void {
+  if (rareState.debounce !== null) {
+    clearTimeout(rareState.debounce);
+    rareState.debounce = null;
+  }
+  if (instant) {
+    renderRareResults();
+    return;
+  }
+  rareState.debounce = setTimeout(() => {
+    rareState.debounce = null;
+    renderRareResults();
+  }, RARE_FILTER_DEBOUNCE_MS);
+}
 
 function rareBodyHtml(): string {
   return [
@@ -197,16 +254,10 @@ async function runRareScan(): Promise<void> {
   if (!overlay || rareState.running) return;
   rareState.running = true;
   rareState.aborted = { aborted: false };
+  // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
+  void send({ type: 'rares:refresh', force: false });
   const filters = readFilterValues(overlay.body);
   const pages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
-  const maxPriceRaw = filters['maxPrice'] ?? '';
-  const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
-  const sort = (filters['sort'] ?? 'roi') as
-    | 'roi'
-    | 'stickerSum'
-    | 'profit'
-    | 'priceAsc'
-    | 'priceDesc';
 
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
   setStatus('Collecting SkinsMonkey inventory…', 'info');
@@ -232,28 +283,14 @@ async function runRareScan(): Promise<void> {
     info: `Matching ${items.length} items against rare DB…`,
     progressPct: 80,
   });
-  const results = await findRareResults(items);
-  const filtered = applyRareFilter(results, {
-    ...(maxPrice !== undefined ? { maxPrice } : {}),
-    sort,
-  });
+  rareState.results = await findRareResults(items);
 
   if (!overlay) {
     finishRareScan();
     return;
   }
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (list) {
-    list.innerHTML =
-      renderResultsHeader('Item · stickers detected', 'Worth') +
-      (filtered.length
-        ? filtered.map(renderRareCard).join('')
-        : `<div class="sh-empty">
-            <div class="sh-empty-icon">⌖</div>
-            <div class="sh-empty-title">No rare stickers found</div>
-            <div class="sh-empty-sub">Widen filters or scan more pages.</div>
-          </div>`);
-  }
+  renderRareResults();
+  const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
   updateScanBar(overlay.body, {
     info: `Scan complete — ${filtered.length} hits.`,
     progressPct: 100,
@@ -280,6 +317,10 @@ function finishRareScan(): void {
 
 function abortRareScan(): void {
   rareState.aborted.aborted = true;
+  if (rareState.debounce !== null) {
+    clearTimeout(rareState.debounce);
+    rareState.debounce = null;
+  }
 }
 
 /* ─────────────────────────────────────────────── mount / unmount ── */
@@ -327,8 +368,29 @@ function unmount(): void {
   currentMode = null;
 }
 
+// Reactive filters (Rare mode): re-apply + re-render in place when the user
+// changes a filter after a scan (no rescan). SkinsMonkey is a Nuxt/Vue SPA, so
+// — like PirateSwap — we listen on `document` in the CAPTURE phase scoped to
+// our overlay, since the host framework can swallow bubble-phase events. These
+// are registered once (not in `mount`, which re-runs on mode flips) to avoid
+// leaking duplicate listeners. The `rareState.results.length` guard makes them
+// no-ops in Arbitrage mode (which has no in-overlay filterable results).
+function registerRareFilterListeners(): void {
+  const onFilterEvent = (instant: boolean) => (e: Event) => {
+    const t = e.target as HTMLElement | null;
+    if (!t || !overlay || currentMode !== 'rare') return;
+    if (!overlay.root.contains(t) || !t.matches?.('[data-filter]')) return;
+    if (!rareState.results.length) return;
+    scheduleRareFilterApply(instant);
+  };
+  // `<select>` → instant; text/number inputs → debounced.
+  document.addEventListener('change', onFilterEvent(true), true);
+  document.addEventListener('input', onFilterEvent(false), true);
+}
+
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
+  registerRareFilterListeners();
   mount(await getSkinsmonkeyMode());
   watchSettings((s) => {
     // Only SkinsMonkey reacts to the per-site mode toggle.

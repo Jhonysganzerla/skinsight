@@ -67,13 +67,23 @@ interface FakeEl {
 const scroll = { top: 0 };
 
 function mkEl(tag: string, doc: { createElement: (t: string) => FakeEl }): FakeEl {
-  const el: FakeEl = {
+  let _innerHTML = '';
+  const el = {
     tagName: tag,
     className: '',
-    style: {},
-    innerHTML: '',
-    children: [],
-    appendChild(c) {
+    style: {} as Record<string, string>,
+    children: [] as FakeEl[],
+    // Setting innerHTML clears existing children, like the real DOM — so a
+    // re-mount (container.innerHTML = prefix; appendChild(newList)) replaces
+    // the old subtree instead of stacking a second one.
+    get innerHTML(): string {
+      return _innerHTML;
+    },
+    set innerHTML(v: string) {
+      _innerHTML = v;
+      this.children = [];
+    },
+    appendChild(c: FakeEl) {
       this.children.push(c);
     },
     getBoundingClientRect() {
@@ -82,7 +92,7 @@ function mkEl(tag: string, doc: { createElement: (t: string) => FakeEl }): FakeE
     },
     ownerDocument: doc,
   };
-  return el;
+  return el as unknown as FakeEl;
 }
 
 interface FakeScrollRoot extends FakeEl {
@@ -153,14 +163,18 @@ describe('renderVirtualList (fake DOM)', () => {
     const container = mkEl('div', doc);
     const scrollRoot = mkScrollRoot(doc);
     const items = Array.from({ length: total }, (_, i) => i);
-    const handle = renderVirtualList({
+    const handle = mountInto(container, scrollRoot, items);
+    return { container, scrollRoot, handle };
+  }
+
+  function mountInto(container: FakeEl, scrollRoot: FakeScrollRoot, items: number[]) {
+    return renderVirtualList({
       scrollRoot: scrollRoot as unknown as HTMLElement,
       container: container as unknown as HTMLElement,
       items,
       render: (n) => `<i data-i="${n}"></i>`,
       prefixHtml: '<header></header>',
     });
-    return { container, scrollRoot, handle };
   }
 
   it('mounts only a bounded window for a 6000-item set', () => {
@@ -179,6 +193,28 @@ describe('renderVirtualList (fake DOM)', () => {
     expect(html).toContain('data-i="100"');
     expect(html).not.toContain('data-i="0"');
     expect(countMarkers(html)).toBeLessThanOrEqual(30);
+  });
+
+  it('re-mounting with a reordered list shows the new order at the top', () => {
+    // This is exactly what PS applyAndRender does on a Sort change: destroy the
+    // old handle, then renderVirtualList again with the re-sorted array into the
+    // SAME container at scrollTop 0.
+    const doc = { createElement: (t: string) => mkEl(t, doc) };
+    const container = mkEl('div', doc);
+    const scrollRoot = mkScrollRoot(doc);
+
+    const asc = Array.from({ length: 6000 }, (_, i) => i); // 0,1,2,…
+    const h1 = mountInto(container, scrollRoot, asc);
+    expect(findWindowHtml(container)).toContain('data-i="0"');
+
+    h1.destroy();
+    scroll.top = 0;
+    const desc = [...asc].reverse(); // 5999,5998,…  (a different "sort")
+    mountInto(container, scrollRoot, desc);
+
+    const html = findWindowHtml(container);
+    expect(html).toContain('data-i="5999"');
+    expect(html).not.toContain('data-i="0"');
   });
 
   it('destroy() detaches the scroll listener', () => {
