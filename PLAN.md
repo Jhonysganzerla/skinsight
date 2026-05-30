@@ -468,9 +468,11 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 
 ---
 
-## v0.4.1 — Bug fixes pós-smoke + perf + repo público (READY FOR SMOKE)
+## v0.4.1 — Bug fixes pós-smoke + perf + repo público + remote-rares (✅ SMOKE OK · tag `v0.4.1`)
 
-**Status:** ✅ **Todos os itens entregues — pronto para smoke do Jhony + tag `v0.4.1`.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓ entregue; Issue 3 (GitHub remote) ✓ completo. T2 (regenerador `rare_stickers.json` via deep scan CS.Money, `6856aa6`) e T3 (drop `itemWithSticker`, `f370b9e`) fechados. Gates locais verdes (typecheck/lint/prettier/77 tests/build/pack). Tag `v0.4.1` será criada pelo Jhony após smoke.
+**Status:** ✅ **Smoke do Jhony passou nos 3 sites (PS + CS.Money + SkinsMonkey) + Arbitrage (CSFloat). Tag `v0.4.1` criada.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓; Issue 3 (GitHub remote) ✓. Pós-smoke veio uma rodada grande (ver "checkpoint final" no fim deste arquivo): pipeline remote-rares + gerador Python + piso $1.00 + filtros reativos em todos os sites + correções de scan do PirateSwap (throttle/DESC/hang). Gates verdes (typecheck/lint/85 tests/build/pack).
+
+> ⚠️ Notas abaixo (B1–T4) preservam o estado *pré*-smoke para histórico. Alguns números ficaram desatualizados (ex.: piso $0.50 → **$1.00**; `itemWithSticker` foi **restaurado** depois; yields de match agora são **por tempo**, não por contagem). O estado autoritativo é o **checkpoint final** no fim do arquivo.
 
 ### Commits desde `v0.4.0` (10)
 
@@ -616,3 +618,40 @@ Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 
 - Ícones SVG profissionais (não placeholder) — v0.7 polish.
 - Source SVG do ícone hoje é simples (1.1 KB); pode ser refinado por designer no v0.7.
+
+---
+
+## v0.4.1 — checkpoint final (pós-smoke · estado autoritativo)
+
+Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbitrage (CSFloat). Depois do smoke veio uma rodada de trabalho que não estava no plano original:
+
+### Pipeline remote-rares (lista pública + atualizador privado)
+
+- **`src/modules/rare/remote.ts`** (novo): SW busca a lista publicada em `raw.githubusercontent.com/Jhonysganzerla/skinsight/main/public/rare_stickers.json`, valida com `isValidRareList`, cacheia em `chrome.storage.local` com TTL 24h. `rare-data.ts` prefere o cache e cai no bundled se ausente/inválido — fallback nunca quebra o scanner. `host_permissions` escopado só à raw URL (nunca `<all_urls>`).
+- **Popup**: seção de status da lista (contagem + idade) + botão de refresh manual (`force:true`).
+- **Mensagens**: `rares:refresh` / `rares:status` no SW. Scan-start dispara `rares:refresh` fire-and-forget (TTL-gated).
+
+### Gerador Python (PRIVADO — pasta `tools/`, gitignored)
+
+- **`tools/update_rare_stickers.py`**: scrapeia `cs.money/5.0/load_bots_inventory/730?hasRareStickers=true`, agrega por nome (`min_price`), e faz **merge aditivo** na lista pública. Invariantes: (1) **distinct** por nome, (2) **nunca deleta** (raro não deixa de ser raro), (3) só adiciona nomes novos acima do piso. CS.Money está atrás de Cloudflare+sessão, então o script replica um request copiado do DevTools (`tools/csmoney_fetch.txt`, também gitignored — contém cookies). Passo a passo em `tools/README.md`.
+- **Última execução**: 20.148 items → lista **1.313 → 3.248** raros.
+
+### Piso de raridade $0.50 → **$1.00**
+
+- `RARE_THRESHOLD_USD = 1.0` em `csmoney.ts`. Aplica só a **entradas novas** na geração; o runtime (`finder`) casa por **pertencimento de nome** (`lookup`), sem re-aplicar piso — entradas antigas <$1 ("grandfathered") seguem válidas.
+
+### Filtros reativos em TODOS os sites
+
+- Bug era site-wide: CS.Money e SkinsMonkey só aplicavam filtro no Scan, não na mudança pós-scan. Corrigido com listeners de captura no `document` escopados ao overlay (selects instantâneo, inputs debounce 250ms). PirateSwap já tinha.
+
+### PirateSwap — scan robusto (3 fixes encadeados)
+
+1. **Throttle silencioso**: PS responde HTTP 200 + `{items:[]}` (sem 429) quando paginado rápido. O scan parava na 1ª página vazia → morria na ponta barata. Agora encerra **só** em `empty:true` (ou erro HTTP); página vazia-sem-flag = throttle → backoff exponencial + retry, com bail de segurança.
+2. **DESC**: varre do mais caro primeiro — os stickers valiosos entram nas primeiras páginas, dentro do orçamento pré-throttle (~60 págs).
+3. **Hang de ~1h no "Matching"**: `findRareResults` cedia main-thread a cada 100 items (~50 `setTimeout(0)`); aba em background estrangula `setTimeout` p/ ~1/min → ~50min travado. Agora yield é **por tempo** (≥50ms de CPU), 0–3 pausas. `runScan` blindado com try/catch/finally (nunca mais fica preso em "Matching").
+
+### Build não clobbera mais a lista
+
+- `scripts/build-rare-data.mjs` (rodado no `prebuild`) regenerava `public/rare_stickers.json` da fonte legada (1.313), revertendo a lista do Python a cada build/pack. Agora faz no-op quando já existe lista válida (gerador Python é o dono); só regenera em checkout frio.
+
+### Gates: typecheck/lint/**85 tests**/build/pack verdes. `main` no remoto, working tree limpo, `tools/` privado.
