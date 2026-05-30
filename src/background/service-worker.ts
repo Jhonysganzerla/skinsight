@@ -27,6 +27,7 @@ import {
 } from '../modules/shared/storage';
 import { csfloatBucket } from '../modules/shared/throttle';
 import { getRareRemoteCache, refreshRareRemote } from '../modules/rare/remote';
+import { getSteamPrice, steamQuota } from '../modules/oracles/steam';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
 
@@ -121,6 +122,17 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
         ok: true,
         data: c ? { count: c.data.length, fetchedAt: c.fetchedAt } : null,
       };
+    }
+
+    case 'steam:price': {
+      // On-demand Steam Market price for one item. Fetch runs here (CORS needs
+      // a background origin), gated by the 15/min bucket inside getSteamPrice.
+      const p = await getSteamPrice(msg.marketHashName);
+      return { ok: p !== null, data: p };
+    }
+
+    case 'steam:quota': {
+      return { ok: true, data: steamQuota() };
     }
 
     case 'hit:record': {

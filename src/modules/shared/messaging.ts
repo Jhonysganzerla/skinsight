@@ -27,7 +27,12 @@ export type Message =
   //                                        false from scan-start = TTL-gated)
   //   popup         → SW: rares:status   (read cached count + fetchedAt)
   | { type: 'rares:refresh'; force?: boolean }
-  | { type: 'rares:status' };
+  | { type: 'rares:status' }
+  // Steam Market per-item oracle (v0.5):
+  //   any tab → SW: steam:price  (on-demand price for one market_hash_name)
+  //   any tab → SW: steam:quota  (token-bucket usage for the UI indicator)
+  | { type: 'steam:price'; marketHashName: string }
+  | { type: 'steam:quota' };
 
 /** Subset of AnalysisRow we hand back to the SW for the "Today's hits" feed. */
 export interface HitRow {

@@ -102,3 +102,12 @@ export class TokenBucket {
 export function csfloatBucket(): TokenBucket {
   return new TokenBucket({ refillPerMs: 45 / 60_000, capacity: 10 });
 }
+
+/**
+ * Steam Community Market bucket: 15 req/min, no burst beyond the minute's
+ * allotment. Steam rate-limits ~20 req/min/IP and bans on abuse (briefing
+ * §9 DON'T #4), so capacity == the per-minute budget keeps us well under.
+ */
+export function steamBucket(): TokenBucket {
+  return new TokenBucket({ refillPerMs: 15 / 60_000, capacity: 15 });
+}

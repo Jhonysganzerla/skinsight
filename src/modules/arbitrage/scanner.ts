@@ -10,6 +10,8 @@
 import { sleep } from '../shared/fmt';
 import type { ArbitrageItem, ExportPayload } from './types';
 import { getDefIndex } from './csf-url';
+import { send } from '../shared/messaging';
+import { getSteamPriceCached, primeSteamMirror, type SteamPrice } from '../oracles/steam';
 
 /* ── Raw shapes returned by SkinsMonkey /api/inventory ───────────────── */
 interface RawSticker {
@@ -247,39 +249,30 @@ function charmPatMatches(
   return f.ranges.some((r) => seed >= r.min && seed <= r.max);
 }
 
-/* ── Steam Market accessory pricing (queued ~1.1s) ───────────────────── */
-const _steamCache: Record<string, number | null> = {};
-let _steamQueue: Promise<unknown> = Promise.resolve();
+/* ── Steam Market accessory pricing (via SW oracle, v0.5) ────────────── */
+// Migrated off the old inline content-script fetch queue: the request now runs
+// in the service worker (oracles/steam.ts) behind a shared 15/min token bucket
+// with 429 backoff. The public surface is unchanged — USD cents (number|null) —
+// so score.ts / buildExportPayload stay untouched (Regra crítica #1). The
+// Arbitrage value remains `median ?? lowest`, matching the old behavior
+// (`median_price || lowest_price`); the per-card UI (T3) shows lowest instead.
 
-export function steamPrice(marketHashName: string): Promise<number | null> {
-  if (Object.prototype.hasOwnProperty.call(_steamCache, marketHashName)) {
-    return Promise.resolve(_steamCache[marketHashName]!);
-  }
-  _steamQueue = _steamQueue.then(
-    () =>
-      new Promise<void>((resolve) => {
-        setTimeout(
-          async () => {
-            try {
-              const url =
-                'https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=' +
-                encodeURIComponent(marketHashName);
-              const r = await fetch(url, { mode: 'cors', credentials: 'omit' });
-              if (!r.ok) throw new Error('HTTP ' + r.status);
-              const d = (await r.json()) as { median_price?: string; lowest_price?: string };
-              const raw = d.median_price || d.lowest_price || '0';
-              const cents = Math.round(parseFloat(raw.replace(/[^0-9.]/g, '')) * 100);
-              _steamCache[marketHashName] = isNaN(cents) ? null : cents;
-            } catch {
-              _steamCache[marketHashName] = null;
-            }
-            resolve();
-          },
-          1000 + Math.random() * 200,
-        );
-      }),
-  );
-  return _steamQueue.then(() => _steamCache[marketHashName] ?? null);
+/** Reduce a SteamPrice to the single USD-cents number the Arbitrage uses. */
+function arbCents(p: SteamPrice | null): number | null {
+  return p ? (p.medianCents ?? p.lowestCents) : null;
+}
+
+/**
+ * Resolve one Steam price via the SW oracle and prime the local mirror so the
+ * synchronous `getSteamPrice()` below can read it during `buildExportPayload`.
+ */
+export async function steamPrice(marketHashName: string): Promise<number | null> {
+  const cached = getSteamPriceCached(marketHashName);
+  if (cached) return arbCents(cached);
+  const r = await send({ type: 'steam:price', marketHashName });
+  const p = (r.data as SteamPrice | null) ?? null;
+  primeSteamMirror(marketHashName, p);
+  return arbCents(p);
 }
 
 export async function fetchAccessoryPrices(
@@ -306,8 +299,13 @@ export async function fetchAccessoryPrices(
   }
 }
 
+/**
+ * Synchronous USD-cents read for `buildExportPayload`. The mirror MUST be warm
+ * — `fetchAccessoryPrices` awaits every name through the SW first, so by the
+ * time the payload is built every accessory is in the mirror (or null).
+ */
 export function getSteamPrice(name: string): number | null {
-  return _steamCache[name] ?? null;
+  return arbCents(getSteamPriceCached(name));
 }
 
 /* ── Build clipboard-replacement payload ─────────────────────────────── */
