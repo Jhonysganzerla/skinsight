@@ -766,3 +766,53 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 **Custo: M** (interceptor ~80 linhas, listener ~120, allowlist+wiring por site, manifest, testes de plumbing — filtro de URL, idempotência, dispatch/parse do evento). Risco concentrado em **`world:MAIN` + CSP + cross-browser (Firefox)** → exige smoke por site.
 
 **Recomendação:** viável e de alto valor como **complemento** ao scan ativo, especialmente dado o throttle de CS.Money/PirateSwap. Antes de comprometer os 4 sites, fazer um **proof-of-concept fino em UM site (CS.Money — o mais castigado por throttle)** pra validar `world:MAIN`+CSP na prática; se passar, estender. Decisão de prosseguir é do Jhony (aprovação separada).
+
+---
+
+## v0.6 — Skinport oracle (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
+
+> **Status: detalhamento para aprovação (briefing §12).** Implementar T1–T4 só após o "ok" do Jhony. Prep de publicação fica para v1.0 (fora do escopo do v0.6).
+
+**Objetivo:** oráculo local de preço de mercado da Skinport. Um fetch em massa de `api.skinport.com/v1/items` (cacheado 5min), indexado por `market_hash_name`, exibido como **coluna Skinport (USD)** no card — referência cruzada de valor de mercado para os 4 sites. Espelha o padrão remote-rares (`remote.ts`) + Steam oracle (`oracles/steam.ts`): fetch no SW, cache no storage, content script lê o cache.
+
+### Pontos NÃO-NEGOCIÁVEIS (do briefing + esta aprovação)
+1. **Cache hard 5min** em `chrome.storage.local`. **Checa TTL ANTES de qualquer fetch.** Nunca chamar `api.skinport.com` fora desse intervalo (briefing §9 DON'T #5). A TTL É o rate-limit (não precisa token-bucket).
+2. **`Accept-Encoding: br`** no request. ⚠️ Nota técnica: `Accept-Encoding` é *forbidden header* no `fetch()` — o browser controla e já manda `br` por padrão na negociação. Então a exigência é satisfeita implicitamente; não dá pra setá-lo manualmente (seria ignorado). Se a Skinport rejeitar mesmo assim, é achado a tratar (não bloqueia o design).
+3. **Fetch no service worker** (CORS exige origem de background).
+4. **Index local por `market_hash_name` → `{ min_price, mean_price, max_price }`** (USD cents).
+5. **Re-fetch lazy:** só quando o cache expira **E** o usuário aciona um scan. Nunca em background/automático.
+6. **Coluna Skinport no card, em USD explícito** (nunca BRL).
+7. **`host_permission api.skinport.com` já existe** — não alargar. Sem `<all_urls>`.
+
+### T1 — `src/modules/oracles/skinport.ts` (novo)
+- `export interface SkinportPrice { minCents: number; meanCents: number; maxCents: number; }`
+- **SW-side:** `refreshSkinportIndex(force = false): Promise<{ ok; count?; fetchedAt?; cached?; error? }>` — **checa TTL primeiro**; se `Date.now() - fetchedAt < 5min` e não `force` → retorna `{ ok, cached:true }` SEM fetch. Senão: `fetch('https://api.skinport.com/v1/items?app_id=730&currency=USD')` → parse `{ market_hash_name, min_price, mean_price, max_price }[]` → indexa `Record<mhn, [min,mean,max]>` (cents) → cacheia `{ fetchedAt, index }` em `chrome.storage.local` (chave `skinport_index`). Nunca lança.
+- **Content-side:** `loadSkinportIndex(): Promise<void>` (lê o storage → `Map` em memória) + `getSkinportPrice(mhn): SkinportPrice | null` (lookup síncrono no Map). Mesmo padrão de `rare-data.ts` (SW escreve, content lê).
+- `SKINPORT_TTL_MS = 5*60*1000`.
+
+### T2 — Service worker + mensageria
+- `shared/messaging.ts`: `| { type: 'skinport:refresh'; force?: boolean }` (+ opcional `skinport:status`).
+- `service-worker.ts`: case `skinport:refresh` → `refreshSkinportIndex(msg.force)` → retorna meta. O fetch real roda aqui (CORS).
+- **Fluxo lazy:** no scan-start de cada site, o content script faz `await send({ type:'skinport:refresh' })` (TTL-gated → instantâneo se fresco, fetch só se expirado), depois `await loadSkinportIndex()`, e aí renderiza com a coluna populada.
+
+### T3 — UI da coluna Skinport
+- `shared/ui.ts`: `renderSkinportCell(mhn, price | null)` (espelha `renderSteamCell`) — `Skinport $X.XX USD` com **min como número primário**; mean/max no tooltip. `skinportHtml?` em `ItemCardProps`, renderizado na coluna de ação.
+- Wire em `rare/render.ts` (rare + csmoney cards) e `content/csfloat.ts` (arb), lendo `getSkinportPrice(mhn)`. Funciona offline-after-load (lookup síncrono), sobrevive à virtualização (re-deriva do índice).
+- Sem botão por-card (diferente do Steam): a coluna popula sozinha após o `loadSkinportIndex` do scan, já que o índice é em massa.
+
+### T4 — Testes (`tests/modules/oracles.skinport.test.ts`)
+- TTL: **não faz fetch** quando cache < 5min (o ponto crítico do §9 DON'T #5); faz quando expira ou `force`.
+- Parse: array da Skinport → index `{minCents,meanCents,maxCents}`.
+- Lookup síncrono por `market_hash_name`.
+- Nunca lança (erro de rede → `{ ok:false }`, índice antigo preservado).
+
+### Exit criteria
+- Coluna Skinport (USD) aparece nos cards cujo item está no índice.
+- **Nunca** chama `api.skinport.com` mais de 1×/5min (teste prova: cache fresco → zero fetch).
+- Fetch no SW, sem erro de CORS. Sem alargar `host_permissions`, sem `<all_urls>`.
+- Gates verdes (lint + typecheck + test + build). Conventional Commits.
+
+### Arquivos (estimativa)
+`src/modules/oracles/skinport.ts` (novo), `shared/messaging.ts` (+1-2 tipos), `background/service-worker.ts` (+1 case), `shared/ui.ts` (+`renderSkinportCell` + `skinportHtml`), `modules/rare/render.ts` (wire), `content/{csfloat,pirateswap,skinsmonkey,csmoney}.ts` (refresh+load no scan-start + célula), `tests/modules/oracles.skinport.test.ts` (novo). **Custo: M.**
+
+> **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T1–T4.
