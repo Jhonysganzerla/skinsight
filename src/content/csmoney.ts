@@ -29,7 +29,6 @@ const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
 
 const FILTERS: FilterField[] = [
-  { id: 'pages', label: 'Pages', type: 'number', value: '6' },
   { id: 'delayMs', label: 'Delay (ms)', type: 'number', value: '900' },
   {
     id: 'sort',
@@ -59,8 +58,11 @@ interface State {
 
 const FILTER_DEBOUNCE_MS = 250;
 
-/** Safety cap for the regenerate deep scan (collector stops earlier on empty). */
-const REGEN_MAX_PAGES = 250;
+/** Safety cap for any deep scan (regenerate + normal scan). The collector stops
+ *  earlier on empty/short page; this only guards a runaway response. The old
+ *  user-facing "Pages" cap was removed — the scan now walks to inventory end. */
+const SCAN_SAFETY_CAP_PAGES = 250;
+const REGEN_MAX_PAGES = SCAN_SAFETY_CAP_PAGES;
 const REGEN_DELAY_MS = 900;
 
 let overlay: OverlayHandle | null = null;
@@ -155,15 +157,16 @@ async function runScan(): Promise<void> {
   // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
   void send({ type: 'rares:refresh', force: false });
   const filters = readFilterValues(overlay.body);
-  const pages = Math.max(1, Math.min(50, parseInt(filters['pages'] ?? '6', 10) || 6));
   const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
   const sortKey = filters['sort'] ?? 'net_desc';
 
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
   setStatus('Collecting CS.Money inventory…', 'info');
 
+  // No page cap — walk to inventory end (collector breaks on empty/short page),
+  // guarded only by SCAN_SAFETY_CAP_PAGES against a runaway response.
   const collected = await collectCsMoney({
-    maxPages: pages,
+    maxPages: SCAN_SAFETY_CAP_PAGES,
     delayMs,
     signal: state.aborted,
     onStatus: (msg) => {

@@ -80,7 +80,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       if (opts.signal?.aborted) break;
       const offset = page * LIMIT;
       const url = `${ENDPOINT}?${qs({ ...BASE, limit: String(LIMIT), offset: String(offset) })}`;
-      opts.onStatus?.(`Collecting page ${page + 1}/${opts.maxPages}…`);
+      opts.onStatus?.(`Collecting page ${page + 1} (${out.length} items)…`);
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = (await res.json()) as CsmResp;
