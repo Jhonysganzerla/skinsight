@@ -660,7 +660,7 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 
 ## v0.5 — Steam Market per-item oracle (PLANEJADO · aguardando aprovação)
 
-> **Status: APROVADO pelo Jhony (com 3 ajustes obrigatórios abaixo). Em implementação.**
+> **Status: T2 + T3 ENTREGUES (gates verdes, 95 tests). Aguardando smoke do Jhony no navegador.** T2 = `d73bc2b` (oracle no SW + migração do scanner). T3 = `3f27083` (botão por card + cota). Os 3 ajustes obrigatórios estão dentro.**
 >
 > **Ajustes obrigatórios da aprovação:**
 > 1. **Contrato síncrono do Arbitrage:** o cache em memória espelhado DEVE estar hidratado **antes** do `buildExportPayload`. Resolvido (não fica em aberto): `fetchAccessoryPrices` vira async e **pré-aquece** o mirror pedindo cada preço ao SW (`steam:price`); só depois o `buildExportPayload` lê o mirror síncrono via `getSteamPrice`. Ver T2.
