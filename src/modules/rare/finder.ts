@@ -274,8 +274,16 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
 
 /* ── Match + score ──────────────────────────────────────────────────── */
 
-/** How many items to process per main-thread tick before yielding. */
-const FIND_CHUNK_SIZE = 100;
+/**
+ * Yield to the event loop only after a chunk has actually hogged the main
+ * thread this long (ms). Time-based, NOT count-based: matching is cheap
+ * (~Map lookups), so a fixed "yield every N items" sprinkled ~50 setTimeout(0)
+ * calls across a big scan. Background tabs throttle setTimeout to ~1/min, which
+ * turned those 50 yields into a ~50-minute "stuck on Matching…" hang. Yielding
+ * by elapsed CPU time instead caps real work at ~one frame between repaints and
+ * keeps the yield count to single digits even for a 10k-item inventory.
+ */
+const YIELD_EVERY_MS = 50;
 
 /** Yield control to the event loop so the UI can repaint between chunks. */
 function nextTick(): Promise<void> {
@@ -286,10 +294,11 @@ function nextTick(): Promise<void> {
  * Build the result set. `mapOverride` lets tests inject a deterministic
  * map without going through chrome.runtime.getURL + fetch.
  *
- * v0.4.1: yields to the main thread every `FIND_CHUNK_SIZE` items so a
- * 2000-item PS scan no longer freezes the overlay for ~hundreds of ms.
- * The function is genuinely async now — earlier versions declared async
- * but ran a single synchronous loop.
+ * v0.4.1: yields to the main thread so a big PS scan doesn't freeze the
+ * overlay. The yield is TIME-based (see YIELD_EVERY_MS) — a count-based yield
+ * fired ~50 setTimeout(0)s that a backgrounded tab throttled into a ~50-minute
+ * "stuck on Matching…" hang. The function is genuinely async — earlier versions
+ * declared async but ran a single synchronous loop.
  */
 export async function findRareResults(
   items: RareItem[],
@@ -297,6 +306,7 @@ export async function findRareResults(
 ): Promise<RareResult[]> {
   const map = mapOverride ?? (await getRareMap());
   const out: RareResult[] = [];
+  let lastYield = Date.now();
   for (let i = 0; i < items.length; i++) {
     const it = items[i]!;
     const matches: RareStickerMatch[] = [];
@@ -317,8 +327,11 @@ export async function findRareResults(
       const roi = it.price > 0 ? stickerSum / it.price : 0;
       out.push({ ...it, matches, stickerSum, profit, roi });
     }
-    if ((i + 1) % FIND_CHUNK_SIZE === 0 && i + 1 < items.length) {
+    // Yield only after we've actually held the thread for a frame's worth of
+    // work — keeps the yield count in single digits regardless of item count.
+    if (i + 1 < items.length && Date.now() - lastYield >= YIELD_EVERY_MS) {
       await nextTick();
+      lastYield = Date.now();
     }
   }
   return out;

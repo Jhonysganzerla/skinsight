@@ -249,78 +249,85 @@ async function runScan(): Promise<void> {
   state.running = true;
   state.aborted = { aborted: false };
 
-  // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
-  // only hits the network if the cache is older than 24h, and the freshly
-  // cached list applies on the next page load (this scan uses the loaded map).
-  void send({ type: 'rares:refresh', force: false });
+  try {
+    // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
+    // only hits the network if the cache is older than 24h, and the freshly
+    // cached list applies on the next page load (this scan uses the loaded map).
+    void send({ type: 'rares:refresh', force: false });
 
-  // No progress bar — we don't know the total ahead of time. Indeterminate
-  // status only; the user can Stop at any moment.
-  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Scanning inventory…' });
-  setStatus('Scanning PirateSwap inventory until empty…', 'info');
-  flog('scan: begin');
+    // No progress bar — we don't know the total ahead of time. Indeterminate
+    // status only; the user can Stop at any moment.
+    updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Scanning inventory…' });
+    setStatus('Scanning PirateSwap inventory until empty…', 'info');
+    flog('scan: begin');
 
-  const items = await collectAll({
-    site: 'pirateswap',
-    signal: state.aborted,
-    onProgress: (msg, collected) => {
-      if (!overlay) return;
-      updateScanBar(overlay.body, { info: msg });
-      flog(`scan: ${msg} (collected=${collected})`);
-    },
-  });
-  // Diagnostic for the "0 rare hits" report: how many scanned items actually
-  // carry stickers, and a few example names to eyeball against the rare DB
-  // (whose keys are norm("Sticker | Name (Variant) | Tournament")). If
-  // withStickers=0 the endpoint isn't returning sticker data at all (param /
-  // endpoint issue); if it's >0 but hits stay 0, it's a name-matching issue.
-  const withStickers = items.filter((it) => it.stickers.length > 0).length;
-  const totalStickers = items.reduce((n, it) => n + it.stickers.length, 0);
-  const sampleNames = items
-    .flatMap((it) => it.stickers.map((s) => s.name))
-    .filter(Boolean)
-    .slice(0, 5);
-  flog(
-    `scan: done — ${items.length} items, ${withStickers} with stickers, ` +
-      `${totalStickers} stickers total; samples=${JSON.stringify(sampleNames)}`,
-  );
-
-  if (state.aborted.aborted) {
-    setStatus('Scan stopped.', 'info');
-    finish();
-    return;
-  }
-
-  updateScanBar(overlay.body, {
-    info: `Matching ${items.length} items against rare DB…`,
-  });
-  flog(`match: begin findRareResults over ${items.length} items`);
-  state.results = await findRareResults(items);
-  flog(`match: done — ${state.results.length} hits`);
-
-  if (!overlay) {
-    finish();
-    return;
-  }
-  flog('render: begin initial applyAndRender');
-  applyAndRender();
-  flog('render: initial applyAndRender returned');
-  updateScanBar(overlay.body, {
-    info: `Scan complete — ${state.results.length} hits.`,
-  });
-  setStatus(`Found ${state.results.length} items with rare stickers.`, 'ok');
-
-  const top = applyRareFilter(state.results, currentFilterOpts())[0];
-  if (top) {
-    void send({
-      type: 'hit:record',
+    const items = await collectAll({
       site: 'pirateswap',
-      name: top.name,
-      sub: `${top.matches.length} rare stickers · listed ${formatUsd(top.price)}`,
-      profitUsd: top.profit,
+      signal: state.aborted,
+      onProgress: (msg, collected) => {
+        if (!overlay) return;
+        updateScanBar(overlay.body, { info: msg });
+        flog(`scan: ${msg} (collected=${collected})`);
+      },
     });
+    // Diagnostic for the "0 rare hits" report: how many scanned items actually
+    // carry stickers, and a few example names to eyeball against the rare DB
+    // (whose keys are norm("Sticker | Name (Variant) | Tournament")). If
+    // withStickers=0 the endpoint isn't returning sticker data at all (param /
+    // endpoint issue); if it's >0 but hits stay 0, it's a name-matching issue.
+    const withStickers = items.filter((it) => it.stickers.length > 0).length;
+    const totalStickers = items.reduce((n, it) => n + it.stickers.length, 0);
+    const sampleNames = items
+      .flatMap((it) => it.stickers.map((s) => s.name))
+      .filter(Boolean)
+      .slice(0, 5);
+    flog(
+      `scan: done — ${items.length} items, ${withStickers} with stickers, ` +
+        `${totalStickers} stickers total; samples=${JSON.stringify(sampleNames)}`,
+    );
+
+    if (state.aborted.aborted) {
+      setStatus('Scan stopped.', 'info');
+      return;
+    }
+
+    updateScanBar(overlay.body, {
+      info: `Matching ${items.length} items against rare DB…`,
+    });
+    flog(`match: begin findRareResults over ${items.length} items`);
+    state.results = await findRareResults(items);
+    flog(`match: done — ${state.results.length} hits`);
+
+    if (!overlay) return;
+    flog('render: begin initial applyAndRender');
+    applyAndRender();
+    flog('render: initial applyAndRender returned');
+    updateScanBar(overlay.body, {
+      info: `Scan complete — ${state.results.length} hits.`,
+    });
+    setStatus(`Found ${state.results.length} items with rare stickers.`, 'ok');
+
+    const top = applyRareFilter(state.results, currentFilterOpts())[0];
+    if (top) {
+      void send({
+        type: 'hit:record',
+        site: 'pirateswap',
+        name: top.name,
+        sub: `${top.matches.length} rare stickers · listed ${formatUsd(top.price)}`,
+        profitUsd: top.profit,
+      });
+    }
+  } catch (e) {
+    // Never leave the overlay stuck on "Matching…/Scanning…": surface the error
+    // and let finally clear `running` so the user can rescan.
+    flog(`scan: ERROR ${(e as Error)?.message ?? String(e)}`);
+    if (overlay) {
+      updateScanBar(overlay.body, { info: 'Scan failed.' });
+      setStatus('Scan error: ' + ((e as Error)?.message ?? String(e)), 'err');
+    }
+  } finally {
+    finish();
   }
-  finish();
 }
 
 function formatUsd(n: number): string {

@@ -47,7 +47,7 @@ const RARE_DB = buildMap([
 ]);
 
 describe('rare/finder — chunked main-thread yields (v0.4.1)', () => {
-  it('yields ≥ N/100 times for a 2000-item synthetic input', async () => {
+  it('yields by elapsed time, not item count (few/no yields for fast input)', async () => {
     const items = Array.from({ length: 2000 }, (_, i) => ({
       id: 'I-' + i,
       name: 'Synth ' + i,
@@ -60,10 +60,14 @@ describe('rare/finder — chunked main-thread yields (v0.4.1)', () => {
     }));
     const map = new Map<string, number>();
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
-    await findRareResults(items, map);
-    // 2000 items / 100 chunk = 19 yields (skips the final tick).
+    const out = await findRareResults(items, map);
+    // Time-based yielding: matching 2000 items is microseconds of CPU, far under
+    // YIELD_EVERY_MS, so it yields a handful of times at most — NOT the ~19 the
+    // old count-based scheme forced. Those count-based setTimeout(0)s got
+    // throttled to ~1/min in a backgrounded tab, hanging "Matching…" for ~1h.
     const yieldCalls = setTimeoutSpy.mock.calls.filter((c) => c[1] === 0).length;
-    expect(yieldCalls).toBeGreaterThanOrEqual(19);
+    expect(yieldCalls).toBeLessThanOrEqual(5);
+    expect(out).toEqual([]); // nothing matches the empty map
     setTimeoutSpy.mockRestore();
   });
 
