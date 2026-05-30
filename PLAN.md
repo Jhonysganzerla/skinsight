@@ -655,3 +655,114 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 - `scripts/build-rare-data.mjs` (rodado no `prebuild`) regenerava `public/rare_stickers.json` da fonte legada (1.313), revertendo a lista do Python a cada build/pack. Agora faz no-op quando já existe lista válida (gerador Python é o dono); só regenera em checkout frio.
 
 ### Gates: typecheck/lint/**85 tests**/build/pack verdes. `main` no remoto, working tree limpo, `tools/` privado.
+
+---
+
+## v0.5 — Steam Market per-item oracle (PLANEJADO · aguardando aprovação)
+
+> **Status: APROVADO pelo Jhony (com 3 ajustes obrigatórios abaixo). Em implementação.**
+>
+> **Ajustes obrigatórios da aprovação:**
+> 1. **Contrato síncrono do Arbitrage:** o cache em memória espelhado DEVE estar hidratado **antes** do `buildExportPayload`. Resolvido (não fica em aberto): `fetchAccessoryPrices` vira async e **pré-aquece** o mirror pedindo cada preço ao SW (`steam:price`); só depois o `buildExportPayload` lê o mirror síncrono via `getSteamPrice`. Ver T2.
+> 2. **Cache guarda `median_price` E `lowest_price` E `volume`.** Card exibe **`lowest_price`** como número primário.
+> 3. **Preço rotulado explicitamente como USD** (currency=1). Nunca misturar com display BRL.
+
+**Objetivo:** botão **"Show Steam price"** por card que busca o preço do item na Steam Community Market **on-demand** (1 item por clique), com o fetch movido pro service worker sob rate-limit guard. NÃO é scan massivo (briefing §9 DON'T #4 — Steam limita ~20 req/min/IP e mata a conta/IP em scan).
+
+### Decisões fixas (do briefing + esta rodada)
+- Per-item, on-demand. Nunca varredura.
+- Fetch no **service worker** (CORS exige sair do background, não do content script).
+- Guard: **máx 15 req/min** (margem sob o teto de 20), fila interna, **backoff exponencial em 429**.
+- Cache em `chrome.storage.local`, **TTL 1h** por `market_hash_name`.
+- `host_permission` `steamcommunity.com/market/*` **já existe** — não alargar.
+- Indicador de cota no overlay quando perto do teto ("Steam slow — 14/15 used").
+
+### T2 — `src/modules/oracles/steam.ts` (novo) + roteamento no SW
+
+**Módulo `oracles/steam.ts`:**
+- `export interface SteamPrice { lowestCents: number | null; medianCents: number | null; volume: number | null; currency: 'USD'; fetchedAt: number; }` — guarda **lowest + median + volume** (ajuste #2), moeda fixa **USD** (ajuste #3).
+- `export async function getSteamPrice(marketHashName: string): Promise<SteamPrice | null>` — fluxo: cache-hit (TTL 1h) → retorna; senão enfileira no guard → fetch `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=…` (`currency=1` = USD) → parse `lowest_price`, `median_price`, `volume` (todos) → cacheia → retorna. Nunca lança (retorna `null` em erro).
+- **Mirror síncrono:** `export function getSteamPriceCached(marketHashName: string): SteamPrice | null` lê um `Map` em memória (espelho do `storage`), populado por `getSteamPrice`. É o contrato síncrono que o Arbitrage usa (ajuste #1).
+- `export function steamQuota(): { used: number; max: number; windowMs: number }` — pro indicador de UI.
+- **Rate-limit guard:** sliding window 15/60s. Reaproveitar o padrão de token-bucket que já existe em `src/modules/shared/throttle.ts` (hoje `csfloatBucket`); adicionar `steamBucket()` (15 tokens / 60s) lá, em vez de inventar outro mecanismo. Backoff: em 429, pausa o bucket por `min(30s · 2^n, 5min)`.
+- **Cache:** chave `steam_price:<market_hash_name>` em `chrome.storage.local`, valor `{ lowestCents, medianCents, volume, currency:'USD', fetchedAt }`. GC oportunista (descarta entradas > TTL na leitura). O mirror em memória é hidratado na leitura do storage e em cada fetch.
+
+**Service worker (`service-worker.ts`):**
+- Novo case `steam:price` → `getSteamPrice(msg.marketHashName)` → `{ ok, data: SteamPrice | null }`.
+- Novo case `steam:quota` → `{ ok, data: steamQuota() }`.
+- O fetch real roda aqui (background) por causa de CORS.
+
+**Mensageria (`shared/messaging.ts`):**
+```
+| { type: 'steam:price'; marketHashName: string }
+| { type: 'steam:quota' }
+```
+
+**Aposentar a `steamPrice()` inline do `scanner.ts`:**
+- Hoje `scanner.ts` tem `steamPrice()` (fila ~1.1s no content script) + `getSteamPrice()` sync + `fetchAccessoryPrices()`, usados pelo Arbitrage (sticker/charm pricing no `buildExportPayload`/`score.ts`).
+- Redirecionar para o módulo novo **sem quebrar o Arbitrage**: a fila inline some; o Arbitrage passa a pedir preço via o mesmo guard do SW. **Regra crítica #1: NÃO mexer no algoritmo de score** — só na origem do número (`steamPrice`/`getSteamPrice`). `score.ts` permanece intocado.
+- **Migração (ajuste #1 — decidido, não fica em aberto):** `buildExportPayload` lê `getSteamPriceCached` (síncrono). Para garantir o mirror hidratado **antes** do build, `fetchAccessoryPrices` vira **async** e pré-aquece: para cada `market_hash_name` único, faz `await send({ type:'steam:price', marketHashName })` (respeitando o guard do SW), o que popula o mirror. Só **depois** desse `await` o `buildExportPayload` roda e lê o mirror síncrono. O `score.ts` permanece intocado (Regra crítica #1) — só muda a origem do número.
+
+**Testes (`tests/modules/oracles.steam.test.ts`):** mock `fetch` — valida (1) cache evita re-fetch dentro de 1h; (2) 15 cliques rápidos = 15 fetches e o 16º enfileira (não dispara já); (3) 429 → backoff, UI não trava; (4) parse de `median_price`/`lowest_price`/ausência.
+
+### T3 — UI do botão "Show Steam price" por card
+- Estado por card: `idle → loading → loaded → error`. Estilo via `tokens.css`/mockup (mesmo padrão dos chips/cards existentes).
+- **Loaded exibe `lowest_price` como número primário (ajuste #2), rotulado USD explicitamente (ajuste #3):** ex. `Steam $12.34 USD` (lowest). Median + volume como secundário/tooltip (ex. `med $13.10 · vol 42`). Nunca exibir como R$/BRL.
+- Funciona em **Arbitrage e Rare** cards (componente compartilhado em `shared/ui.ts`).
+- Indicador de cota perto do teto no overlay ("Steam slow — N/15 used"), lido via `steam:quota`.
+- Click → `send({ type:'steam:price', marketHashName })` → atualiza o card. Re-click dentro de 1h = cache (instantâneo).
+
+### Exit criteria v0.5
+- Click busca preço Steam e mostra; cache evita re-fetch em 1h; 429 não trava UI; 15 cliques rápidos respeitam o guard (15 fetches + enfileira).
+- Gates verdes no CI (lint + typecheck + test + build).
+- Sem `<all_urls>`, sem `clipboardRead/Write`, sem alargar `host_permissions`. Conventional Commits.
+
+### Arquivos tocados (estimativa)
+`src/modules/oracles/steam.ts` (novo), `shared/throttle.ts` (+`steamBucket`), `shared/messaging.ts` (+2 types), `background/service-worker.ts` (+2 cases), `modules/arbitrage/scanner.ts` (redireciona steamPrice), `shared/ui.ts` (botão+estado), os 2 renderers de card (Arb/Rare), `tests/modules/oracles.steam.test.ts` (novo). **Custo: M.**
+
+---
+
+## Spike: interceptação passiva de tráfego (Fase A — read-only · SEM CÓDIGO)
+
+> **Entregável de diagnóstico. NENHUM arquivo de código novo nesta rodada.** Implementação só após aprovação separada.
+>
+> **Licença:** a TÉCNICA foi estudada a partir da extensão BetterFloat (open source sob **CC BY-NC-SA 4.0** — ShareAlike viral, **incompatível** com nossa PolyForm Noncommercial). Padrão/ideia não é protegido; expressão específica é. **Nada do código deles foi lido/copiado para cá**; a proposta abaixo é arquitetura limpa nossa. Se na implementação algo começar a espelhar estrutura de arquivo ou nomes deles, **parar**.
+
+### A técnica (genérica)
+Injetar, no **MAIN world** da página e **antes** do site fazer suas chamadas, um script que faz monkey-patch de `window.fetch` e `XMLHttpRequest.prototype.open/send`. Cada resposta JSON de URLs de interesse é re-emitida como `CustomEvent` no `document` (ex.: `skinsight:net` com `{ url, json }`). O content script (isolated world) só **escuta** — nunca faz request extra. Resultado: enquanto o usuário navega normalmente, capturamos os dados que o **próprio site já buscou**, com **zero requests adicionais** e **zero risco de throttle/ban**.
+
+### Endpoints que cada site já chama em navegação normal (do nosso HAR/scanner atual)
+| Site | Endpoint que o site chama sozinho | O que carrega |
+| --- | --- | --- |
+| SkinsMonkey | `skinsmonkey.com/api/inventory?…&withStickers=true` | inventário ao abrir/scrollar o trade |
+| PirateSwap | `web.pirateswap.com/inventory/v2/ExchangerInventory` | inventário do exchanger paginado |
+| CS.Money | `cs.money/5.0/load_bots_inventory/730` | inventário dos bots ao navegar/filtrar |
+| CSFloat | `csfloat.com/api/v1/listings?market_hash_name=…` | listings na busca |
+
+Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou seja, os **normalizadores existentes** (`normalizePs`, `normalizeSm`, parser CS.Money) **reusam direto**, sem reverter schema novo.
+
+### Veredito por site (vale / não vale)
+- **CS.Money — VALE (alto).** Foi onde o throttle mais doeu. Toda página que o usuário rola = dados grátis sem 429. Passivo **complementa** o scan ativo: o ativo pagina exaustivamente (e leva 429); o passivo enriquece de graça conforme navega.
+- **PirateSwap — VALE (alto).** Mesmo motivo: o throttle silencioso da v0.4.1 limita o scan ativo a ~2.4k items/janela. Captura passiva enquanto o usuário navega contorna isso sem custo.
+- **SkinsMonkey — VALE (médio).** Inventário grande; passivo reduz nossa necessidade de marteler `/api/inventory`. Útil no modo Rare.
+- **CSFloat — NÃO VALE (agora).** Já é o "oráculo" do fluxo Arbitrage via hand-off; listings passivos teriam valor marginal. Reavaliar se virarmos a precificação CSFloat passiva.
+
+**Posicionamento vs. scanner atual:** passivo = **oportunístico e parcial** (só o que o usuário navega); ativo = **exaustivo e sob demanda** (paginação completa). Proposta: passivo **complementa**, não substitui. Merge por `id` do item (distinct, mesma regra da lista de raros), re-render debounced. O usuário ainda dispara o scan ativo quando quer cobertura total.
+
+### Riscos (e mitigação)
+- **Isolated world (MV3):** o content script padrão NÃO enxerga o `window.fetch` da página. Precisa de um content script com **`world: "MAIN"`** (Chrome 111+) **ou** injeção de `<script src=WAR>` no `document_start`. → Preferir `world:"MAIN"` (injetado pelo browser, **não** sujeito ao CSP da página).
+- **CSP dos sites:** a abordagem de injetar `<script>` na página pode ser bloqueada por `script-src` estrito (CS.Money/CSFloat são SPAs com CSP). `world:"MAIN"` evita isso. → Para o build **Firefox** (suporte a `world:MAIN` mais novo/limitado), manter **fallback** via injeção de WAR script (nossos `assets/*.js` já estão em `web_accessible_resources` pros 4 hosts).
+- **Ordem de carga:** tem que patchar **antes** do site chamar → `run_at: "document_start"` no script MAIN.
+- **Idempotência:** flag-guard em `window` (ex.: `if (window.__skinsight_net) return;`) pra não duplicar o patch em re-injeção/SPA navigation.
+- **Schema drift:** se o site mudar o shape, o normalizador quebra — mas é o mesmo risco que o scanner ativo já corre hoje; reuso = uma fonte só de verdade.
+- **Privacidade/policy:** só LEMOS respostas que o site já buscou pra si; **zero rede nova, zero permissão nova, sem `<all_urls>`**. Alinhado à nossa postura. Se for a produção, documentar em `PRIVACY.md`.
+
+### Esboço de arquitetura limpa (nossa, sob PolyForm — NÃO implementar ainda)
+- `src/content/passive/interceptor.ts` (**MAIN world**, document_start): patch idempotente de fetch+XHR, filtra por allowlist de URL por site, `dispatchEvent(new CustomEvent('skinsight:net', { detail }))`. **Zero lógica de app** — só captura e re-emite.
+- `src/content/passive/listener.ts` (isolated, importado por cada content script existente): `addEventListener('skinsight:net')`, roteia por URL → normalizador existente → merge distinct no result set → re-render debounced.
+- `manifest.config.ts`: 2ª entrada `content_scripts` por site com `world:"MAIN"`, `run_at:"document_start"`, `js:[interceptor]`. Os scripts isolados atuais ficam como estão.
+
+### Custo + recomendação
+**Custo: M** (interceptor ~80 linhas, listener ~120, allowlist+wiring por site, manifest, testes de plumbing — filtro de URL, idempotência, dispatch/parse do evento). Risco concentrado em **`world:MAIN` + CSP + cross-browser (Firefox)** → exige smoke por site.
+
+**Recomendação:** viável e de alto valor como **complemento** ao scan ativo, especialmente dado o throttle de CS.Money/PirateSwap. Antes de comprometer os 4 sites, fazer um **proof-of-concept fino em UM site (CS.Money — o mais castigado por throttle)** pra validar `world:MAIN`+CSP na prática; se passar, estender. Decisão de prosseguir é do Jhony (aprovação separada).
