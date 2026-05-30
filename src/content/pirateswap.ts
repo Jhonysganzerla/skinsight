@@ -18,6 +18,7 @@ import {
 import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
+import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import type { RareResult } from '../modules/rare/types';
 
@@ -363,6 +364,7 @@ function mount(): void {
     },
   });
   overlay.body.innerHTML = bodyHtml();
+  wireSteamButtons(overlay.body);
   setStatus('Ready.', 'info');
 
   overlay.body.addEventListener('click', (e) => {

@@ -10,11 +10,14 @@ import {
   renderItemCard,
   renderResultsHeader,
   renderScanBar,
+  renderSteamCell,
   updateScanBar,
   variantByProfitPct,
   type ItemCardProps,
   type MetaChip,
 } from '../modules/shared/ui';
+import { getSteamPriceCached } from '../modules/oracles/steam';
+import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import {
   hitRowFromAnalysisRow,
   onMessage,
@@ -102,6 +105,10 @@ function itemCardForRow(row: AnalysisRow): string {
     variant,
     openUrl,
     openLabel: 'Open CSFloat ↗',
+    steamHtml: renderSteamCell(
+      row.item.marketName,
+      getSteamPriceCached(row.item.marketName),
+    ),
   };
   return renderItemCard(props);
 }
@@ -185,6 +192,7 @@ function mount(): void {
   });
   overlay.body.innerHTML = bodyHtmlIdle();
   wireScanBar();
+  wireSteamButtons(overlay.body);
   setStatus('Ready.', 'info');
 
   // Announce ourselves to the SW so it can forward any pending payload.

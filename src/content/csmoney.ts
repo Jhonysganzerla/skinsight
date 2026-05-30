@@ -20,6 +20,7 @@ import {
 } from '../modules/shared/ui';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
+import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import { esc } from '../modules/shared/fmt';
 import type { CsMoneyItem } from '../modules/rare/types';
@@ -302,6 +303,7 @@ function mount(): void {
     },
   });
   overlay.body.innerHTML = bodyHtml();
+  wireSteamButtons(overlay.body);
   setStatus('Ready.', 'info');
 
   overlay.body.addEventListener('click', (e) => {

@@ -10,6 +10,7 @@
 import {
   renderItemCard,
   renderStickerBreakdown,
+  renderSteamCell,
   variantByRoi,
   type ItemCardProps,
   type MetaChip,
@@ -17,6 +18,7 @@ import {
   type StickerKind,
 } from '../shared/ui';
 import { fmtUsd, shortExterior, stripStickerPrefix } from '../shared/fmt';
+import { getSteamPriceCached } from '../oracles/steam';
 import type { CsMoneyItem, RareResult } from './types';
 
 /**
@@ -69,6 +71,7 @@ export function renderRareCard(r: RareResult): string {
     profitFraction: r.roi - 1, // ROI of 1.5 means +50% over the listing.
     variant: variantByRoi(r.roi),
     extraHtml: renderStickerBreakdown(chips),
+    steamHtml: renderSteamCell(r.marketHashName || r.name, getSteamPriceCached(r.marketHashName || r.name)),
   };
   return renderItemCard(props);
 }
@@ -105,6 +108,7 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     profitFraction: margin,
     variant,
     extraHtml: renderStickerBreakdown(chips),
+    steamHtml: renderSteamCell(it.name, getSteamPriceCached(it.name)),
   };
   return renderItemCard(props);
 }

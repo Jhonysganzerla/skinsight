@@ -141,6 +141,52 @@ export interface ItemCardProps {
   openLabel?: string;
   /** Optional extra block rendered inside the card (e.g. sticker breakdown). */
   extraHtml?: string;
+  /** Optional Steam-price cell (see `renderSteamCell`), shown in the action column. */
+  steamHtml?: string;
+}
+
+/* ───────────────────────────────────────────── Steam price cell ── */
+
+/** Minimal view of a Steam price (structurally matches oracles' SteamPrice). */
+export interface SteamPriceView {
+  lowestCents: number | null;
+  medianCents: number | null;
+  volume: number | null;
+}
+
+/**
+ * Per-card Steam Market price cell (v0.5 T3). Pure HTML — the host script wires
+ * the click via `[data-role=steam-price]` and replaces the wrapper on response.
+ *
+ * `lowest_price` is the PRIMARY number (per approval); median + volume go in the
+ * native tooltip. Price is labelled **USD** explicitly, never BRL. The cell
+ * always re-derives from the (cached) price, so it survives virtual-list
+ * re-mounts — the loaded value lives in the oracle mirror, never in the DOM.
+ */
+export function renderSteamCell(marketHashName: string, p: SteamPriceView | null): string {
+  const wrap = (inner: string): string =>
+    `<div class="sh-steam-cell" data-role="steam-cell" data-mhn="${esc(marketHashName)}">${inner}</div>`;
+  if (!p) {
+    return wrap(
+      `<button class="sh-btn sh-btn-sm" data-role="steam-price" type="button">Steam price</button>`,
+    );
+  }
+  const primaryCents = p.lowestCents ?? p.medianCents;
+  if (primaryCents == null) {
+    return wrap(`<span class="sh-meta-chip sh-pill-mini sh-pill-warn">Steam — no data</span>`);
+  }
+  const bits: string[] = [];
+  if (p.medianCents != null) bits.push('med ' + fmtUsd(p.medianCents / 100));
+  if (p.volume != null) bits.push('vol ' + p.volume);
+  const title = bits.length ? ` title="${esc(bits.join(' · '))}"` : '';
+  return wrap(
+    `<span class="sh-meta-chip sh-pill-mini sh-pill-success"${title}>Steam ${esc(fmtUsd(primaryCents / 100))} USD</span>`,
+  );
+}
+
+/** The transient "loading" inner markup, swapped in on click before the fetch. */
+export function steamCellLoadingHtml(): string {
+  return `<span class="sh-meta-chip">Steam …</span>`;
 }
 
 export function renderItemCard(p: ItemCardProps): string {
@@ -177,6 +223,7 @@ export function renderItemCard(p: ItemCardProps): string {
         <div class="sh-profit-big${profitCls}">${profitText}</div>
         <div class="sh-profit-pct">${pctText}</div>
         ${link}
+        ${p.steamHtml ?? ''}
       </div>
       ${p.extraHtml ?? ''}
     </div>

@@ -29,6 +29,7 @@ import {
 } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
+import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-sm-overlay';
@@ -343,6 +344,7 @@ function mount(mode: 'arbitrage' | 'rare'): void {
     },
   });
   overlay.body.innerHTML = mode === 'arbitrage' ? arbBodyHtml() : rareBodyHtml();
+  wireSteamButtons(overlay.body);
   setStatus('Ready.', 'info');
 
   overlay.body.addEventListener('click', (e) => {
