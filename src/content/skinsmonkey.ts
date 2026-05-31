@@ -30,6 +30,7 @@ import {
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
+import { loadSkinportIndex } from '../modules/oracles/skinport';
 import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-sm-overlay';
@@ -257,6 +258,9 @@ async function runRareScan(): Promise<void> {
   rareState.aborted = { aborted: false };
   // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
   void send({ type: 'rares:refresh', force: false });
+  // Skinport oracle (v0.6): TTL-gated refresh + hydrate index for the column.
+  await send({ type: 'skinport:refresh' });
+  await loadSkinportIndex();
   const filters = readFilterValues(overlay.body);
   const pages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
 

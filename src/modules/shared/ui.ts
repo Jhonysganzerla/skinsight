@@ -143,6 +143,8 @@ export interface ItemCardProps {
   extraHtml?: string;
   /** Optional Steam-price cell (see `renderSteamCell`), shown in the action column. */
   steamHtml?: string;
+  /** Optional Skinport-price cell (see `renderSkinportCell`), in the action column. */
+  skinportHtml?: string;
 }
 
 /* ───────────────────────────────────────────── Steam price cell ── */
@@ -189,6 +191,37 @@ export function steamCellLoadingHtml(): string {
   return `<span class="sh-meta-chip">Steam …</span>`;
 }
 
+/* ──────────────────────────────────────────── Skinport price cell ── */
+
+/** Minimal view of a Skinport price (structurally matches the oracle's). */
+export interface SkinportPriceView {
+  minCents: number | null;
+  meanCents: number | null;
+  maxCents: number | null;
+}
+
+/**
+ * Per-card Skinport market-price cell (v0.6). Pure HTML — populated in bulk
+ * from the cached index (no per-card button). `min_price` is the PRIMARY number
+ * (USD, explicit); mean/max go in the tooltip. A null min renders "no data" —
+ * NEVER $0.00. Re-derived from the index on each render, so it survives
+ * virtual-list re-mounts.
+ */
+export function renderSkinportCell(marketHashName: string, p: SkinportPriceView | null): string {
+  const wrap = (inner: string): string =>
+    `<div class="sh-skinport-cell" data-role="skinport-cell" data-mhn="${esc(marketHashName)}">${inner}</div>`;
+  if (!p || p.minCents == null) {
+    return wrap(`<span class="sh-meta-chip sh-pill-mini sh-pill-warn">Skinport — no data</span>`);
+  }
+  const bits: string[] = [];
+  if (p.meanCents != null) bits.push('mean ' + fmtUsd(p.meanCents / 100));
+  if (p.maxCents != null) bits.push('max ' + fmtUsd(p.maxCents / 100));
+  const title = bits.length ? ` title="${esc(bits.join(' · '))}"` : '';
+  return wrap(
+    `<span class="sh-meta-chip sh-pill-mini"${title}>Skinport ${esc(fmtUsd(p.minCents / 100))} USD</span>`,
+  );
+}
+
 export function renderItemCard(p: ItemCardProps): string {
   const variantCls = p.variant === 'hot' ? ' hot' : p.variant === 'warm' ? ' warm' : '';
   const profitCls = p.variant === 'hot' ? '' : p.variant === 'warm' ? ' warm' : ' neutral';
@@ -224,6 +257,7 @@ export function renderItemCard(p: ItemCardProps): string {
         <div class="sh-profit-pct">${pctText}</div>
         ${link}
         ${p.steamHtml ?? ''}
+        ${p.skinportHtml ?? ''}
       </div>
       ${p.extraHtml ?? ''}
     </div>

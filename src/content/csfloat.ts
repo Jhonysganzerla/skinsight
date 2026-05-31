@@ -11,6 +11,7 @@ import {
   renderResultsHeader,
   renderScanBar,
   renderSteamCell,
+  renderSkinportCell,
   updateScanBar,
   variantByProfitPct,
   type ItemCardProps,
@@ -18,6 +19,7 @@ import {
 } from '../modules/shared/ui';
 import { getSteamPriceCached } from '../modules/oracles/steam';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
+import { getSkinportPrice, loadSkinportIndex } from '../modules/oracles/skinport';
 import {
   hitRowFromAnalysisRow,
   onMessage,
@@ -109,6 +111,7 @@ function itemCardForRow(row: AnalysisRow): string {
       row.item.marketName,
       getSteamPriceCached(row.item.marketName),
     ),
+    skinportHtml: renderSkinportCell(row.item.marketName, getSkinportPrice(row.item.marketName)),
   };
   return renderItemCard(props);
 }
@@ -120,6 +123,11 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   overlay.body.innerHTML = bodyHtmlRunning(0, total);
   setStatus(`Analyzing ${total} listings…`, 'info');
   wireScanBar();
+
+  // Skinport oracle (v0.6): TTL-gated refresh (fetch only if the 5-min cache is
+  // stale), then hydrate the index so the Skinport column populates on render.
+  await send({ type: 'skinport:refresh' });
+  await loadSkinportIndex();
 
   const rows: AnalysisRow[] = [];
   await runAnalysis(payload.items, {

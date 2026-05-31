@@ -11,6 +11,7 @@ import {
   renderItemCard,
   renderStickerBreakdown,
   renderSteamCell,
+  renderSkinportCell,
   variantByRoi,
   type ItemCardProps,
   type MetaChip,
@@ -19,6 +20,7 @@ import {
 } from '../shared/ui';
 import { fmtUsd, shortExterior, stripStickerPrefix } from '../shared/fmt';
 import { getSteamPriceCached } from '../oracles/steam';
+import { getSkinportPrice } from '../oracles/skinport';
 import type { CsMoneyItem, RareResult } from './types';
 
 /**
@@ -72,6 +74,7 @@ export function renderRareCard(r: RareResult): string {
     variant: variantByRoi(r.roi),
     extraHtml: renderStickerBreakdown(chips),
     steamHtml: renderSteamCell(r.marketHashName || r.name, getSteamPriceCached(r.marketHashName || r.name)),
+    skinportHtml: renderSkinportCell(r.marketHashName || r.name, getSkinportPrice(r.marketHashName || r.name)),
   };
   return renderItemCard(props);
 }
@@ -109,6 +112,7 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     variant,
     extraHtml: renderStickerBreakdown(chips),
     steamHtml: renderSteamCell(it.name, getSteamPriceCached(it.name)),
+    skinportHtml: renderSkinportCell(it.name, getSkinportPrice(it.name)),
   };
   return renderItemCard(props);
 }
