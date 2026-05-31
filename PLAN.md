@@ -871,13 +871,42 @@ Maior risco: sessão longa com **Steam oracle + virtualização + listeners reat
 - **Re-injeção de content script** em SPAs (cs.money/csfloat/SM) — estado/listeners duplicados entre navegações.
 - **Entregável:** seção "Spike: memory-leak audit (Fase A)" no PLAN com achado por suspeito + veredito + fixes propostos (implementados depois, em tarefa aprovada). Método: DevTools Memory (heap snapshots antes/depois de N scans + navegação), detached-nodes, listener count.
 
+#### Spike: memory-leak audit (Fase A) — RESULTADO (read-only, sem código)
+
+Auditoria estática (leitura de `overlay.ts`, `virtual-list.ts`, `oracles/steam.ts`, `steam-ui.ts`, e os 4 content scripts). Achados por severidade:
+
+- **🔴 ALTO — `overlay.ts` `enableDrag`: window listeners nunca removidos + root destacado retido.**
+  `enableDrag` (overlay.ts:160-195) faz `window.addEventListener('mousemove', …)` e `window.addEventListener('mouseup', …)` que **nunca são removidos**. `destroy()` (overlay.ts:127-130) só faz `root.remove(); minbar.remove();`. Cada `createOverlay()` adiciona **2 listeners permanentes no `window`** cujos closures capturam `root` → o nó `root` destacado (e toda a subtree) fica **retido para sempre**. `createOverlay` remove o DOM antigo por id (linha 67-68) mas **não** desliga os listeners do drag antigo.
+  **Exercitado por:** SkinsMonkey flip de modo (`mount → unmount → createOverlay` a cada flip, skinsmonkey.ts:331/368) e close→reopen em qualquer site. Sessão longa alternando modo/abrindo-fechando = acúmulo de window-listeners + overlays destacados.
+  **Fix proposto:** `enableDrag` registra via `AbortController`; guardar o controller no handle; `destroy()` faz `controller.abort()` (remove mousemove/mouseup de uma vez) antes de `root.remove()`. Custo baixo.
+
+- **🟡 MÉDIO — render-handle da virtual-list não é destruído no close do overlay.**
+  PS destrói o handle antes de cada re-render (`state.renderHandle?.destroy()`, pirateswap.ts applyAndRenderUnsafe) ✓, mas no **close** (`onClose` → `overlay.destroy()`) o `state.renderHandle` ativo **não** é destruído. O listener de `scroll` está no `overlay.body` (vai com o nó removido), mas o **`resize` no `window`** (virtual-list.ts:201) e o `IntersectionObserver` seguem vivos, e o closure `onScroll` retém `scrollRoot` (= body destacado).
+  **Fix proposto:** no `onClose` de PS (e onde mais usar vlist), `state.renderHandle?.destroy(); state.renderHandle = null;` antes de `overlay.destroy()`.
+
+- **🟡 BAIXO-MÉDIO — `oracles/steam.ts` `_mirror` Map cresce sem limite.**
+  `_mirror` (steam.ts) guarda todo item precificado pela sessão, sem evicção. Limitado na prática (cresce por clique do usuário no botão Steam), mas **ilimitado** numa sessão muito longa.
+  **Fix proposto:** cap simples (LRU ou tamanho máx, ex. 1000) ou evicção por TTL na leitura. Baixa prioridade.
+
+- **🟢 OK (verificado, sem leak):**
+  - `virtual-list.destroy()` remove scroll+resize e dá `observer.disconnect()` ✓ (o problema é só **chamá-lo** no close — ver MÉDIO acima). O rAF pendente no destroy não é cancelado, mas o callback faz no-op (`if (destroyed) return`) — inócuo.
+  - **Filtros reativos:** SkinsMonkey registra **uma vez** no bootstrap (`registerRareFilterListeners`, guard `currentMode==='rare'`) — sem dup por flip ✓. PS/CS.Money adicionam no `mount()` que é **guardado** (`if (overlay) return`) e roda 1× por load de página → não duplica; ficam órfãos-mas-guardados (`if (!overlay) return`) após close — risco baixo (1 par de listeners por vida da página).
+  - `steam-ui` listener delegado: idempotente via `_steamWired` no `overlay.body` ✓.
+  - **Re-injeção SPA:** content scripts MV3 injetam 1× por load de documento; troca de rota SPA **não** re-injeta → estado de módulo não duplica por navegação. O risco de re-`createOverlay` vem dos flips de modo do SM + close/reopen, não da SPA.
+
+**Veredito:** 1 leak ALTO real (drag window-listeners) com fix barato e contido; 1 MÉDIO (destruir vlist handle no close); 1 menor (cap do `_mirror`). Tudo corrigível em uma tarefa pequena. Recomendo um "T1.b — fixes do audit" como **primeira tarefa de código** do v0.7, **após seu ok**.
+
 ### T2 — Ícones SVG profissionais
 
 Substituir o crosshair placeholder por um SVG profissional → rasterizar p/ PNG 16/32/48/128 via o `scripts/build-icons.mjs` existente. Atualizar `action.default_icon` + `icons` (já wirados).
 
-### T3 — i18n PT-BR + EN
+### T3 — i18n PT-BR + EN (HÍBRIDO — desvio consciente registrado)
 
-Strings voltadas ao usuário hoje inline nos content scripts/popup. Avaliar `chrome.i18n` + `_locales/{en,pt_BR}/messages.json` vs. um módulo `t(key)` leve com detecção via `navigator.language` + override nas options. Decisão na implementação; default = módulo leve interno (menos atrito que `_locales` p/ strings dinâmicas do overlay). Sem string hard-coded restante.
+**Desvio consciente do briefing §6** (que pedia `chrome.i18n`): para as strings do overlay/popup usamos um **módulo interno leve** `t(key)`. **Motivo:** `chrome.i18n` resolve o locale pelo idioma do navegador e **não permite override em runtime** — e queremos um **seletor de idioma nas options** (T4). O módulo interno dá esse override; `chrome.i18n` não.
+
+**Híbrido obrigatório:** manter um **`_locales` MÍNIMO** só para o **manifest** (`name`/`description` via `__MSG_*__` + `default_locale`), senão o **listing da Web Store não localiza** no v1.0.
+
+→ módulo interno `t(key)` (overlay/popup + override nas options) **+ `_locales/{en,pt_BR}` mínimo** (manifest/store). Detecção default por `navigator.language`. Zero string hard-coded restante no overlay.
 
 ### T4 — Options page
 
@@ -885,7 +914,7 @@ Strings voltadas ao usuário hoje inline nos content scripts/popup. Avaliar `chr
 
 ### T5 — Onboarding
 
-Primeira execução (`onInstalled`): abrir uma aba/painel de boas-vindas explicando os modos (Rare/Arbitrage), os sites suportados e o fluxo básico. Mostrar uma única vez (flag em storage).
+Primeira execução: abrir uma aba de boas-vindas explicando os modos (Rare/Arbitrage), os sites suportados e o fluxo básico. **`chrome.tabs.create` no `onInstalled` é OK aqui — escopado a `details.reason === 'install'`** (NÃO dispara em `update`/`chrome_update`; não cai no DON'T #7, que veda `tabs.create` fora de ativação do usuário em fluxos recorrentes). Mostrar uma única vez (o próprio `reason==='install'` já garante; sem flag extra necessária).
 
 ### T6 — Docs completas
 
