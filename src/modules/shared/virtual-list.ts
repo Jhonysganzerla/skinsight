@@ -117,16 +117,41 @@ function debugEnabled(): boolean {
 const DEFAULT_ROW_HEIGHT = 88;
 const DEFAULT_BUFFER = 10;
 
+/**
+ * Measure the real per-row stride (height + gap) from a rendered window.
+ *
+ * v0.7 T1.c: the 88px default badly under-estimated the PirateSwap rare cards
+ * (image + sticker breakdown + Steam cell ≈ 2×), so the geometry (real px ÷
+ * rowHeight) over-shot the row index — every scroll nudge mounted a window much
+ * further down, shifting content, firing another scroll → the list ran away to
+ * the end (and overshot to the start on the way back). We self-correct from the
+ * first real render instead of trusting the estimate.
+ *
+ * Uses the MEDIAN of consecutive `offsetTop` deltas (gap-aware and robust to a
+ * single outlier tall card); falls back to the first card's `offsetHeight`.
+ * Returns 0 when nothing is measurable (e.g. no layout, as in unit tests) so the
+ * caller keeps its current estimate.
+ */
+export function measureRowHeight(win: HTMLElement): number {
+  const kids = win.children;
+  const n = kids.length;
+  if (n === 0) return 0;
+  if (n === 1) return (kids[0] as HTMLElement).offsetHeight || 0;
+  const deltas: number[] = [];
+  for (let i = 1; i < n; i++) {
+    const d = (kids[i] as HTMLElement).offsetTop - (kids[i - 1] as HTMLElement).offsetTop;
+    if (d > 0) deltas.push(d);
+  }
+  if (deltas.length === 0) return (kids[0] as HTMLElement).offsetHeight || 0;
+  deltas.sort((a, b) => a - b);
+  return deltas[Math.floor(deltas.length / 2)]!;
+}
+
 export function renderVirtualList<T>(opts: VirtualListOpts<T>): VirtualListHandle {
-  const {
-    scrollRoot,
-    container,
-    items,
-    render,
-    prefixHtml = '',
-    rowHeight = DEFAULT_ROW_HEIGHT,
-    buffer = DEFAULT_BUFFER,
-  } = opts;
+  const { scrollRoot, container, items, render, prefixHtml = '', buffer = DEFAULT_BUFFER } = opts;
+  // Mutable: T1.c re-adopts the real stride after the first render (see below).
+  let rowHeight = opts.rowHeight ?? DEFAULT_ROW_HEIGHT;
+  let measured = false;
   const total = items.length;
   const doc = container.ownerDocument;
 
@@ -170,10 +195,27 @@ export function renderVirtualList<T>(opts: VirtualListOpts<T>): VirtualListHandl
     let buf = '';
     for (let i = next.start; i < next.end; i++) buf += render(items[i]!, i);
     win.innerHTML = buf;
+    // T1.c: on the first non-empty render, replace the rowHeight estimate with
+    // the measured stride and re-run once so the spacers/index match reality.
+    // `measured` guards against re-entry, so this never loops.
+    if (!measured && next.end > next.start) {
+      measured = true;
+      const real = measureRowHeight(win);
+      if (real > 0 && Math.abs(real - rowHeight) > 4) {
+        rowHeight = real;
+        mounted = { start: -1, end: -1 }; // invalidate so the corrected window applies
+        recompute();
+        return;
+      }
+    }
     if (debugEnabled()) {
-      console.debug(
+      // console.warn (visible at the default DevTools level, unlike
+      // console.debug/Verbose) so the scroll smoke can read it. scrolledIntoList
+      // + rowH are the key geometry inputs for the runaway diagnosis.
+      console.warn(
         `[Skinsight] vlist window [${next.start}-${next.end}) of ${total} — ` +
-          `${next.end - next.start} cards mounted (viewportH=${viewportH} rowH=${rowHeight})`,
+          `${next.end - next.start} cards mounted ` +
+          `(scrolledIntoList=${Math.round(scrolledIntoList)} viewportH=${viewportH} rowH=${Math.round(rowHeight)} measured=${measured})`,
       );
     }
   }

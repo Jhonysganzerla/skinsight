@@ -53,7 +53,13 @@ export const OVERLAY_CSS = `
 
 .sh-body {
   padding: 14px; flex: 1; min-height: 0; overflow-y: auto;
+  /* v0.7 T1.c: the virtual list replaces its window nodes + resizes spacers on
+     every scroll. With scroll anchoring on (default), Chrome adjusts scrollTop
+     to keep the (now-destroyed) anchor visible, firing another scroll →
+     recompute → runaway auto-scroll. Disabling anchoring breaks that loop. */
+  overflow-anchor: none;
 }
+.sh-vlist, .sh-vlist-pad, .sh-vlist-window { overflow-anchor: none; }
 .sh-body::-webkit-scrollbar { width: 8px; }
 .sh-body::-webkit-scrollbar-thumb { background: #2a3142; border-radius: 4px; }
 
