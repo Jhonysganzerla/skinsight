@@ -30,6 +30,14 @@ const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
 
 const FILTERS: FilterField[] = [
+  {
+    id: 'maxPages',
+    label: 'Max pages',
+    type: 'number',
+    value: '',
+    placeholder: 'all',
+    hint: 'Blank = scan the whole inventory (capped at the safety limit).',
+  },
   { id: 'delayMs', label: 'Delay (ms)', type: 'number', value: '900' },
   {
     id: 'sort',
@@ -164,13 +172,21 @@ async function runScan(): Promise<void> {
   const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
   const sortKey = filters['sort'] ?? 'net_desc';
 
+  // "Max pages" is optional: blank → scan the whole inventory (collector breaks
+  // on empty/short page), guarded by SCAN_SAFETY_CAP_PAGES. A positive number
+  // caps the scan early, clamped to the safety limit.
+  const maxPagesRaw = (filters['maxPages'] ?? '').trim();
+  const maxPagesNum = parseInt(maxPagesRaw, 10);
+  const maxPages =
+    maxPagesRaw && maxPagesNum > 0
+      ? Math.min(maxPagesNum, SCAN_SAFETY_CAP_PAGES)
+      : SCAN_SAFETY_CAP_PAGES;
+
   updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
   setStatus('Collecting CS.Money inventory…', 'info');
 
-  // No page cap — walk to inventory end (collector breaks on empty/short page),
-  // guarded only by SCAN_SAFETY_CAP_PAGES against a runaway response.
   const collected = await collectCsMoney({
-    maxPages: SCAN_SAFETY_CAP_PAGES,
+    maxPages,
     delayMs,
     signal: state.aborted,
     onStatus: (msg) => {
