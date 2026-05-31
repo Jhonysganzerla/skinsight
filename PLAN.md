@@ -472,7 +472,7 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 
 **Status:** ✅ **Smoke do Jhony passou nos 3 sites (PS + CS.Money + SkinsMonkey) + Arbitrage (CSFloat). Tag `v0.4.1` criada.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓; Issue 3 (GitHub remote) ✓. Pós-smoke veio uma rodada grande (ver "checkpoint final" no fim deste arquivo): pipeline remote-rares + gerador Python + piso $1.00 + filtros reativos em todos os sites + correções de scan do PirateSwap (throttle/DESC/hang). Gates verdes (typecheck/lint/85 tests/build/pack).
 
-> ⚠️ Notas abaixo (B1–T4) preservam o estado *pré*-smoke para histórico. Alguns números ficaram desatualizados (ex.: piso $0.50 → **$1.00**; `itemWithSticker` foi **restaurado** depois; yields de match agora são **por tempo**, não por contagem). O estado autoritativo é o **checkpoint final** no fim do arquivo.
+> ⚠️ Notas abaixo (B1–T4) preservam o estado _pré_-smoke para histórico. Alguns números ficaram desatualizados (ex.: piso $0.50 → **$1.00**; `itemWithSticker` foi **restaurado** depois; yields de match agora são **por tempo**, não por contagem). O estado autoritativo é o **checkpoint final** no fim do arquivo.
 
 ### Commits desde `v0.4.0` (10)
 
@@ -660,9 +660,10 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 
 ## v0.5 — Steam Market per-item oracle (PLANEJADO · aguardando aprovação)
 
-> **Status: T2 + T3 ENTREGUES (gates verdes, 95 tests). Aguardando smoke do Jhony no navegador.** T2 = `d73bc2b` (oracle no SW + migração do scanner). T3 = `3f27083` (botão por card + cota). Os 3 ajustes obrigatórios estão dentro.**
+> **Status: T2 + T3 ENTREGUES (gates verdes, 95 tests). Aguardando smoke do Jhony no navegador.** T2 = `d73bc2b` (oracle no SW + migração do scanner). T3 = `3f27083` (botão por card + cota). Os 3 ajustes obrigatórios estão dentro.\*\*
 >
 > **Ajustes obrigatórios da aprovação:**
+>
 > 1. **Contrato síncrono do Arbitrage:** o cache em memória espelhado DEVE estar hidratado **antes** do `buildExportPayload`. Resolvido (não fica em aberto): `fetchAccessoryPrices` vira async e **pré-aquece** o mirror pedindo cada preço ao SW (`steam:price`); só depois o `buildExportPayload` lê o mirror síncrono via `getSteamPrice`. Ver T2.
 > 2. **Cache guarda `median_price` E `lowest_price` E `volume`.** Card exibe **`lowest_price`** como número primário.
 > 3. **Preço rotulado explicitamente como USD** (currency=1). Nunca misturar com display BRL.
@@ -670,6 +671,7 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 **Objetivo:** botão **"Show Steam price"** por card que busca o preço do item na Steam Community Market **on-demand** (1 item por clique), com o fetch movido pro service worker sob rate-limit guard. NÃO é scan massivo (briefing §9 DON'T #4 — Steam limita ~20 req/min/IP e mata a conta/IP em scan).
 
 ### Decisões fixas (do briefing + esta rodada)
+
 - Per-item, on-demand. Nunca varredura.
 - Fetch no **service worker** (CORS exige sair do background, não do content script).
 - Guard: **máx 15 req/min** (margem sob o teto de 20), fila interna, **backoff exponencial em 429**.
@@ -680,6 +682,7 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 ### T2 — `src/modules/oracles/steam.ts` (novo) + roteamento no SW
 
 **Módulo `oracles/steam.ts`:**
+
 - `export interface SteamPrice { lowestCents: number | null; medianCents: number | null; volume: number | null; currency: 'USD'; fetchedAt: number; }` — guarda **lowest + median + volume** (ajuste #2), moeda fixa **USD** (ajuste #3).
 - `export async function getSteamPrice(marketHashName: string): Promise<SteamPrice | null>` — fluxo: cache-hit (TTL 1h) → retorna; senão enfileira no guard → fetch `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=…` (`currency=1` = USD) → parse `lowest_price`, `median_price`, `volume` (todos) → cacheia → retorna. Nunca lança (retorna `null` em erro).
 - **Mirror síncrono:** `export function getSteamPriceCached(marketHashName: string): SteamPrice | null` lê um `Map` em memória (espelho do `storage`), populado por `getSteamPrice`. É o contrato síncrono que o Arbitrage usa (ajuste #1).
@@ -688,17 +691,20 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 - **Cache:** chave `steam_price:<market_hash_name>` em `chrome.storage.local`, valor `{ lowestCents, medianCents, volume, currency:'USD', fetchedAt }`. GC oportunista (descarta entradas > TTL na leitura). O mirror em memória é hidratado na leitura do storage e em cada fetch.
 
 **Service worker (`service-worker.ts`):**
+
 - Novo case `steam:price` → `getSteamPrice(msg.marketHashName)` → `{ ok, data: SteamPrice | null }`.
 - Novo case `steam:quota` → `{ ok, data: steamQuota() }`.
 - O fetch real roda aqui (background) por causa de CORS.
 
 **Mensageria (`shared/messaging.ts`):**
+
 ```
 | { type: 'steam:price'; marketHashName: string }
 | { type: 'steam:quota' }
 ```
 
 **Aposentar a `steamPrice()` inline do `scanner.ts`:**
+
 - Hoje `scanner.ts` tem `steamPrice()` (fila ~1.1s no content script) + `getSteamPrice()` sync + `fetchAccessoryPrices()`, usados pelo Arbitrage (sticker/charm pricing no `buildExportPayload`/`score.ts`).
 - Redirecionar para o módulo novo **sem quebrar o Arbitrage**: a fila inline some; o Arbitrage passa a pedir preço via o mesmo guard do SW. **Regra crítica #1: NÃO mexer no algoritmo de score** — só na origem do número (`steamPrice`/`getSteamPrice`). `score.ts` permanece intocado.
 - **Migração (ajuste #1 — decidido, não fica em aberto):** `buildExportPayload` lê `getSteamPriceCached` (síncrono). Para garantir o mirror hidratado **antes** do build, `fetchAccessoryPrices` vira **async** e pré-aquece: para cada `market_hash_name` único, faz `await send({ type:'steam:price', marketHashName })` (respeitando o guard do SW), o que popula o mirror. Só **depois** desse `await` o `buildExportPayload` roda e lê o mirror síncrono. O `score.ts` permanece intocado (Regra crítica #1) — só muda a origem do número.
@@ -706,6 +712,7 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 **Testes (`tests/modules/oracles.steam.test.ts`):** mock `fetch` — valida (1) cache evita re-fetch dentro de 1h; (2) 15 cliques rápidos = 15 fetches e o 16º enfileira (não dispara já); (3) 429 → backoff, UI não trava; (4) parse de `median_price`/`lowest_price`/ausência.
 
 ### T3 — UI do botão "Show Steam price" por card
+
 - Estado por card: `idle → loading → loaded → error`. Estilo via `tokens.css`/mockup (mesmo padrão dos chips/cards existentes).
 - **Loaded exibe `lowest_price` como número primário (ajuste #2), rotulado USD explicitamente (ajuste #3):** ex. `Steam $12.34 USD` (lowest). Median + volume como secundário/tooltip (ex. `med $13.10 · vol 42`). Nunca exibir como R$/BRL.
 - Funciona em **Arbitrage e Rare** cards (componente compartilhado em `shared/ui.ts`).
@@ -713,11 +720,13 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 - Click → `send({ type:'steam:price', marketHashName })` → atualiza o card. Re-click dentro de 1h = cache (instantâneo).
 
 ### Exit criteria v0.5
+
 - Click busca preço Steam e mostra; cache evita re-fetch em 1h; 429 não trava UI; 15 cliques rápidos respeitam o guard (15 fetches + enfileira).
 - Gates verdes no CI (lint + typecheck + test + build).
 - Sem `<all_urls>`, sem `clipboardRead/Write`, sem alargar `host_permissions`. Conventional Commits.
 
 ### Arquivos tocados (estimativa)
+
 `src/modules/oracles/steam.ts` (novo), `shared/throttle.ts` (+`steamBucket`), `shared/messaging.ts` (+2 types), `background/service-worker.ts` (+2 cases), `modules/arbitrage/scanner.ts` (redireciona steamPrice), `shared/ui.ts` (botão+estado), os 2 renderers de card (Arb/Rare), `tests/modules/oracles.steam.test.ts` (novo). **Custo: M.**
 
 ---
@@ -729,19 +738,22 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 > **Licença:** a TÉCNICA foi estudada a partir da extensão BetterFloat (open source sob **CC BY-NC-SA 4.0** — ShareAlike viral, **incompatível** com nossa PolyForm Noncommercial). Padrão/ideia não é protegido; expressão específica é. **Nada do código deles foi lido/copiado para cá**; a proposta abaixo é arquitetura limpa nossa. Se na implementação algo começar a espelhar estrutura de arquivo ou nomes deles, **parar**.
 
 ### A técnica (genérica)
+
 Injetar, no **MAIN world** da página e **antes** do site fazer suas chamadas, um script que faz monkey-patch de `window.fetch` e `XMLHttpRequest.prototype.open/send`. Cada resposta JSON de URLs de interesse é re-emitida como `CustomEvent` no `document` (ex.: `skinsight:net` com `{ url, json }`). O content script (isolated world) só **escuta** — nunca faz request extra. Resultado: enquanto o usuário navega normalmente, capturamos os dados que o **próprio site já buscou**, com **zero requests adicionais** e **zero risco de throttle/ban**.
 
 ### Endpoints que cada site já chama em navegação normal (do nosso HAR/scanner atual)
-| Site | Endpoint que o site chama sozinho | O que carrega |
-| --- | --- | --- |
-| SkinsMonkey | `skinsmonkey.com/api/inventory?…&withStickers=true` | inventário ao abrir/scrollar o trade |
-| PirateSwap | `web.pirateswap.com/inventory/v2/ExchangerInventory` | inventário do exchanger paginado |
-| CS.Money | `cs.money/5.0/load_bots_inventory/730` | inventário dos bots ao navegar/filtrar |
-| CSFloat | `csfloat.com/api/v1/listings?market_hash_name=…` | listings na busca |
+
+| Site        | Endpoint que o site chama sozinho                    | O que carrega                          |
+| ----------- | ---------------------------------------------------- | -------------------------------------- |
+| SkinsMonkey | `skinsmonkey.com/api/inventory?…&withStickers=true`  | inventário ao abrir/scrollar o trade   |
+| PirateSwap  | `web.pirateswap.com/inventory/v2/ExchangerInventory` | inventário do exchanger paginado       |
+| CS.Money    | `cs.money/5.0/load_bots_inventory/730`               | inventário dos bots ao navegar/filtrar |
+| CSFloat     | `csfloat.com/api/v1/listings?market_hash_name=…`     | listings na busca                      |
 
 Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou seja, os **normalizadores existentes** (`normalizePs`, `normalizeSm`, parser CS.Money) **reusam direto**, sem reverter schema novo.
 
 ### Veredito por site (vale / não vale)
+
 - **CS.Money — VALE (alto).** Foi onde o throttle mais doeu. Toda página que o usuário rola = dados grátis sem 429. Passivo **complementa** o scan ativo: o ativo pagina exaustivamente (e leva 429); o passivo enriquece de graça conforme navega.
 - **PirateSwap — VALE (alto).** Mesmo motivo: o throttle silencioso da v0.4.1 limita o scan ativo a ~2.4k items/janela. Captura passiva enquanto o usuário navega contorna isso sem custo.
 - **SkinsMonkey — VALE (médio).** Inventário grande; passivo reduz nossa necessidade de marteler `/api/inventory`. Útil no modo Rare.
@@ -750,6 +762,7 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 **Posicionamento vs. scanner atual:** passivo = **oportunístico e parcial** (só o que o usuário navega); ativo = **exaustivo e sob demanda** (paginação completa). Proposta: passivo **complementa**, não substitui. Merge por `id` do item (distinct, mesma regra da lista de raros), re-render debounced. O usuário ainda dispara o scan ativo quando quer cobertura total.
 
 ### Riscos (e mitigação)
+
 - **Isolated world (MV3):** o content script padrão NÃO enxerga o `window.fetch` da página. Precisa de um content script com **`world: "MAIN"`** (Chrome 111+) **ou** injeção de `<script src=WAR>` no `document_start`. → Preferir `world:"MAIN"` (injetado pelo browser, **não** sujeito ao CSP da página).
 - **CSP dos sites:** a abordagem de injetar `<script>` na página pode ser bloqueada por `script-src` estrito (CS.Money/CSFloat são SPAs com CSP). `world:"MAIN"` evita isso. → Para o build **Firefox** (suporte a `world:MAIN` mais novo/limitado), manter **fallback** via injeção de WAR script (nossos `assets/*.js` já estão em `web_accessible_resources` pros 4 hosts).
 - **Ordem de carga:** tem que patchar **antes** do site chamar → `run_at: "document_start"` no script MAIN.
@@ -758,11 +771,13 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 - **Privacidade/policy:** só LEMOS respostas que o site já buscou pra si; **zero rede nova, zero permissão nova, sem `<all_urls>`**. Alinhado à nossa postura. Se for a produção, documentar em `PRIVACY.md`.
 
 ### Esboço de arquitetura limpa (nossa, sob PolyForm — NÃO implementar ainda)
+
 - `src/content/passive/interceptor.ts` (**MAIN world**, document_start): patch idempotente de fetch+XHR, filtra por allowlist de URL por site, `dispatchEvent(new CustomEvent('skinsight:net', { detail }))`. **Zero lógica de app** — só captura e re-emite.
 - `src/content/passive/listener.ts` (isolated, importado por cada content script existente): `addEventListener('skinsight:net')`, roteia por URL → normalizador existente → merge distinct no result set → re-render debounced.
 - `manifest.config.ts`: 2ª entrada `content_scripts` por site com `world:"MAIN"`, `run_at:"document_start"`, `js:[interceptor]`. Os scripts isolados atuais ficam como estão.
 
 ### Custo + recomendação
+
 **Custo: M** (interceptor ~80 linhas, listener ~120, allowlist+wiring por site, manifest, testes de plumbing — filtro de URL, idempotência, dispatch/parse do evento). Risco concentrado em **`world:MAIN` + CSP + cross-browser (Firefox)** → exige smoke por site.
 
 **Recomendação:** viável e de alto valor como **complemento** ao scan ativo, especialmente dado o throttle de CS.Money/PirateSwap. Antes de comprometer os 4 sites, fazer um **proof-of-concept fino em UM site (CS.Money — o mais castigado por throttle)** pra validar `world:MAIN`+CSP na prática; se passar, estender. Decisão de prosseguir é do Jhony (aprovação separada).
@@ -776,8 +791,9 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 **Objetivo:** oráculo local de preço de mercado da Skinport. Um fetch em massa de `api.skinport.com/v1/items` (cacheado 5min), indexado por `market_hash_name`, exibido como **coluna Skinport (USD)** no card — referência cruzada de valor de mercado para os 4 sites. Espelha o padrão remote-rares (`remote.ts`) + Steam oracle (`oracles/steam.ts`): fetch no SW, cache no storage, content script lê o cache.
 
 ### Pontos NÃO-NEGOCIÁVEIS (do briefing + esta aprovação)
+
 1. **Cache hard 5min** em `chrome.storage.local`. **Checa TTL ANTES de qualquer fetch.** Nunca chamar `api.skinport.com` fora desse intervalo (briefing §9 DON'T #5). A TTL É o rate-limit (não precisa token-bucket).
-2. **`Accept-Encoding: br`** no request. ⚠️ Nota técnica: `Accept-Encoding` é *forbidden header* no `fetch()` — o browser controla e já manda `br` por padrão na negociação. Então a exigência é satisfeita implicitamente; não dá pra setá-lo manualmente (seria ignorado). Se a Skinport rejeitar mesmo assim, é achado a tratar (não bloqueia o design).
+2. **`Accept-Encoding: br`** no request. ⚠️ Nota técnica: `Accept-Encoding` é _forbidden header_ no `fetch()` — o browser controla e já manda `br` por padrão na negociação. Então a exigência é satisfeita implicitamente; não dá pra setá-lo manualmente (seria ignorado). Se a Skinport rejeitar mesmo assim, é achado a tratar (não bloqueia o design).
 3. **Fetch no service worker** (CORS exige origem de background).
 4. **Index local por `market_hash_name` → `{ min_price, mean_price, max_price }`** (USD cents).
 5. **Re-fetch lazy:** só quando o cache expira **E** o usuário aciona um scan. Nunca em background/automático.
@@ -785,34 +801,40 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 7. **`host_permission api.skinport.com` já existe** — não alargar. Sem `<all_urls>`.
 
 ### T1 — `src/modules/oracles/skinport.ts` (novo)
+
 - `export interface SkinportPrice { minCents: number; meanCents: number; maxCents: number; }`
 - **SW-side:** `refreshSkinportIndex(force = false): Promise<{ ok; count?; fetchedAt?; cached?; error? }>` — **checa TTL primeiro**; se `Date.now() - fetchedAt < 5min` e não `force` → retorna `{ ok, cached:true }` SEM fetch. Senão: `fetch('https://api.skinport.com/v1/items?app_id=730&currency=USD')` → parse `{ market_hash_name, min_price, mean_price, max_price }[]` → indexa `Record<mhn, [min,mean,max]>` (cents) → cacheia `{ fetchedAt, index }` em `chrome.storage.local` (chave `skinport_index`). Nunca lança.
 - **Content-side:** `loadSkinportIndex(): Promise<void>` (lê o storage → `Map` em memória) + `getSkinportPrice(mhn): SkinportPrice | null` (lookup síncrono no Map). Mesmo padrão de `rare-data.ts` (SW escreve, content lê).
 - `SKINPORT_TTL_MS = 5*60*1000`.
 
 ### T2 — Service worker + mensageria
+
 - `shared/messaging.ts`: `| { type: 'skinport:refresh'; force?: boolean }` (+ opcional `skinport:status`).
 - `service-worker.ts`: case `skinport:refresh` → `refreshSkinportIndex(msg.force)` → retorna meta. O fetch real roda aqui (CORS).
 - **Fluxo lazy:** no scan-start de cada site, o content script faz `await send({ type:'skinport:refresh' })` (TTL-gated → instantâneo se fresco, fetch só se expirado), depois `await loadSkinportIndex()`, e aí renderiza com a coluna populada.
 
 ### T3 — UI da coluna Skinport
+
 - `shared/ui.ts`: `renderSkinportCell(mhn, price | null)` (espelha `renderSteamCell`) — `Skinport $X.XX USD` com **min como número primário**; mean/max no tooltip. `skinportHtml?` em `ItemCardProps`, renderizado na coluna de ação.
 - Wire em `rare/render.ts` (rare + csmoney cards) e `content/csfloat.ts` (arb), lendo `getSkinportPrice(mhn)`. Funciona offline-after-load (lookup síncrono), sobrevive à virtualização (re-deriva do índice).
 - Sem botão por-card (diferente do Steam): a coluna popula sozinha após o `loadSkinportIndex` do scan, já que o índice é em massa.
 
 ### T4 — Testes (`tests/modules/oracles.skinport.test.ts`)
+
 - TTL: **não faz fetch** quando cache < 5min (o ponto crítico do §9 DON'T #5); faz quando expira ou `force`.
 - Parse: array da Skinport → index `{minCents,meanCents,maxCents}`.
 - Lookup síncrono por `market_hash_name`.
 - Nunca lança (erro de rede → `{ ok:false }`, índice antigo preservado).
 
 ### Exit criteria
+
 - Coluna Skinport (USD) aparece nos cards cujo item está no índice.
 - **Nunca** chama `api.skinport.com` mais de 1×/5min (teste prova: cache fresco → zero fetch).
 - Fetch no SW, sem erro de CORS. Sem alargar `host_permissions`, sem `<all_urls>`.
 - Gates verdes (lint + typecheck + test + build). Conventional Commits.
 
 ### Arquivos (estimativa)
+
 `src/modules/oracles/skinport.ts` (novo), `shared/messaging.ts` (+1-2 tipos), `background/service-worker.ts` (+1 case), `shared/ui.ts` (+`renderSkinportCell` + `skinportHtml`), `modules/rare/render.ts` (wire), `content/{csfloat,pirateswap,skinsmonkey,csmoney}.ts` (refresh+load no scan-start + célula), `tests/modules/oracles.skinport.test.ts` (novo). **Custo: M.**
 
 > **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T1–T4.

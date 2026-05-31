@@ -73,8 +73,14 @@ export function renderRareCard(r: RareResult): string {
     profitFraction: r.roi - 1, // ROI of 1.5 means +50% over the listing.
     variant: variantByRoi(r.roi),
     extraHtml: renderStickerBreakdown(chips),
-    steamHtml: renderSteamCell(r.marketHashName || r.name, getSteamPriceCached(r.marketHashName || r.name)),
-    skinportHtml: renderSkinportCell(r.marketHashName || r.name, getSkinportPrice(r.marketHashName || r.name)),
+    steamHtml: renderSteamCell(
+      r.marketHashName || r.name,
+      getSteamPriceCached(r.marketHashName || r.name),
+    ),
+    skinportHtml: renderSkinportCell(
+      r.marketHashName || r.name,
+      getSkinportPrice(r.marketHashName || r.name),
+    ),
   };
   return renderItemCard(props);
 }

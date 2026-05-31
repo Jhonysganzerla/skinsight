@@ -50,11 +50,14 @@ async function load() {
 
 describe('oracles/steam — parse', () => {
   it('parses lowest + median + volume into USD cents', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        priceResponse({ success: true, lowest_price: '$1.50', median_price: '$2.00', volume: '1,234' }),
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      priceResponse({
+        success: true,
+        lowest_price: '$1.50',
+        median_price: '$2.00',
+        volume: '1,234',
+      }),
+    );
     const { getSteamPrice } = await load();
     const p = await getSteamPrice('AK-47 | Redline (FT)');
     expect(p).toEqual({

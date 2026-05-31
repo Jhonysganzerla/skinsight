@@ -107,10 +107,7 @@ function itemCardForRow(row: AnalysisRow): string {
     variant,
     openUrl,
     openLabel: 'Open CSFloat ↗',
-    steamHtml: renderSteamCell(
-      row.item.marketName,
-      getSteamPriceCached(row.item.marketName),
-    ),
+    steamHtml: renderSteamCell(row.item.marketName, getSteamPriceCached(row.item.marketName)),
     skinportHtml: renderSkinportCell(row.item.marketName, getSkinportPrice(row.item.marketName)),
   };
   return renderItemCard(props);

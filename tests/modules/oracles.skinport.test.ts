@@ -50,7 +50,12 @@ describe('toCents', () => {
 describe('buildSkinportIndex', () => {
   it('indexes by market_hash_name with [min,mean,max] cents', () => {
     const idx = buildSkinportIndex([
-      { market_hash_name: 'AK-47 | Redline (FT)', min_price: 12.34, mean_price: 13.1, max_price: 20 },
+      {
+        market_hash_name: 'AK-47 | Redline (FT)',
+        min_price: 12.34,
+        mean_price: 13.1,
+        max_price: 20,
+      },
       { market_hash_name: 'Glock | Fade', min_price: null, mean_price: 5, max_price: null },
     ]);
     expect(idx['AK-47 | Redline (FT)']).toEqual([1234, 1310, 2000]);
@@ -83,9 +88,11 @@ describe('refreshSkinportIndex — TTL guard', () => {
   });
 
   it('fetches when forced even if fresh', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify([{ market_hash_name: 'X', min_price: 1 }]), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify([{ market_hash_name: 'X', min_price: 1 }]), { status: 200 }),
+      );
     await refreshSkinportIndex(true);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
@@ -98,7 +105,14 @@ describe('refreshSkinportIndex — expired / errors', () => {
     });
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
-        JSON.stringify([{ market_hash_name: 'AWP | Asiimov (FT)', min_price: 50, mean_price: 55, max_price: 70 }]),
+        JSON.stringify([
+          {
+            market_hash_name: 'AWP | Asiimov (FT)',
+            min_price: 50,
+            mean_price: 55,
+            max_price: 70,
+          },
+        ]),
         { status: 200 },
       ),
     );
