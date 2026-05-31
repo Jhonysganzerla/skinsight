@@ -28,7 +28,6 @@ import {
 import { csfloatBucket } from '../modules/shared/throttle';
 import { getRareRemoteCache, refreshRareRemote } from '../modules/rare/remote';
 import { getSteamPrice, steamQuota } from '../modules/oracles/steam';
-import { refreshSkinportIndex } from '../modules/oracles/skinport';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
 
@@ -134,13 +133,6 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
 
     case 'steam:quota': {
       return { ok: true, data: steamQuota() };
-    }
-
-    case 'skinport:refresh': {
-      // TTL-gated inside refreshSkinportIndex: fetches only if the 5-min cache
-      // has expired (or force). Never calls api.skinport.com more often.
-      const r = await refreshSkinportIndex(msg.force ?? false);
-      return r.error !== undefined ? { ok: r.ok, error: r.error, data: r } : { ok: r.ok, data: r };
     }
 
     case 'hit:record': {

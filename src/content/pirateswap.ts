@@ -19,7 +19,6 @@ import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
-import { loadSkinportIndex } from '../modules/oracles/skinport';
 import { send } from '../modules/shared/messaging';
 import type { RareResult } from '../modules/rare/types';
 
@@ -256,11 +255,6 @@ async function runScan(): Promise<void> {
     // only hits the network if the cache is older than 24h, and the freshly
     // cached list applies on the next page load (this scan uses the loaded map).
     void send({ type: 'rares:refresh', force: false });
-
-    // Skinport oracle (v0.6): TTL-gated refresh + hydrate the index so the
-    // Skinport column populates when results render.
-    await send({ type: 'skinport:refresh' });
-    await loadSkinportIndex();
 
     // No progress bar — we don't know the total ahead of time. Indeterminate
     // status only; the user can Stop at any moment.

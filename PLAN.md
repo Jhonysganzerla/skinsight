@@ -784,9 +784,19 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 
 ---
 
-## v0.6 — Skinport oracle (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
+## v0.6 — Skinport oracle (❌ DROPPED em v0.6.1 — endpoint atrás de Cloudflare CAPTCHA)
 
-> **Status: detalhamento para aprovação (briefing §12).** Implementar T1–T4 só após o "ok" do Jhony. Prep de publicação fica para v1.0 (fora do escopo do v0.6).
+> **Status: DROPADO.** Implementado e tagueado `v0.6.0`, mas o smoke do Jhony pegou **403 Forbidden** no `api.skinport.com/v1/items`: a Skinport pôs o endpoint atrás de **CAPTCHA da Cloudflare** (até navegador normal é desafiado; service worker não resolve challenge JS/cookie). A premissa "API pública sem auth" (pesquisa mai/2025) **não vale mais** — não é Origin/header (stripping não resolve challenge), não é rate-limit. A coluna Skinport **nunca populou**; a v0.6.0 foi tagueada "Smoke OK" com o caminho de dados quebrado.
+>
+> **Removido por completo de `main` em `v0.6.1`** (T1–T3): módulo + testes deletados, `renderSkinportCell`/`skinportHtml`/mensageria/case do SW/wiring nos 4 content scripts removidos, `api.skinport.com` fora do manifest (menos permissão = review Web Store mais limpo). `grep -ri skinport src/` → zero. O código vive no histórico/tag `v0.6.0` se a Skinport um dia reabrir o endpoint.
+>
+> **Impacto no roadmap:** o **Steam oracle (v0.5)** passa a ser a referência de preço de mercado externa. Próximo bloco real = **v0.7 Polish**.
+>
+> **Lição (regra geral):** para features de REDE, "smoke OK" exige confirmar que o **dado chega de fato** (status 200 + índice/coluna populada), não só que a UI não quebra. Aplicar nos próximos oráculos/integrações.
+
+<details><summary>Detalhamento original do v0.6 (histórico — não implementar)</summary>
+
+> Implementar T1–T4 só após o "ok" do Jhony. Prep de publicação fica para v1.0 (fora do escopo do v0.6).
 
 **Objetivo:** oráculo local de preço de mercado da Skinport. Um fetch em massa de `api.skinport.com/v1/items` (cacheado 5min), indexado por `market_hash_name`, exibido como **coluna Skinport (USD)** no card — referência cruzada de valor de mercado para os 4 sites. Espelha o padrão remote-rares (`remote.ts`) + Steam oracle (`oracles/steam.ts`): fetch no SW, cache no storage, content script lê o cache.
 
@@ -838,3 +848,5 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 `src/modules/oracles/skinport.ts` (novo), `shared/messaging.ts` (+1-2 tipos), `background/service-worker.ts` (+1 case), `shared/ui.ts` (+`renderSkinportCell` + `skinportHtml`), `modules/rare/render.ts` (wire), `content/{csfloat,pirateswap,skinsmonkey,csmoney}.ts` (refresh+load no scan-start + célula), `tests/modules/oracles.skinport.test.ts` (novo). **Custo: M.**
 
 > **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T1–T4.
+
+</details>

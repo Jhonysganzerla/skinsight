@@ -21,7 +21,6 @@ import {
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
-import { loadSkinportIndex } from '../modules/oracles/skinport';
 import { send } from '../modules/shared/messaging';
 import { esc } from '../modules/shared/fmt';
 import type { CsMoneyItem } from '../modules/rare/types';
@@ -165,9 +164,6 @@ async function runScan(): Promise<void> {
   state.aborted = { aborted: false };
   // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
   void send({ type: 'rares:refresh', force: false });
-  // Skinport oracle (v0.6): TTL-gated refresh + hydrate index for the column.
-  await send({ type: 'skinport:refresh' });
-  await loadSkinportIndex();
   const filters = readFilterValues(overlay.body);
   const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
   const sortKey = filters['sort'] ?? 'net_desc';

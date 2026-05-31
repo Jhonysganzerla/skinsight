@@ -32,11 +32,7 @@ export type Message =
   //   any tab → SW: steam:price  (on-demand price for one market_hash_name)
   //   any tab → SW: steam:quota  (token-bucket usage for the UI indicator)
   | { type: 'steam:price'; marketHashName: string }
-  | { type: 'steam:quota' }
-  // Skinport bulk price oracle (v0.6):
-  //   any tab → SW: skinport:refresh  (scan-start; TTL-gated, fetches only if
-  //                                     the 5-min cache has expired)
-  | { type: 'skinport:refresh'; force?: boolean };
+  | { type: 'steam:quota' };
 
 /** Subset of AnalysisRow we hand back to the SW for the "Today's hits" feed. */
 export interface HitRow {
