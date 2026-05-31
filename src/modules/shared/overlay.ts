@@ -101,6 +101,14 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
   const statusEl = root.querySelector<HTMLElement>('[data-role=status]')!;
   const countEl = minbar.querySelector<HTMLElement>('[data-role=count]')!;
 
+  // All listeners this shell attaches — including the drag handlers on `window`
+  // — are registered with this signal so `destroy()` removes them in one shot.
+  // Without it the window mousemove/mouseup leaked on every createOverlay (their
+  // closures retained the detached `root`), accumulating across mode flips /
+  // close-reopen. (v0.7 T1.b)
+  const ac = new AbortController();
+  const { signal } = ac;
+
   const handle: OverlayHandle = {
     root,
     body,
@@ -125,6 +133,7 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
       countEl.textContent = String(n);
     },
     destroy() {
+      ac.abort(); // remove the window drag listeners (+ all shell listeners)
       root.remove();
       minbar.remove();
     },
@@ -133,15 +142,19 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
   // Header buttons.
   root
     .querySelector<HTMLElement>('[data-act=min]')!
-    .addEventListener('click', () => handle.minimize());
-  root.querySelector<HTMLElement>('[data-act=close]')!.addEventListener('click', () => {
-    if (opts.onClose) opts.onClose();
-    else handle.destroy();
-  });
-  minbar.addEventListener('click', () => handle.restore());
+    .addEventListener('click', () => handle.minimize(), { signal });
+  root.querySelector<HTMLElement>('[data-act=close]')!.addEventListener(
+    'click',
+    () => {
+      if (opts.onClose) opts.onClose();
+      else handle.destroy();
+    },
+    { signal },
+  );
+  minbar.addEventListener('click', () => handle.restore(), { signal });
 
   // Drag.
-  enableDrag(root, opts.persistKey);
+  enableDrag(root, opts.persistKey, signal);
 
   // Hydrate from persisted state.
   if (opts.persistKey) {
@@ -157,7 +170,7 @@ function escape(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function enableDrag(root: HTMLElement, persistKey: string | undefined) {
+function enableDrag(root: HTMLElement, persistKey: string | undefined, signal: AbortSignal) {
   const header = root.querySelector<HTMLElement>('.sh-header');
   if (!header) return;
   let dragging = false;
@@ -165,33 +178,47 @@ function enableDrag(root: HTMLElement, persistKey: string | undefined) {
     sy = 0,
     ox = 0,
     oy = 0;
-  header.addEventListener('mousedown', (e) => {
-    const t = e.target as HTMLElement;
-    if (t.closest('.sh-icon-btn')) return;
-    dragging = true;
-    const r = root.getBoundingClientRect();
-    sx = e.clientX;
-    sy = e.clientY;
-    ox = r.left;
-    oy = r.top;
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    const left = Math.max(0, ox + e.clientX - sx);
-    const top = Math.max(0, oy + e.clientY - sy);
-    root.style.left = left + 'px';
-    root.style.top = top + 'px';
-    root.style.right = 'auto';
-  });
-  window.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = false;
-    if (persistKey) {
+  header.addEventListener(
+    'mousedown',
+    (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('.sh-icon-btn')) return;
+      dragging = true;
       const r = root.getBoundingClientRect();
-      void persistPosition(persistKey, { left: r.left, top: r.top });
-    }
-  });
+      sx = e.clientX;
+      sy = e.clientY;
+      ox = r.left;
+      oy = r.top;
+      e.preventDefault();
+    },
+    { signal },
+  );
+  // mousemove/mouseup live on `window` (drag continues outside the header) —
+  // these are the ones that leaked; the signal removes them on destroy().
+  window.addEventListener(
+    'mousemove',
+    (e) => {
+      if (!dragging) return;
+      const left = Math.max(0, ox + e.clientX - sx);
+      const top = Math.max(0, oy + e.clientY - sy);
+      root.style.left = left + 'px';
+      root.style.top = top + 'px';
+      root.style.right = 'auto';
+    },
+    { signal },
+  );
+  window.addEventListener(
+    'mouseup',
+    () => {
+      if (!dragging) return;
+      dragging = false;
+      if (persistKey) {
+        const r = root.getBoundingClientRect();
+        void persistPosition(persistKey, { left: r.left, top: r.top });
+      }
+    },
+    { signal },
+  );
 }
 
 async function hydratePosition(root: HTMLElement, minbar: HTMLElement, key: string) {

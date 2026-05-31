@@ -37,8 +37,20 @@ export const STEAM_WINDOW_MS = 60_000;
 
 const KEY = (mhn: string): string => `steam_price:${mhn}`;
 
-/** Per-context mirror of the storage cache (sync reads for the Arbitrage path). */
+/** Per-context mirror of the storage cache (sync reads for the Arbitrage path).
+ *  Capped (v0.7 T1.b): insertion-ordered Map, evict-oldest above the cap so a
+ *  very long session can't grow it without bound. */
 const _mirror = new Map<string, SteamPrice>();
+const STEAM_MIRROR_MAX = 1000;
+
+function mirrorSet(marketHashName: string, p: SteamPrice): void {
+  _mirror.delete(marketHashName); // re-insert so it counts as most-recent
+  _mirror.set(marketHashName, p);
+  if (_mirror.size > STEAM_MIRROR_MAX) {
+    const oldest = _mirror.keys().next().value;
+    if (oldest !== undefined) _mirror.delete(oldest);
+  }
+}
 
 /** Bucket lives at module scope so the whole SW shares one 15/min budget. */
 const _bucket = steamBucket();
@@ -56,7 +68,7 @@ export function getSteamPriceCached(marketHashName: string): SteamPrice | null {
 
 /** Seed the mirror from a message response (content-script side). */
 export function primeSteamMirror(marketHashName: string, p: SteamPrice | null): void {
-  if (p) _mirror.set(marketHashName, p);
+  if (p) mirrorSet(marketHashName, p);
 }
 
 /** "$12.34" → 1234 cents. Strips currency symbols/grouping. null if unparseable. */
@@ -78,7 +90,7 @@ async function readCache(marketHashName: string): Promise<SteamPrice | null> {
     const r = (await chrome.storage.local.get(KEY(marketHashName))) as Record<string, unknown>;
     const p = r[KEY(marketHashName)] as SteamPrice | undefined;
     const hit = fresh(p);
-    if (hit) _mirror.set(marketHashName, hit);
+    if (hit) mirrorSet(marketHashName, hit);
     return hit;
   } catch {
     return null;
@@ -86,7 +98,7 @@ async function readCache(marketHashName: string): Promise<SteamPrice | null> {
 }
 
 async function writeCache(marketHashName: string, p: SteamPrice): Promise<void> {
-  _mirror.set(marketHashName, p);
+  mirrorSet(marketHashName, p);
   try {
     await chrome.storage.local.set({ [KEY(marketHashName)]: p });
   } catch {

@@ -880,13 +880,11 @@ Auditoria estática (leitura de `overlay.ts`, `virtual-list.ts`, `oracles/steam.
   **Exercitado por:** SkinsMonkey flip de modo (`mount → unmount → createOverlay` a cada flip, skinsmonkey.ts:331/368) e close→reopen em qualquer site. Sessão longa alternando modo/abrindo-fechando = acúmulo de window-listeners + overlays destacados.
   **Fix proposto:** `enableDrag` registra via `AbortController`; guardar o controller no handle; `destroy()` faz `controller.abort()` (remove mousemove/mouseup de uma vez) antes de `root.remove()`. Custo baixo.
 
-- **🟡 MÉDIO — render-handle da virtual-list não é destruído no close do overlay.**
-  PS destrói o handle antes de cada re-render (`state.renderHandle?.destroy()`, pirateswap.ts applyAndRenderUnsafe) ✓, mas no **close** (`onClose` → `overlay.destroy()`) o `state.renderHandle` ativo **não** é destruído. O listener de `scroll` está no `overlay.body` (vai com o nó removido), mas o **`resize` no `window`** (virtual-list.ts:201) e o `IntersectionObserver` seguem vivos, e o closure `onScroll` retém `scrollRoot` (= body destacado).
-  **Fix proposto:** no `onClose` de PS (e onde mais usar vlist), `state.renderHandle?.destroy(); state.renderHandle = null;` antes de `overlay.destroy()`.
+- **🟢 MÉDIO — FALSO-POSITIVO (corrigido no T1.b após re-trace do código).**
+  A análise inicial dizia que o `renderHandle` não era destruído no close. Re-traçando: o `onClose` do PS chama `abort()` (pirateswap.ts:361) e **`abort()` já faz `state.renderHandle?.destroy()`** (pirateswap.ts:340) → `vh.destroy()` remove scroll+resize+observer. Ou seja, **o handle É destruído no close**. Único caminho de teardown = botão close → onClose → abort(); sem gap. **CS.Money e SkinsMonkey não usam virtual-list** (render por `innerHTML` puro) → não há handle/observer/resize p/ vazar. **Nenhuma mudança de código necessária.** (Lição: o re-trace pegou o que a leitura estática inicial não — `abort()` cobre o teardown.)
 
-- **🟡 BAIXO-MÉDIO — `oracles/steam.ts` `_mirror` Map cresce sem limite.**
-  `_mirror` (steam.ts) guarda todo item precificado pela sessão, sem evicção. Limitado na prática (cresce por clique do usuário no botão Steam), mas **ilimitado** numa sessão muito longa.
-  **Fix proposto:** cap simples (LRU ou tamanho máx, ex. 1000) ou evicção por TTL na leitura. Baixa prioridade.
+- **✅ BAIXO — `oracles/steam.ts` `_mirror` Map cresce sem limite (CORRIGIDO no T1.b).**
+  Era ilimitado numa sessão muito longa. Corrigido: `_mirror` agora é capado em `STEAM_MIRROR_MAX=1000`, insertion-ordered, evict-oldest (`mirrorSet`).
 
 - **🟢 OK (verificado, sem leak):**
   - `virtual-list.destroy()` remove scroll+resize e dá `observer.disconnect()` ✓ (o problema é só **chamá-lo** no close — ver MÉDIO acima). O rAF pendente no destroy não é cancelado, mas o callback faz no-op (`if (destroyed) return`) — inócuo.
@@ -894,7 +892,14 @@ Auditoria estática (leitura de `overlay.ts`, `virtual-list.ts`, `oracles/steam.
   - `steam-ui` listener delegado: idempotente via `_steamWired` no `overlay.body` ✓.
   - **Re-injeção SPA:** content scripts MV3 injetam 1× por load de documento; troca de rota SPA **não** re-injeta → estado de módulo não duplica por navegação. O risco de re-`createOverlay` vem dos flips de modo do SM + close/reopen, não da SPA.
 
-**Veredito:** 1 leak ALTO real (drag window-listeners) com fix barato e contido; 1 MÉDIO (destruir vlist handle no close); 1 menor (cap do `_mirror`). Tudo corrigível em uma tarefa pequena. Recomendo um "T1.b — fixes do audit" como **primeira tarefa de código** do v0.7, **após seu ok**.
+**Veredito:** 1 leak ALTO real (drag window-listeners); o MÉDIO virou falso-positivo no re-trace; 1 menor (cap do `_mirror`).
+
+#### T1.b — fixes do audit (ENTREGUE · gates verdes, 101 tests)
+
+- **ALTO ✅** — `overlay.ts`: `enableDrag` + todos os listeners do shell registrados com um `AbortController`; `destroy()` faz `ac.abort()` antes de `root.remove()`. Corrige os 4 sites de uma vez. Teste de regressão `tests/modules/overlay.drag-cleanup.test.ts` (signal abortado após destroy; 2 ciclos create→destroy sem acúmulo).
+- **MÉDIO ✅** — re-trace: já coberto por `abort()` no `onClose` do PS; CS.Money/SM não usam vlist. Sem código.
+- **BAIXO ✅** — `oracles/steam.ts`: `_mirror` capado (`STEAM_MIRROR_MAX=1000`, evict-oldest via `mirrorSet`).
+- **PARA AQUI** — aguardando ok do Jhony antes de T2–T6.
 
 ### T2 — Ícones SVG profissionais
 
