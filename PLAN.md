@@ -850,3 +850,60 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 > **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T1–T4.
 
 </details>
+
+---
+
+## v0.7 — Polish (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
+
+> **Status: detalhamento para aprovação (briefing §12).** Roadmap corrigido: v0.7 (Polish) → v0.8 (Beta privado) → v1.0 (publicação). Prep de publicação NÃO é agora (screenshots/listing dependem da UI polida; pular geraria retrabalho). Implementar T2–T6 só após o "ok"; **T1 (Fase A) é read-only e já pode rodar quando aprovado** — é o item de maior risco.
+
+**Objetivo:** lapidar a extensão para um beta privado de qualidade — sem features novas de dado, foco em robustez, i18n, UX de configuração/entrada e docs.
+
+### T1 — Fase A: audit de memory-leak (READ-ONLY · diagnóstico antes de tocar código)
+
+Maior risco: sessão longa com **Steam oracle + virtualização + listeners reativos** rodando juntos (a Skinport saiu, mas o resto permanece). **Investigação read-only + proposta escrita no PLAN; zero código nesta sub-fase.** Suspeitos a auditar:
+
+- **Steam mirror (`_mirror` Map em `oracles/steam.ts`)** — cresce sem limite (todo item precificado fica pra sempre). Sessão longa → creep. Avaliar cap/LRU/TTL-evict.
+- **Virtual-list (`virtual-list.ts`)** — `destroy()` desconecta o `IntersectionObserver` e remove o listener de scroll/rAF? Churn de re-render acumula observers/nós destacados?
+- **Listeners de filtro reativo (capture-phase no `document`)** — PS/CS.Money adicionam no mount; em re-mount/SPA-renavegação os antigos são removidos? (SkinsMonkey registra uma vez no bootstrap justamente p/ evitar dup — confirmar os outros.)
+- **`steam-ui` listener delegado** (`_steamWired`) + **overlay drag listeners** + **flog ring buffer** — vazam em re-injeção?
+- **Timers** (`setTimeout`/debounce) órfãos; nós DOM destacados retidos.
+- **Re-injeção de content script** em SPAs (cs.money/csfloat/SM) — estado/listeners duplicados entre navegações.
+- **Entregável:** seção "Spike: memory-leak audit (Fase A)" no PLAN com achado por suspeito + veredito + fixes propostos (implementados depois, em tarefa aprovada). Método: DevTools Memory (heap snapshots antes/depois de N scans + navegação), detached-nodes, listener count.
+
+### T2 — Ícones SVG profissionais
+
+Substituir o crosshair placeholder por um SVG profissional → rasterizar p/ PNG 16/32/48/128 via o `scripts/build-icons.mjs` existente. Atualizar `action.default_icon` + `icons` (já wirados).
+
+### T3 — i18n PT-BR + EN
+
+Strings voltadas ao usuário hoje inline nos content scripts/popup. Avaliar `chrome.i18n` + `_locales/{en,pt_BR}/messages.json` vs. um módulo `t(key)` leve com detecção via `navigator.language` + override nas options. Decisão na implementação; default = módulo leve interno (menos atrito que `_locales` p/ strings dinâmicas do overlay). Sem string hard-coded restante.
+
+### T4 — Options page
+
+`options_ui` no manifest + página dedicada para o que não cabe no popup: override de idioma, parâmetros de scan default (delay/max-pages), toggle de debug (`skinsight:debug`), reset de cache (rares/steam). Persiste em `chrome.storage.local` via o `storage.ts` existente.
+
+### T5 — Onboarding
+
+Primeira execução (`onInstalled`): abrir uma aba/painel de boas-vindas explicando os modos (Rare/Arbitrage), os sites suportados e o fluxo básico. Mostrar uma única vez (flag em storage).
+
+### T6 — Docs completas
+
+Finalizar `docs/ARCHITECTURE.md` (data-flow atual: 4 content scripts + SW + oráculo Steam + remote-rares), `docs/API-NOTES.md` (endpoints + a queda da Skinport), `docs/CONTRIBUTING.md`, e polir o `README.md`. Refletir o roadmap corrigido.
+
+### Ordem sugerida
+
+T1 (Fase A, read-only) → T2 → T3 → T4 → T5 → T6. T1 primeiro porque é o risco; o resto é mecânico e paralelizável.
+
+### Exit criteria
+
+- T1: seção de audit no PLAN com veredito + fixes propostos (sem código).
+- Ícones nítidos em 16/32/48/128. Strings alternam PT-BR/EN. Options persiste. Onboarding aparece 1×. Docs completas e coerentes com o roadmap.
+- Gates verdes: typecheck + lint + **format:check** + testes + build. Conventional Commits.
+- Sem `<all_urls>`, sem alargar permissões além do necessário (options/onboarding não exigem host novo).
+
+### Arquivos (estimativa)
+
+T2: `scripts/build-icons.mjs` + SVG source + `manifest.config.ts`. T3: novo `modules/shared/i18n.ts` + `_locales/*` (se `chrome.i18n`) + toques nos content scripts/popup. T4: `src/options/{options.html,options.ts,options.css}` + `manifest.config.ts`. T5: `service-worker.ts` (onInstalled) + página/asset de welcome. T6: `docs/*` + `README.md`. **Custo: M–L** (T1 read-only; T3 é o mais espalhado).
+
+> **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T2–T6 (e o "ok" para rodar T1 read-only).
