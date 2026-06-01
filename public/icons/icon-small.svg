@@ -1,7 +1,7 @@
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Skinsight master icon (v0.7 T2): "S" monogram + 3 diamonds (white sides,
-       gold center = Gold sticker tier). Used for the 48 and 128 PNGs. The 16/32
-       use icon-small.svg (center diamond only) for legibility. -->
+  <!-- Small-size variant (v0.7 T2) for the 16 and 32 PNGs: same "S" monogram,
+       but only the central gold diamond (slightly enlarged) — the two white side
+       diamonds drop out so the glyph stays legible at favicon sizes. -->
   <defs>
     <linearGradient id="g2bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#1a2030"/><stop offset="1" stop-color="#0c0f16"/>
@@ -15,9 +15,5 @@
   </defs>
   <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#g2bg)"/>
   <path d="M88 46 C88 33 76 28 64 28 C50 28 40 35 40 48 C40 60 53 63 64 66 C75 69 88 72 88 84 C88 97 76 102 64 102 C51 102 40 97 40 84" fill="none" stroke="url(#g2s)" stroke-width="13" stroke-linecap="round"/>
-  <g fill="#ffffff">
-    <path d="M43 54 L49 60 L43 66 L37 60 Z"/>
-    <path d="M85 76 L91 82 L85 88 L79 82 Z"/>
-  </g>
-  <path d="M64 60 L71 67 L64 74 L57 67 Z" fill="url(#g2gold)"/>
+  <path d="M64 56 L75 67 L64 78 L53 67 Z" fill="url(#g2gold)"/>
 </svg>
