@@ -94,6 +94,24 @@ describe('collectAll PirateSwap — full-inventory scan', () => {
     warn.mockRestore();
   });
 
+  it('honors an optional maxPages cap (PS "Max pages")', async () => {
+    // Always-full pages; a maxPages of 3 must stop after 3 fetches even though
+    // the API never sets empty=true.
+    installFetchSequence(Array.from({ length: 50 }, () => pageOf(40)));
+    const items = await collectAll({ site: 'pirateswap', maxPages: 3 });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(items).toHaveLength(3 * 40);
+  });
+
+  it('clamps maxPages to the SAFETY cap (never scans beyond it)', async () => {
+    installFetchSequence(Array.from({ length: 400 }, () => pageOf(40)));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const items = await collectAll({ site: 'pirateswap', maxPages: 9999 });
+    expect(fetchSpy).toHaveBeenCalledTimes(PS_SAFETY_CAP_PAGES);
+    expect(items).toHaveLength(PS_SAFETY_CAP_PAGES * 40);
+    warn.mockRestore();
+  });
+
   it('honors abort signal mid-scan', async () => {
     installFetchSequence(Array.from({ length: 50 }, () => pageOf(40)));
     const signal = { aborted: false };

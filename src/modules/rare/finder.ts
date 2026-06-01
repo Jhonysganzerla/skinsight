@@ -197,10 +197,13 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
     // so we back off and retry the SAME page. A retry budget prevents an
     // infinite loop if PS is genuinely down / the throttle never clears.
     const MAX_EMPTY_RETRIES = 4;
+    // Optional user cap (PS "Max pages"); blank → full scan. Never above the
+    // safety cap, which always guards against a runaway response.
+    const cap = Math.min(opts.maxPages ?? PS_SAFETY_CAP_PAGES, PS_SAFETY_CAP_PAGES);
     const startedAt = Date.now();
     let loggedHeader = false;
     let p = 1;
-    for (; p <= PS_SAFETY_CAP_PAGES; p++) {
+    for (; p <= cap; p++) {
       if (opts.signal?.aborted) break;
       opts.onProgress?.(`Scanned ${p - 1} pages (${items.length} items)…`, items.length);
 

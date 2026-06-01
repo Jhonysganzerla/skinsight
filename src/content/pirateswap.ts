@@ -38,6 +38,14 @@ type SortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
 // v0.4.1: page-count filter removed. Scan walks the inventory to the end
 // (PS reports `empty=true` on the trailing page). Safety cap 250 pages.
 const FILTERS: FilterField[] = [
+  {
+    id: 'maxPages',
+    label: 'Max pages',
+    type: 'number',
+    value: '',
+    placeholder: 'all',
+    hint: 'Blank = scan the whole inventory (capped at the safety limit).',
+  },
   { id: 'maxPrice', label: 'Max price ($)', type: 'number', placeholder: 'none' },
   {
     id: 'sort',
@@ -262,8 +270,16 @@ async function runScan(): Promise<void> {
     setStatus('Scanning PirateSwap inventory until empty…', 'info');
     flog('scan: begin');
 
+    // Optional "Max pages": blank → scan to inventory end (collectAll caps at
+    // PS_SAFETY_CAP_PAGES); a positive number caps the scan early.
+    const filters = readFilterValues(overlay.body);
+    const maxPagesRaw = (filters['maxPages'] ?? '').trim();
+    const maxPagesNum = parseInt(maxPagesRaw, 10);
+    const maxPages = maxPagesRaw && maxPagesNum > 0 ? maxPagesNum : undefined;
+
     const items = await collectAll({
       site: 'pirateswap',
+      ...(maxPages !== undefined ? { maxPages } : {}),
       signal: state.aborted,
       onProgress: (msg, collected) => {
         if (!overlay) return;
