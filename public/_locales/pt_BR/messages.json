@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Skinsight",
+    "description": "Extension name shown in the toolbar and the Chrome Web Store."
+  },
+  "appDesc": {
+    "message": "Scanner de arbitragem e stickers raros de skins CS2 para SkinsMonkey, CSFloat, PirateSwap e CS.Money.",
+    "description": "Short store/manifest description (pt-BR)."
+  }
+}

@@ -3,9 +3,15 @@ import pkg from './package.json' with { type: 'json' };
 
 export default defineManifest({
   manifest_version: 3,
-  name: 'Skinsight',
+  // i18n (v0.7 T3a): name/description resolve from public/_locales via __MSG__,
+  // so the Chrome Web Store listing localizes (en + pt_BR). default_locale is
+  // required whenever _locales is present. The runtime UI uses a separate
+  // lightweight t() module (T3b) — chrome.i18n can't be overridden at runtime,
+  // which the options page needs (conscious deviation from briefing §6).
+  default_locale: 'en',
+  name: '__MSG_appName__',
   version: pkg.version,
-  description: pkg.description,
+  description: '__MSG_appDesc__',
   icons: {
     16: 'icons/icon-16.png',
     32: 'icons/icon-32.png',
