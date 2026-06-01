@@ -22,6 +22,7 @@ import {
   type TodayHit,
 } from '../modules/shared/storage';
 import { send } from '../modules/shared/messaging';
+import { t } from '../modules/shared/i18n';
 
 const KO_FI_URL = 'https://ko-fi.com/sganzerla';
 const PIX_KEY = 'ac344236-c335-4f89-aee2-e671101d4619';
@@ -104,15 +105,15 @@ async function readRareStatus(): Promise<RareListStatus | null> {
   }
 }
 
-/** Human-friendly "time since" for the rare-list timestamp (pt-BR). */
+/** Human-friendly "time since" for the rare-list timestamp (localized). */
 function fmtAgo(ms: number): string {
   const diff = Date.now() - ms;
   const min = Math.floor(diff / 60000);
-  if (min < 1) return 'agora mesmo';
-  if (min < 60) return `há ${min} min`;
+  if (min < 1) return t('time.now');
+  if (min < 60) return t('time.min', { n: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `há ${h}h`;
-  return `há ${Math.floor(h / 24)}d`;
+  if (h < 24) return t('time.hour', { n: h });
+  return t('time.day', { n: Math.floor(h / 24) });
 }
 
 function escHtml(s: unknown): string {
@@ -153,15 +154,15 @@ function renderModesSection(s: Settings, active: SiteDef | null): string {
   // Rare first — v0.4 repositioning. Skinsight is primarily a rare scanner.
   return `
     <div class="popup-section"${sectionDim}>
-      <div class="section-label">SkinsMonkey mode <span style="font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">— pick one</span></div>
+      <div class="section-label">${escHtml(t('popup.modes.label'))} <span style="font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">— ${escHtml(t('popup.modes.pickOne'))}</span></div>
       <div class="mode-row">
         <button class="mode-card ${rareActive ? 'active' : ''}" data-mode="rare" type="button">
-          <div class="mode-card-title"><span class="toggle-dot"></span> Rare stickers</div>
-          <div class="mode-card-meta">Default · catches under-listed items</div>
+          <div class="mode-card-title"><span class="toggle-dot"></span> ${escHtml(t('popup.modes.rare.title'))}</div>
+          <div class="mode-card-meta">${escHtml(t('popup.modes.rare.meta'))}</div>
         </button>
         <button class="mode-card ${arbActive ? 'active' : ''}" data-mode="arbitrage" type="button">
-          <div class="mode-card-title"><span class="toggle-dot"></span> Arbitrage</div>
-          <div class="mode-card-meta">SM ↔ CSFloat</div>
+          <div class="mode-card-title"><span class="toggle-dot"></span> ${escHtml(t('popup.modes.arb.title'))}</div>
+          <div class="mode-card-meta">${escHtml(t('popup.modes.arb.meta'))}</div>
         </button>
       </div>
     </div>
@@ -169,9 +170,9 @@ function renderModesSection(s: Settings, active: SiteDef | null): string {
 }
 
 function siteSubtitle(site: SiteDef): string {
-  if (site.key === 'skinsmonkey') return 'Mode toggle above';
-  if (site.key === 'csfloat') return 'Always-on Arbitrage oracle';
-  return 'Always-on Rare';
+  if (site.key === 'skinsmonkey') return t('popup.sites.sub.skinsmonkey');
+  if (site.key === 'csfloat') return t('popup.sites.sub.csfloat');
+  return t('popup.sites.sub.rare');
 }
 
 function renderSitesSection(activeHost: string | null): string {
@@ -180,8 +181,8 @@ function renderSitesSection(activeHost: string | null): string {
       ? activeHost === site.host || activeHost.endsWith('.' + site.host)
       : false;
     const pill = isActive
-      ? '<span class="site-pill pill-active">Active tab</span>'
-      : '<span class="site-pill pill-on">Ready</span>';
+      ? `<span class="site-pill pill-active">${escHtml(t('popup.sites.activeTab'))}</span>`
+      : `<span class="site-pill pill-on">${escHtml(t('popup.sites.ready'))}</span>`;
     return `
       <a class="site-status" href="${site.url}" data-open="${site.url}">
         <div class="site-icon" style="background:${site.iconBg};color:${site.iconFg};">${site.short}</div>
@@ -195,7 +196,7 @@ function renderSitesSection(activeHost: string | null): string {
   }).join('');
   return `
     <div class="popup-section">
-      <div class="section-label">Sites</div>
+      <div class="section-label">${escHtml(t('popup.sites.label'))}</div>
       ${rows}
     </div>
   `;
@@ -205,9 +206,9 @@ function renderHitsSection(hits: TodayHit[]): string {
   if (!hits.length) {
     return `
       <div class="popup-section">
-        <div class="section-label">Today's hits</div>
+        <div class="section-label">${escHtml(t('popup.hits.label'))}</div>
         <div class="hit-row" style="justify-content:center;color:var(--text-dim);font-size:11.5px;">
-          No hits yet — start scanning on any supported site.
+          ${escHtml(t('popup.hits.empty'))}
         </div>
       </div>
     `;
@@ -229,7 +230,7 @@ function renderHitsSection(hits: TodayHit[]): string {
     .join('');
   return `
     <div class="popup-section">
-      <div class="section-label">Today's hits <span class="pill-mini pill-success">${hits.length}</span></div>
+      <div class="section-label">${escHtml(t('popup.hits.label'))} <span class="pill-mini pill-success">${hits.length}</span></div>
       ${rows}
     </div>
   `;
@@ -237,14 +238,14 @@ function renderHitsSection(hits: TodayHit[]): string {
 
 function renderRareListSection(status: RareListStatus | null): string {
   const meta = status
-    ? `${status.count} stickers · atualizado ${escHtml(fmtAgo(status.fetchedAt))}`
-    : 'Usando lista embutida — clique para buscar a publicada';
+    ? t('popup.rares.meta', { count: status.count, ago: fmtAgo(status.fetchedAt) })
+    : t('popup.rares.bundled');
   return `
     <div class="popup-section">
-      <div class="section-label">Lista de raros</div>
+      <div class="section-label">${escHtml(t('popup.rares.label'))}</div>
       <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
-        <div style="font-size:11px;color:var(--text-dim);flex:1;min-width:0;">${meta}</div>
-        <button class="donate-btn" id="btn-refresh-rares" type="button" style="flex:0 0 auto;">↻ Atualizar</button>
+        <div style="font-size:11px;color:var(--text-dim);flex:1;min-width:0;">${escHtml(meta)}</div>
+        <button class="donate-btn" id="btn-refresh-rares" type="button" style="flex:0 0 auto;">${escHtml(t('popup.rares.refresh'))}</button>
       </div>
     </div>
   `;
@@ -253,10 +254,10 @@ function renderRareListSection(status: RareListStatus | null): string {
 function renderDonateSection(): string {
   return `
     <div class="popup-section">
-      <div class="section-label">Achou bom? Paga um café</div>
+      <div class="section-label">${escHtml(t('popup.donate.label'))}</div>
       <div class="donate-row">
         <button class="donate-btn" id="btn-kofi" type="button">☕ Ko-fi</button>
-        <button class="donate-btn" id="btn-pix" type="button">📱 Copy Pix</button>
+        <button class="donate-btn" id="btn-pix" type="button">${escHtml(t('popup.donate.pix'))}</button>
       </div>
       <div class="footer-links">
         <a href="https://github.com/jhonysganzerla/skinsight" target="_blank" rel="noopener">GitHub</a>
@@ -271,7 +272,7 @@ function renderEmptyState(): string {
     <a class="site-status" href="${s.url}" data-open="${s.url}">
       <div class="site-icon" style="background:${s.iconBg};color:${s.iconFg};">${s.short}</div>
       <div class="site-name">${escHtml(s.label)}</div>
-      <span class="open-link">Open ↗</span>
+      <span class="open-link">${escHtml(t('popup.open'))}</span>
     </a>
   `,
   ).join('');
@@ -279,8 +280,8 @@ function renderEmptyState(): string {
     <div class="popup-section">
       <div class="empty">
         <div class="empty-icon">⌖</div>
-        <p class="empty-title">No supported site detected</p>
-        <p class="empty-sub">Open one of the supported skin trading sites and the scanner will activate automatically.</p>
+        <p class="empty-title">${escHtml(t('popup.empty.title'))}</p>
+        <p class="empty-sub">${escHtml(t('popup.empty.sub'))}</p>
         <div class="site-list">${links}</div>
       </div>
     </div>
@@ -315,16 +316,16 @@ async function openTab(url: string): Promise<void> {
 async function copyPix(btn: HTMLElement): Promise<void> {
   try {
     await navigator.clipboard.writeText(PIX_KEY);
-    btn.textContent = '✓ Copied';
+    btn.textContent = t('popup.donate.pixCopied');
     btn.classList.add('copied');
     setTimeout(() => {
-      btn.textContent = '📱 Copy Pix';
+      btn.textContent = t('popup.donate.pix');
       btn.classList.remove('copied');
     }, 2000);
   } catch {
-    btn.textContent = 'Copy failed';
+    btn.textContent = t('popup.donate.pixFailed');
     setTimeout(() => {
-      btn.textContent = '📱 Copy Pix';
+      btn.textContent = t('popup.donate.pix');
     }, 2000);
   }
 }
@@ -365,7 +366,7 @@ function wireUp(root: HTMLElement): void {
 /** Force a remote rare-list refresh via the SW, then re-render the popup. */
 async function refreshRares(btn: HTMLElement): Promise<void> {
   const original = btn.textContent;
-  btn.textContent = '↻ Atualizando…';
+  btn.textContent = t('popup.rares.refreshing');
   (btn as HTMLButtonElement).disabled = true;
   let r: Awaited<ReturnType<typeof send>>;
   try {
@@ -378,7 +379,7 @@ async function refreshRares(btn: HTMLElement): Promise<void> {
     await render();
     return;
   }
-  btn.textContent = 'Falhou';
+  btn.textContent = t('popup.rares.failed');
   setTimeout(() => {
     btn.textContent = original;
     (btn as HTMLButtonElement).disabled = false;
