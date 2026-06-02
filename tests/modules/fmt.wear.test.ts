@@ -18,6 +18,14 @@ describe('wearCode', () => {
     expect(wearCode('★ Karambit | Doppler (Factory New)')).toBe('FN');
   });
 
+  it("accepts SkinsMonkey's UPPER_SNAKE exterior format", () => {
+    expect(wearCode('FACTORY_NEW')).toBe('FN');
+    expect(wearCode('MINIMAL_WEAR')).toBe('MW');
+    expect(wearCode('FIELD_TESTED')).toBe('FT');
+    expect(wearCode('WELL_WORN')).toBe('WW');
+    expect(wearCode('BATTLE_SCARRED')).toBe('BS');
+  });
+
   it('returns empty string when there is no wear', () => {
     expect(wearCode('Sticker | Howling Dawn')).toBe('');
     expect(wearCode('')).toBe('');

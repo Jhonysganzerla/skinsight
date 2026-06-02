@@ -50,12 +50,14 @@ export function sleep(ms: number): Promise<void> {
  * 'Field-Tested' / "AK-47 | Redline (Field-Tested)" → 'FT'. '' when none.
  */
 export function wearCode(s: string): string {
-  const x = String(s || '');
-  if (/Factory New/i.test(x)) return 'FN';
-  if (/Minimal Wear/i.test(x)) return 'MW';
-  if (/Field-Tested/i.test(x)) return 'FT';
-  if (/Well-Worn/i.test(x)) return 'WW';
-  if (/Battle-Scarred/i.test(x)) return 'BS';
+  // Accept both "Factory New" (Steam/PS/name suffix) and "FACTORY_NEW"
+  // (SkinsMonkey details.exterior). Normalize separators, match case-insensitive.
+  const x = String(s || '').replace(/_/g, ' ');
+  if (/factory new/i.test(x)) return 'FN';
+  if (/minimal wear/i.test(x)) return 'MW';
+  if (/field[ -]tested/i.test(x)) return 'FT';
+  if (/well[ -]worn/i.test(x)) return 'WW';
+  if (/battle[ -]scarred/i.test(x)) return 'BS';
   return '';
 }
 
