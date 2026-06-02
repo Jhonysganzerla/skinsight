@@ -20,6 +20,7 @@ import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/fi
 import { renderRareCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
+import { t } from '../modules/shared/i18n';
 import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-ps-overlay';
@@ -37,29 +38,37 @@ type SortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
 
 // v0.4.1: page-count filter removed. Scan walks the inventory to the end
 // (PS reports `empty=true` on the trailing page). Safety cap 250 pages.
-const FILTERS: FilterField[] = [
-  {
-    id: 'maxPages',
-    label: 'Max pages',
-    type: 'number',
-    value: '',
-    placeholder: 'all',
-    hint: 'Blank = scan the whole inventory (capped at the safety limit).',
-  },
-  { id: 'maxPrice', label: 'Max price ($)', type: 'number', placeholder: 'none' },
-  {
-    id: 'sort',
-    label: 'Sort',
-    type: 'select',
-    options: [
-      { value: 'roi', label: 'ROI ↓' },
-      { value: 'stickerSum', label: 'Stickers $ ↓' },
-      { value: 'profit', label: 'Profit ↓' },
-      { value: 'priceAsc', label: 'Price ↑' },
-      { value: 'priceDesc', label: 'Price ↓' },
-    ],
-  },
-];
+// Built lazily so labels reflect the locale resolved at render time.
+function filters(): FilterField[] {
+  return [
+    {
+      id: 'maxPages',
+      label: t('filter.maxPages'),
+      type: 'number',
+      value: '',
+      placeholder: t('filter.ph.all'),
+      hint: t('filter.maxPages.hint'),
+    },
+    {
+      id: 'maxPrice',
+      label: t('filter.maxPrice'),
+      type: 'number',
+      placeholder: t('filter.ph.none'),
+    },
+    {
+      id: 'sort',
+      label: t('filter.sort'),
+      type: 'select',
+      options: [
+        { value: 'roi', label: t('sort.roi') },
+        { value: 'stickerSum', label: t('sort.stickerSum') },
+        { value: 'profit', label: t('sort.profit') },
+        { value: 'priceAsc', label: t('sort.priceAsc') },
+        { value: 'priceDesc', label: t('sort.priceDesc') },
+      ],
+    },
+  ];
+}
 
 interface State {
   running: boolean;
@@ -89,16 +98,16 @@ function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
 
 function bodyHtml(): string {
   return [
-    renderFilterGrid(FILTERS),
-    renderScanBar({ info: 'Ready. Click Scan to begin.', actionLabel: 'Scan' }),
+    renderFilterGrid(filters()),
+    renderScanBar({ info: t('scan.readyHint'), actionLabel: t('scan.scan') }),
     `<div data-role="results"></div>`,
   ].join('');
 }
 
-const EMPTY_HTML = `<div class="sh-empty">
+const emptyHtml = (): string => `<div class="sh-empty">
   <div class="sh-empty-icon">⌖</div>
-  <div class="sh-empty-title">No rare stickers found</div>
-  <div class="sh-empty-sub">Widen filters or scan more pages.</div>
+  <div class="sh-empty-title">${t('rare.empty.title')}</div>
+  <div class="sh-empty-sub">${t('rare.empty.sub')}</div>
 </div>`;
 
 /** Read filter values + apply the current ones to `state.results`. */
@@ -179,7 +188,7 @@ function applyAndRender(): void {
     // change — looking exactly like "changing the Sort select does nothing".
     // Surface it instead of swallowing it.
     console.error('[Skinsight] applyAndRender failed:', e);
-    setStatus('Render error: ' + (e as Error).message, 'err');
+    setStatus(t('scan.renderError', { msg: (e as Error).message }), 'err');
   }
 }
 
@@ -202,9 +211,9 @@ function applyAndRenderUnsafe(): void {
       `path=${filtered.length > VIRT_THRESHOLD ? 'virtual' : 'chunked'}`,
   );
 
-  const header = renderResultsHeader('Item · stickers detected', 'Worth');
+  const header = renderResultsHeader(t('results.header.detected'), t('results.worth'));
   if (!filtered.length) {
-    list.innerHTML = header + EMPTY_HTML;
+    list.innerHTML = header + emptyHtml();
     return;
   }
 
@@ -266,8 +275,8 @@ async function runScan(): Promise<void> {
 
     // No progress bar — we don't know the total ahead of time. Indeterminate
     // status only; the user can Stop at any moment.
-    updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Scanning inventory…' });
-    setStatus('Scanning PirateSwap inventory until empty…', 'info');
+    updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: t('ps.scanningShort') });
+    setStatus(t('ps.scanning'), 'info');
     flog('scan: begin');
 
     // Optional "Max pages": blank → scan to inventory end (collectAll caps at
@@ -304,12 +313,12 @@ async function runScan(): Promise<void> {
     );
 
     if (state.aborted.aborted) {
-      setStatus('Scan stopped.', 'info');
+      setStatus(t('scan.stopped'), 'info');
       return;
     }
 
     updateScanBar(overlay.body, {
-      info: `Matching ${items.length} items against rare DB…`,
+      info: t('scan.matching', { n: items.length }),
     });
     flog(`match: begin findRareResults over ${items.length} items`);
     state.results = await findRareResults(items);
@@ -320,9 +329,9 @@ async function runScan(): Promise<void> {
     applyAndRender();
     flog('render: initial applyAndRender returned');
     updateScanBar(overlay.body, {
-      info: `Scan complete — ${state.results.length} hits.`,
+      info: t('scan.complete.hits', { n: state.results.length }),
     });
-    setStatus(`Found ${state.results.length} items with rare stickers.`, 'ok');
+    setStatus(t('rare.found', { n: state.results.length }), 'ok');
 
     const top = applyRareFilter(state.results, currentFilterOpts())[0];
     if (top) {
@@ -339,8 +348,8 @@ async function runScan(): Promise<void> {
     // and let finally clear `running` so the user can rescan.
     flog(`scan: ERROR ${(e as Error)?.message ?? String(e)}`);
     if (overlay) {
-      updateScanBar(overlay.body, { info: 'Scan failed.' });
-      setStatus('Scan error: ' + ((e as Error)?.message ?? String(e)), 'err');
+      updateScanBar(overlay.body, { info: t('scan.failed') });
+      setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
     }
   } finally {
     finish();
@@ -363,7 +372,7 @@ function abort(): void {
 
 function finish(): void {
   state.running = false;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: 'Scan' });
+  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
 }
 
 function mount(): void {
@@ -381,7 +390,7 @@ function mount(): void {
   });
   overlay.body.innerHTML = bodyHtml();
   wireSteamButtons(overlay.body);
-  setStatus('Ready.', 'info');
+  setStatus(t('scan.ready'), 'info');
 
   overlay.body.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;

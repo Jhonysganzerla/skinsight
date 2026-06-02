@@ -23,33 +23,36 @@ import { renderCsMoneyCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import { esc } from '../modules/shared/fmt';
+import { t } from '../modules/shared/i18n';
 import type { CsMoneyItem } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
 
-const FILTERS: FilterField[] = [
-  {
-    id: 'maxPages',
-    label: 'Max pages',
-    type: 'number',
-    value: '',
-    placeholder: 'all',
-    hint: 'Blank = scan the whole inventory (capped at the safety limit).',
-  },
-  { id: 'delayMs', label: 'Delay (ms)', type: 'number', value: '900' },
-  {
-    id: 'sort',
-    label: 'Sort',
-    type: 'select',
-    options: [
-      { value: 'net_desc', label: 'Net $ ↓' },
-      { value: 'stickers_desc', label: 'Stickers $ ↓' },
-      { value: 'weapon_asc', label: 'Cheapest weapon ↑' },
-      { value: 'count_desc', label: 'Sticker count ↓' },
-    ],
-  },
-];
+function filters(): FilterField[] {
+  return [
+    {
+      id: 'maxPages',
+      label: t('filter.maxPages'),
+      type: 'number',
+      value: '',
+      placeholder: t('filter.ph.all'),
+      hint: t('filter.maxPages.hint'),
+    },
+    { id: 'delayMs', label: t('filter.delayMs'), type: 'number', value: '900' },
+    {
+      id: 'sort',
+      label: t('filter.sort'),
+      type: 'select',
+      options: [
+        { value: 'net_desc', label: t('sort.netDesc') },
+        { value: 'stickers_desc', label: t('sort.stickerSum') },
+        { value: 'weapon_asc', label: t('sort.weaponAsc') },
+        { value: 'count_desc', label: t('sort.countDesc') },
+      ],
+    },
+  ];
+}
 
 interface State {
   running: boolean;
@@ -105,8 +108,8 @@ function regenerateBlockHtml(disabled: boolean): string {
 
 function bodyHtml(): string {
   return [
-    renderFilterGrid(FILTERS),
-    renderScanBar({ info: 'Ready. Click Scan to begin.', actionLabel: 'Scan' }),
+    renderFilterGrid(filters()),
+    renderScanBar({ info: t('scan.readyHint'), actionLabel: t('scan.scan') }),
     `<div data-role="results"></div>`,
     regenerateBlockHtml(true),
   ].join('');
@@ -132,13 +135,13 @@ function renderResults(): void {
   const sortKey = filters['sort'] ?? 'net_desc';
   const sorted = sortItems(state.items, sortKey);
   list.innerHTML =
-    renderResultsHeader('Item · stickers', 'Net') +
+    renderResultsHeader(t('results.header.stickers'), t('results.net')) +
     (sorted.length
       ? sorted.map(renderCsMoneyCard).join('')
       : `<div class="sh-empty">
           <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">No items collected</div>
-          <div class="sh-empty-sub">Try increasing pages or check CS.Money rate limit.</div>
+          <div class="sh-empty-title">${t('csm.empty.title')}</div>
+          <div class="sh-empty-sub">${t('csm.empty.sub')}</div>
         </div>`);
 }
 
@@ -178,8 +181,12 @@ async function runScan(): Promise<void> {
       ? Math.min(maxPagesNum, SCAN_SAFETY_CAP_PAGES)
       : SCAN_SAFETY_CAP_PAGES;
 
-  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
-  setStatus('Collecting CS.Money inventory…', 'info');
+  updateScanBar(overlay.body, {
+    actionLabel: t('scan.stop'),
+    info: t('csm.collecting'),
+    progressPct: 0,
+  });
+  setStatus(t('csm.collectingInv'), 'info');
 
   const collected = await collectCsMoney({
     maxPages,
@@ -192,7 +199,7 @@ async function runScan(): Promise<void> {
   });
 
   if (state.aborted.aborted) {
-    setStatus('Scan stopped.', 'info');
+    setStatus(t('scan.stopped'), 'info');
     finish();
     return;
   }
@@ -210,10 +217,13 @@ async function runScan(): Promise<void> {
   if (drawer) drawer.outerHTML = regenerateBlockHtml(false);
 
   updateScanBar(overlay.body, {
-    info: `Scan complete — ${collected.length} items, ${collected.filter((i) => i.netUsd > 0).length} profitable.`,
+    info: t('csm.complete', {
+      n: collected.length,
+      p: collected.filter((i) => i.netUsd > 0).length,
+    }),
     progressPct: 100,
   });
-  setStatus(`Collected ${collected.length} items.`, 'ok');
+  setStatus(t('csm.collected', { n: collected.length }), 'ok');
 
   const top = sortItems(collected, sortKey)[0];
   if (top && top.netUsd > 0) {
@@ -305,7 +315,7 @@ function abort(): void {
 
 function finish(): void {
   state.running = false;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: 'Scan' });
+  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
 }
 
 function mount(): void {
@@ -323,7 +333,7 @@ function mount(): void {
   });
   overlay.body.innerHTML = bodyHtml();
   wireSteamButtons(overlay.body);
-  setStatus('Ready.', 'info');
+  setStatus(t('scan.ready'), 'info');
 
   overlay.body.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;

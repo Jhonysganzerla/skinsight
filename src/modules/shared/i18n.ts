@@ -94,6 +94,82 @@ const STRINGS: Record<string, Entry> = {
   'overlay.minimize': { en: 'Minimize', 'pt-BR': 'Minimizar' },
   'overlay.close': { en: 'Close', 'pt-BR': 'Fechar' },
   'overlay.minbar.open': { en: 'open', 'pt-BR': 'abrir' },
+  // ── Filters (shared across the rare scanners) ──────────────────────
+  'filter.maxPages': { en: 'Max pages', 'pt-BR': 'Máx. páginas' },
+  'filter.maxPages.hint': {
+    en: 'Blank = scan the whole inventory (capped at the safety limit).',
+    'pt-BR': 'Em branco = escaneia o inventário todo (até o limite de segurança).',
+  },
+  'filter.maxPrice': { en: 'Max price ($)', 'pt-BR': 'Preço máx ($)' },
+  'filter.delayMs': { en: 'Delay (ms)', 'pt-BR': 'Delay (ms)' },
+  'filter.sort': { en: 'Sort', 'pt-BR': 'Ordenar' },
+  'filter.ph.none': { en: 'none', 'pt-BR': 'nenhum' },
+  'filter.ph.all': { en: 'all', 'pt-BR': 'tudo' },
+  // ── Sort options ───────────────────────────────────────────────────
+  'sort.roi': { en: 'ROI ↓', 'pt-BR': 'ROI ↓' },
+  'sort.stickerSum': { en: 'Stickers $ ↓', 'pt-BR': 'Stickers $ ↓' },
+  'sort.profit': { en: 'Profit ↓', 'pt-BR': 'Lucro ↓' },
+  'sort.priceAsc': { en: 'Price ↑', 'pt-BR': 'Preço ↑' },
+  'sort.priceDesc': { en: 'Price ↓', 'pt-BR': 'Preço ↓' },
+  'sort.netDesc': { en: 'Net $ ↓', 'pt-BR': 'Líquido $ ↓' },
+  'sort.weaponAsc': { en: 'Cheapest weapon ↑', 'pt-BR': 'Arma mais barata ↑' },
+  'sort.countDesc': { en: 'Sticker count ↓', 'pt-BR': 'Qtde de stickers ↓' },
+  // ── Scan bar / status (shared) ─────────────────────────────────────
+  'scan.scan': { en: 'Scan', 'pt-BR': 'Escanear' },
+  'scan.stop': { en: 'Stop', 'pt-BR': 'Parar' },
+  'scan.readyHint': { en: 'Ready. Click Scan to begin.', 'pt-BR': 'Pronto. Clique em Escanear.' },
+  'scan.ready': { en: 'Ready.', 'pt-BR': 'Pronto.' },
+  'scan.stopped': { en: 'Scan stopped.', 'pt-BR': 'Scan interrompido.' },
+  'scan.failed': { en: 'Scan failed.', 'pt-BR': 'Scan falhou.' },
+  'scan.error': { en: 'Scan error: {msg}', 'pt-BR': 'Erro no scan: {msg}' },
+  'scan.renderError': { en: 'Render error: {msg}', 'pt-BR': 'Erro de render: {msg}' },
+  'scan.matching': {
+    en: 'Matching {n} items against rare DB…',
+    'pt-BR': 'Comparando {n} items com a DB de raros…',
+  },
+  'scan.complete.hits': { en: 'Scan complete — {n} hits.', 'pt-BR': 'Scan completo — {n} hits.' },
+  // ── Results headers ────────────────────────────────────────────────
+  'results.worth': { en: 'Worth', 'pt-BR': 'Valor' },
+  'results.net': { en: 'Net', 'pt-BR': 'Líquido' },
+  'results.header.detected': {
+    en: 'Item · stickers detected',
+    'pt-BR': 'Item · stickers detectados',
+  },
+  'results.header.stickers': { en: 'Item · stickers', 'pt-BR': 'Item · stickers' },
+  // ── PirateSwap ─────────────────────────────────────────────────────
+  'ps.scanning': {
+    en: 'Scanning PirateSwap inventory until empty…',
+    'pt-BR': 'Escaneando o inventário do PirateSwap até o fim…',
+  },
+  'ps.scanningShort': { en: 'Scanning inventory…', 'pt-BR': 'Escaneando inventário…' },
+  'rare.empty.title': {
+    en: 'No rare stickers found',
+    'pt-BR': 'Nenhum sticker raro encontrado',
+  },
+  'rare.empty.sub': {
+    en: 'Widen filters or scan more pages.',
+    'pt-BR': 'Amplie os filtros ou escaneie mais páginas.',
+  },
+  'rare.found': {
+    en: 'Found {n} items with rare stickers.',
+    'pt-BR': '{n} items com stickers raros.',
+  },
+  // ── CS.Money ───────────────────────────────────────────────────────
+  'csm.collecting': { en: 'Collecting…', 'pt-BR': 'Coletando…' },
+  'csm.collectingInv': {
+    en: 'Collecting CS.Money inventory…',
+    'pt-BR': 'Coletando inventário do CS.Money…',
+  },
+  'csm.empty.title': { en: 'No items collected', 'pt-BR': 'Nenhum item coletado' },
+  'csm.empty.sub': {
+    en: 'Try increasing pages or check CS.Money rate limit.',
+    'pt-BR': 'Aumente as páginas ou cheque o rate limit do CS.Money.',
+  },
+  'csm.complete': {
+    en: 'Scan complete — {n} items, {p} profitable.',
+    'pt-BR': 'Scan completo — {n} items, {p} lucrativos.',
+  },
+  'csm.collected': { en: 'Collected {n} items.', 'pt-BR': '{n} items coletados.' },
   // ── Relative time (fmtAgo) ─────────────────────────────────────────
   'time.now': { en: 'just now', 'pt-BR': 'agora mesmo' },
   'time.min': { en: '{n}m ago', 'pt-BR': 'há {n} min' },
