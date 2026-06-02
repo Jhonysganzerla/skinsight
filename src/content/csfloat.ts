@@ -29,6 +29,7 @@ import { runAnalysis } from '../modules/arbitrage/analyzer';
 import { buildCsfUrl } from '../modules/arbitrage/csf-url';
 import type { AnalysisRow, ArbitrageItem, ExportPayload } from '../modules/arbitrage/types';
 import { shortExterior, wearCode } from '../modules/shared/fmt';
+import { applyStoredLocale } from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
 
 const ROOT_ID = 'skinsight-csf-overlay';
@@ -214,6 +215,7 @@ async function bootstrap(): Promise<void> {
   // CSFloat is the always-on Arbitrage oracle. Mode toggle in the popup
   // only affects SkinsMonkey; this overlay is mounted unconditionally.
   console.debug('[Skinsight] loaded on csfloat');
+  await applyStoredLocale();
   onMessage(handleIncoming);
   mount();
 }

@@ -1,9 +1,13 @@
 /** Typed wrappers over chrome.storage.local. */
 
 import type { ExportPayload } from '../arbitrage/types';
+import type { Locale } from './i18n';
 
 /** The two modes the extension exposes. */
 export type SkinsmonkeyMode = 'arbitrage' | 'rare';
+
+/** UI language preference. 'auto' → detect from navigator.language. */
+export type LocalePref = Locale | 'auto';
 
 export interface Settings {
   /**
@@ -15,12 +19,19 @@ export interface Settings {
    * sticker scanner, arbitrage is a secondary feature.
    */
   skinsmonkeyMode: SkinsmonkeyMode;
+  /**
+   * UI language for the overlay/popup/options (v0.7 T4). 'auto' defers to
+   * navigator.language; 'en' / 'pt-BR' force a locale. Applied at startup in
+   * each context via settings.applyStoredLocale().
+   */
+  locale: LocalePref;
   /** Overlay state per hostname — minimized + remembered position. */
   overlay: Record<string, { minimized?: boolean; left?: number; top?: number } | undefined>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   skinsmonkeyMode: 'rare',
+  locale: 'auto',
   overlay: {},
 };
 
@@ -73,8 +84,13 @@ function normalizeSettings(raw: unknown): Settings {
     if (m.arbitrage_sm || m.arbitrage_csf) mode = 'arbitrage';
     else if (m.rare_smps || m.rare_csm) mode = 'rare';
   }
+  const locale: LocalePref =
+    obj.locale === 'en' || obj.locale === 'pt-BR' || obj.locale === 'auto'
+      ? obj.locale
+      : DEFAULT_SETTINGS.locale;
   return {
     skinsmonkeyMode: mode,
+    locale,
     overlay: obj.overlay ?? {},
   };
 }
@@ -93,6 +109,7 @@ export async function patchSettings(patch: Partial<Settings>): Promise<Settings>
   const next: Settings = {
     skinsmonkeyMode:
       patch.skinsmonkeyMode !== undefined ? patch.skinsmonkeyMode : cur.skinsmonkeyMode,
+    locale: patch.locale !== undefined ? patch.locale : cur.locale,
     overlay: { ...cur.overlay, ...(patch.overlay ?? {}) },
   };
   await setSettings(next);

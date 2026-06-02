@@ -90,6 +90,28 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Abra um dos sites de trade suportados e o scanner ativa automaticamente.',
   },
   'popup.open': { en: 'Open ↗', 'pt-BR': 'Abrir ↗' },
+  'popup.options': { en: '⚙ Options', 'pt-BR': '⚙ Opções' },
+  // ── Options page (v0.7 T4) ─────────────────────────────────────────
+  'options.title': { en: 'Options', 'pt-BR': 'Opções' },
+  'options.tagline': {
+    en: 'Configure Skinsight',
+    'pt-BR': 'Configurar o Skinsight',
+  },
+  'options.language.label': { en: 'Language', 'pt-BR': 'Idioma' },
+  'options.language.desc': {
+    en: 'Language for the overlay and popup. Takes effect immediately.',
+    'pt-BR': 'Idioma do overlay e do popup. Aplica na hora.',
+  },
+  'options.language.auto': { en: 'Automatic (system)', 'pt-BR': 'Automático (sistema)' },
+  'options.mode.label': { en: 'Default SkinsMonkey mode', 'pt-BR': 'Modo padrão do SkinsMonkey' },
+  'options.mode.desc': {
+    en: 'Which scanner runs on SkinsMonkey. PirateSwap and CS.Money are always Rare; CSFloat is always the Arbitrage oracle.',
+    'pt-BR':
+      'Qual scanner roda no SkinsMonkey. PirateSwap e CS.Money são sempre Rare; o CSFloat é sempre o oráculo de Arbitragem.',
+  },
+  'options.about.label': { en: 'About', 'pt-BR': 'Sobre' },
+  'options.about.version': { en: 'Version {v}', 'pt-BR': 'Versão {v}' },
+  'options.saved': { en: 'Saved ✓', 'pt-BR': 'Salvo ✓' },
   // ── Overlay shell ──────────────────────────────────────────────────
   'overlay.minimize': { en: 'Minimize', 'pt-BR': 'Minimizar' },
   'overlay.close': { en: 'Close', 'pt-BR': 'Fechar' },

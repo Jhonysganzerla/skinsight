@@ -22,6 +22,7 @@ import {
   type TodayHit,
 } from '../modules/shared/storage';
 import { send } from '../modules/shared/messaging';
+import { applyStoredLocale } from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
 
 const KO_FI_URL = 'https://ko-fi.com/sganzerla';
@@ -263,6 +264,7 @@ function renderDonateSection(): string {
         <button class="donate-btn" id="btn-pix" type="button">${escHtml(t('popup.donate.pix'))}</button>
       </div>
       <div class="footer-links">
+        <a href="#" id="btn-options">${escHtml(t('popup.options'))}</a>
         <a href="https://github.com/jhonysganzerla/skinsight" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
@@ -363,6 +365,12 @@ function wireUp(root: HTMLElement): void {
       void refreshRares(t);
       return;
     }
+    if (t.id === 'btn-options') {
+      e.preventDefault();
+      chrome.runtime.openOptionsPage();
+      window.close();
+      return;
+    }
   });
 }
 
@@ -413,6 +421,7 @@ async function bootstrap(): Promise<void> {
     /* ignore */
   }
 
+  await applyStoredLocale();
   const content = document.getElementById('content');
   if (content) wireUp(content);
   await render();

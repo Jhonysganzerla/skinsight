@@ -20,7 +20,7 @@ import {
 } from '../modules/shared/ui';
 import { send } from '../modules/shared/messaging';
 import { t } from '../modules/shared/i18n';
-import { getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
+import { applyStoredLocale, getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
 import {
   applyFilter,
   buildExportPayload,
@@ -416,6 +416,7 @@ function registerRareFilterListeners(): void {
 
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
+  await applyStoredLocale();
   registerRareFilterListeners();
   mount(await getSkinsmonkeyMode());
   watchSettings((s) => {

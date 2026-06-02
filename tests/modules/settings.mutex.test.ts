@@ -79,8 +79,42 @@ describe('settings — v0.4 per-site mutex', () => {
   });
 
   it('preserves a valid v0.4 skinsmonkeyMode untouched', async () => {
-    bag['settings'] = { skinsmonkeyMode: 'arbitrage', overlay: {} } satisfies Settings;
+    bag['settings'] = {
+      skinsmonkeyMode: 'arbitrage',
+      locale: 'auto',
+      overlay: {},
+    } satisfies Settings;
     const s = await getSettings();
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+});
+
+describe('settings — v0.7 locale preference', () => {
+  it('defaults to auto when absent', async () => {
+    const s = await getSettings();
+    expect(s.locale).toBe('auto');
+    expect(DEFAULT_SETTINGS.locale).toBe('auto');
+  });
+
+  it('preserves a valid locale (en / pt-BR / auto)', async () => {
+    for (const locale of ['en', 'pt-BR', 'auto'] as const) {
+      bag['settings'] = { skinsmonkeyMode: 'rare', locale, overlay: {} } satisfies Settings;
+      const s = await getSettings();
+      expect(s.locale).toBe(locale);
+    }
+  });
+
+  it('falls back to auto for an unknown locale value', async () => {
+    bag['settings'] = { skinsmonkeyMode: 'rare', locale: 'fr', overlay: {} };
+    const s = await getSettings();
+    expect(s.locale).toBe('auto');
+  });
+
+  it('patchSettings flips locale without touching skinsmonkeyMode', async () => {
+    await patchSettings({ skinsmonkeyMode: 'arbitrage' });
+    await patchSettings({ locale: 'pt-BR' });
+    const s = await getSettings();
+    expect(s.locale).toBe('pt-BR');
     expect(s.skinsmonkeyMode).toBe('arbitrage');
   });
 });

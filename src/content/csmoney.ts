@@ -22,6 +22,7 @@ import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
+import { applyStoredLocale } from '../modules/shared/settings';
 import { esc } from '../modules/shared/fmt';
 import { t } from '../modules/shared/i18n';
 import type { CsMoneyItem } from '../modules/rare/types';
@@ -374,6 +375,7 @@ async function bootstrap(): Promise<void> {
   // CS.Money is always-on Rare. The popup's mode toggle only affects
   // SkinsMonkey; a scan running here survives any change there.
   console.debug('[Skinsight] loaded on cs.money');
+  await applyStoredLocale();
   mount();
 }
 
