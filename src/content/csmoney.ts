@@ -254,10 +254,13 @@ function toFixed(n: number): string {
  *   { fullName, price (skin), stickers:[{name, price, overprice}], overpay:{stickers} }
  *
  * Goal: a ~30-50 item sample to fit `overpay ≈ min(r·Σsticker_price, C·skin_price)`
- * (the maintainer derives r and C offline). The array is also stashed on
- * `window.__skinsightOverpay` so it can be copied straight from the console:
- *   copy(JSON.stringify(__skinsightOverpay, null, 2))
- * (selecting the cs.money content-script context in the DevTools console).
+ * (the maintainer derives r and C offline).
+ *
+ * The pretty JSON is written to localStorage['skinsight:overpay'] — which the
+ * content script shares with the page — so it copies from the DEFAULT (page)
+ * DevTools console context with no context switching:
+ *   copy(localStorage['skinsight:overpay'])
+ * It is also stashed on the content-script `window.__skinsightOverpay`.
  */
 interface OverpayDumpRow {
   fullName: string;
@@ -279,18 +282,25 @@ function dumpOverpaySample(items: CsMoneyItem[]): void {
       })),
       overpay: { stickers: i.overpayStickers },
     }));
+  const json = JSON.stringify(rows, null, 2);
   debugLog(
     `[Skinsight][debug] overpay dump — ${rows.length} item(s) with overpay.stickers > 0 (of ${items.length} collected)`,
   );
-  debugLog(JSON.stringify(rows, null, 2));
+  debugLog(json);
   (globalThis as unknown as { __skinsightOverpay?: unknown }).__skinsightOverpay = rows;
+  try {
+    // Shared with the page → copyable from the default console context.
+    localStorage.setItem('skinsight:overpay', json);
+  } catch {
+    /* quota / disabled storage — the console log above still has the data */
+  }
   if (!rows.length && items.length) {
     console.warn(
       '[Skinsight][debug] no items had overpay.stickers > 0 — the field name may differ. ' +
         'Check the "raw CS.Money item/sticker keys" log above and adjust the capture in csmoney.ts.',
     );
   } else {
-    debugLog('[Skinsight][debug] copy with: copy(JSON.stringify(__skinsightOverpay, null, 2))');
+    debugLog("[Skinsight][debug] copy with: copy(localStorage['skinsight:overpay'])");
   }
 }
 
