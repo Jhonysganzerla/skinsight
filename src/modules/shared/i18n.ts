@@ -81,6 +81,12 @@ const STRINGS: Record<string, Entry> = {
   'popup.donate.pix': { en: '📱 Copy Pix', 'pt-BR': '📱 Copiar Pix' },
   'popup.donate.pixCopied': { en: '✓ Copied', 'pt-BR': '✓ Copiado' },
   'popup.donate.pixFailed': { en: 'Copy failed', 'pt-BR': 'Falha ao copiar' },
+  'popup.donate.showQr': { en: '📷 Show Pix QR', 'pt-BR': '📷 Mostrar QR Pix' },
+  'popup.donate.hideQr': { en: '📷 Hide Pix QR', 'pt-BR': '📷 Ocultar QR Pix' },
+  'popup.donate.qrHint': {
+    en: 'Scan with your bank app — optional donation, any amount.',
+    'pt-BR': 'Escaneie no app do banco — doação opcional, qualquer valor.',
+  },
   'popup.empty.title': {
     en: 'No supported site detected',
     'pt-BR': 'Nenhum site suportado detectado',

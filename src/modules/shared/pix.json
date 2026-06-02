@@ -1,0 +1,4 @@
+{
+  "_note": "Static Pix BR Code (copia-e-cola), no amount. Single source of truth for both the popup 'Copiar Pix' button and scripts/build-pix-qr.mjs (which renders public/pix-qr.svg). CRC16 validated. Regenerate the QR with: npm run build:pixqr.",
+  "payload": "00020101021126580014br.gov.bcb.pix0136ac344236-c335-4f89-aee2-e671101d46195204000053039865802BR5915Jhony Sganzerla6008BRASILIA62070503***6304EEE4"
+}

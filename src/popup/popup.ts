@@ -24,9 +24,12 @@ import {
 import { send } from '../modules/shared/messaging';
 import { applyStoredLocale } from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
+import pixData from '../modules/shared/pix.json';
 
 const KO_FI_URL = 'https://ko-fi.com/sganzerla';
-const PIX_KEY = 'ac344236-c335-4f89-aee2-e671101d4619';
+// Full Pix "copia e cola" (BR Code). Same string the QR encodes — copying just
+// the raw key UUID is not accepted as copia-e-cola by many bank apps.
+const PIX_PAYLOAD = pixData.payload;
 
 interface SiteDef {
   key: 'skinsmonkey' | 'csfloat' | 'pirateswap' | 'csmoney';
@@ -263,6 +266,12 @@ function renderDonateSection(): string {
         <button class="donate-btn" id="btn-kofi" type="button">☕ Ko-fi</button>
         <button class="donate-btn" id="btn-pix" type="button">${escHtml(t('popup.donate.pix'))}</button>
       </div>
+      <button class="donate-btn donate-qr-toggle" id="btn-toggle-qr" type="button"
+        data-show="${escHtml(t('popup.donate.showQr'))}" data-hide="${escHtml(t('popup.donate.hideQr'))}">${escHtml(t('popup.donate.showQr'))}</button>
+      <div class="pix-qr-block" id="pix-qr-block">
+        <img class="pix-qr" src="/pix-qr.svg" alt="QR Code Pix" width="160" height="160" />
+        <div class="pix-qr-hint">${escHtml(t('popup.donate.qrHint'))}</div>
+      </div>
       <div class="footer-links">
         <a href="#" id="btn-options">${escHtml(t('popup.options'))}</a>
         <a href="https://github.com/jhonysganzerla/skinsight" target="_blank" rel="noopener">GitHub</a>
@@ -320,7 +329,7 @@ async function openTab(url: string): Promise<void> {
 
 async function copyPix(btn: HTMLElement): Promise<void> {
   try {
-    await navigator.clipboard.writeText(PIX_KEY);
+    await navigator.clipboard.writeText(PIX_PAYLOAD);
     btn.textContent = t('popup.donate.pixCopied');
     btn.classList.add('copied');
     setTimeout(() => {
@@ -358,6 +367,13 @@ function wireUp(root: HTMLElement): void {
     if (t.id === 'btn-pix') {
       e.preventDefault();
       void copyPix(t);
+      return;
+    }
+    if (t.id === 'btn-toggle-qr') {
+      e.preventDefault();
+      const block = root.querySelector('#pix-qr-block');
+      const open = block?.classList.toggle('show');
+      t.textContent = open ? t.dataset['hide'] || '' : t.dataset['show'] || '';
       return;
     }
     if (t.id === 'btn-refresh-rares') {

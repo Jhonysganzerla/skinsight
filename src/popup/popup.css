@@ -283,6 +283,31 @@ button {
   border-color: var(--success);
   color: var(--success-bright);
 }
+.donate-qr-toggle {
+  width: 100%;
+  margin-top: 8px;
+}
+.pix-qr-block {
+  display: none;
+  margin-top: 10px;
+  text-align: center;
+}
+.pix-qr-block.show {
+  display: block;
+}
+.pix-qr {
+  width: 160px;
+  height: 160px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+}
+.pix-qr-hint {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
 .footer-links {
   display: flex;
   gap: 14px;
