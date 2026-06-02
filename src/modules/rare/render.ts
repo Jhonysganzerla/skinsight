@@ -17,7 +17,7 @@ import {
   type StickerChipProps,
   type StickerKind,
 } from '../shared/ui';
-import { fmtUsd, shortExterior, stripStickerPrefix } from '../shared/fmt';
+import { fmtUsd, shortExterior, stripStickerPrefix, wearCode } from '../shared/fmt';
 import { getSteamPriceCached } from '../oracles/steam';
 import type { CsMoneyItem, RareResult } from './types';
 
@@ -66,6 +66,7 @@ export function renderRareCard(r: RareResult): string {
     imageUrl: r.image,
     thumbEmoji: '⌖',
     name: shortExterior(r.name || '—'),
+    wear: wearCode(r.exterior || r.name),
     meta,
     profitUsd: r.profit,
     profitFraction: r.roi - 1, // ROI of 1.5 means +50% over the listing.
@@ -106,6 +107,7 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     imageUrl: it.imageUrl,
     thumbEmoji: '⌖',
     name: shortExterior(it.name || '—'),
+    wear: wearCode(it.name),
     meta,
     profitUsd: it.netUsd,
     profitFraction: margin,

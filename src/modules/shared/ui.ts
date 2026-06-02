@@ -129,6 +129,8 @@ export interface ItemCardProps {
   /** Fallback emoji when imageUrl is missing. */
   thumbEmoji?: string;
   name: string;
+  /** Optional wear/float code shown as a badge next to the name (FN/MW/FT/WW/BS). */
+  wear?: string;
   /** Inline meta chips ("SM $42.10", "CSF $58.00", "2 stickers", …). */
   meta: MetaChip[];
   /** Headline profit, in USD. */
@@ -216,7 +218,11 @@ export function renderItemCard(p: ItemCardProps): string {
     <div class="sh-item-card${variantCls}" data-item-id="${esc(p.id)}">
       <div class="sh-item-thumb">${thumb}</div>
       <div class="sh-item-info">
-        <div class="sh-item-name">${esc(p.name)}</div>
+        <div class="sh-item-name">${
+          p.wear
+            ? `<span class="sh-wear" style="font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--border);border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:middle;">${esc(p.wear)}</span>`
+            : ''
+        }${esc(p.name)}</div>
         <div class="sh-item-meta">${chips}</div>
       </div>
       <div class="sh-item-action">

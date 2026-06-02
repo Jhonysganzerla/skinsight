@@ -45,6 +45,20 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Wear abbreviation from an exterior string or a full market_hash_name.
+ * 'Field-Tested' / "AK-47 | Redline (Field-Tested)" → 'FT'. '' when none.
+ */
+export function wearCode(s: string): string {
+  const x = String(s || '');
+  if (/Factory New/i.test(x)) return 'FN';
+  if (/Minimal Wear/i.test(x)) return 'MW';
+  if (/Field-Tested/i.test(x)) return 'FT';
+  if (/Well-Worn/i.test(x)) return 'WW';
+  if (/Battle-Scarred/i.test(x)) return 'BS';
+  return '';
+}
+
 /** Strip "(Factory New)" etc. from market hash names for compact display. */
 export function shortExterior(name: string): string {
   return String(name || '')

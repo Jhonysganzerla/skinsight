@@ -28,7 +28,7 @@ import {
 import { runAnalysis } from '../modules/arbitrage/analyzer';
 import { buildCsfUrl } from '../modules/arbitrage/csf-url';
 import type { AnalysisRow, ArbitrageItem, ExportPayload } from '../modules/arbitrage/types';
-import { shortExterior } from '../modules/shared/fmt';
+import { shortExterior, wearCode } from '../modules/shared/fmt';
 
 const ROOT_ID = 'skinsight-csf-overlay';
 const PERSIST_KEY = 'csfloat';
@@ -99,6 +99,7 @@ function itemCardForRow(row: AnalysisRow): string {
     imageUrl: row.item.imageUrl || null,
     thumbEmoji: '⌖',
     name: shortExterior(row.item.marketName || '—'),
+    wear: wearCode(row.item.exterior || row.item.marketName),
     meta: metaForItem(row.item, row.result),
     profitUsd: row.result.grossProfit / 100,
     profitFraction,

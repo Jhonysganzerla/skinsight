@@ -41,6 +41,9 @@ interface SiteDef {
   supports: Array<'arbitrage' | 'rare'>;
 }
 
+// Order: SkinsMonkey, PirateSwap, CS.Money, then CSFloat last (it's the
+// always-on Arbitrage oracle, not a scan target). Per-site colors:
+// SM yellow, PS brown, CS.Money purple, CSFloat blue.
 const SITES: SiteDef[] = [
   {
     key: 'skinsmonkey',
@@ -48,19 +51,9 @@ const SITES: SiteDef[] = [
     short: 'S',
     host: 'skinsmonkey.com',
     url: 'https://skinsmonkey.com/',
-    iconBg: '#3a76ff',
-    iconFg: '#fff',
+    iconBg: '#f5a623',
+    iconFg: '#0c0f16',
     supports: ['arbitrage', 'rare'],
-  },
-  {
-    key: 'csfloat',
-    label: 'CSFloat',
-    short: 'C',
-    host: 'csfloat.com',
-    url: 'https://csfloat.com/',
-    iconBg: '#d4af37',
-    iconFg: '#000',
-    supports: ['arbitrage'],
   },
   {
     key: 'pirateswap',
@@ -68,7 +61,7 @@ const SITES: SiteDef[] = [
     short: 'P',
     host: 'pirateswap.com',
     url: 'https://pirateswap.com/',
-    iconBg: '#7e3a3a',
+    iconBg: '#8a5a2c',
     iconFg: '#fff',
     supports: ['rare'],
   },
@@ -78,9 +71,19 @@ const SITES: SiteDef[] = [
     short: 'M',
     host: 'cs.money',
     url: 'https://cs.money/',
-    iconBg: '#2c8a4a',
+    iconBg: '#7c4dff',
     iconFg: '#fff',
     supports: ['rare'],
+  },
+  {
+    key: 'csfloat',
+    label: 'CSFloat',
+    short: 'C',
+    host: 'csfloat.com',
+    url: 'https://csfloat.com/',
+    iconBg: '#3a76ff',
+    iconFg: '#fff',
+    supports: ['arbitrage'],
   },
 ];
 
