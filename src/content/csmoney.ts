@@ -24,6 +24,7 @@ import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import { applyStoredLocale } from '../modules/shared/settings';
 import { esc } from '../modules/shared/fmt';
+import { debugLog, isDebug } from '../modules/shared/debug';
 import { t } from '../modules/shared/i18n';
 import type { CsMoneyItem } from '../modules/rare/types';
 
@@ -207,6 +208,10 @@ async function runScan(): Promise<void> {
 
   state.items = collected;
 
+  // Debug-only: dump per-item sticker-overpay for offline formula calibration.
+  // No UI change — gated behind localStorage['skinsight:debug'].
+  if (isDebug()) dumpOverpaySample(collected);
+
   if (!overlay) {
     finish();
     return;
@@ -241,6 +246,52 @@ async function runScan(): Promise<void> {
 
 function toFixed(n: number): string {
   return n.toFixed(2);
+}
+
+/**
+ * Debug-only calibration dump (v0.7). For every collected item where CS.Money
+ * reports sticker overpay, emit a compact JSON row:
+ *   { fullName, price (skin), stickers:[{name, price, overprice}], overpay:{stickers} }
+ *
+ * Goal: a ~30-50 item sample to fit `overpay ≈ min(r·Σsticker_price, C·skin_price)`
+ * (the maintainer derives r and C offline). The array is also stashed on
+ * `window.__skinsightOverpay` so it can be copied straight from the console:
+ *   copy(JSON.stringify(__skinsightOverpay, null, 2))
+ * (selecting the cs.money content-script context in the DevTools console).
+ */
+interface OverpayDumpRow {
+  fullName: string;
+  price: number;
+  stickers: Array<{ name: string; price: number; overprice: number }>;
+  overpay: { stickers: number };
+}
+
+function dumpOverpaySample(items: CsMoneyItem[]): void {
+  const rows: OverpayDumpRow[] = items
+    .filter((i) => i.overpayStickers > 0)
+    .map((i) => ({
+      fullName: i.name,
+      price: i.weaponPriceUsd,
+      stickers: i.stickers.map((s) => ({
+        name: s.name,
+        price: s.priceUsd,
+        overprice: s.overprice,
+      })),
+      overpay: { stickers: i.overpayStickers },
+    }));
+  debugLog(
+    `[Skinsight][debug] overpay dump — ${rows.length} item(s) with overpay.stickers > 0 (of ${items.length} collected)`,
+  );
+  debugLog(JSON.stringify(rows, null, 2));
+  (globalThis as unknown as { __skinsightOverpay?: unknown }).__skinsightOverpay = rows;
+  if (!rows.length && items.length) {
+    console.warn(
+      '[Skinsight][debug] no items had overpay.stickers > 0 — the field name may differ. ' +
+        'Check the "raw CS.Money item/sticker keys" log above and adjust the capture in csmoney.ts.',
+    );
+  } else {
+    debugLog('[Skinsight][debug] copy with: copy(JSON.stringify(__skinsightOverpay, null, 2))');
+  }
 }
 
 function regenButton(): HTMLButtonElement | null {

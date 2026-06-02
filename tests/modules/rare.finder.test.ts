@@ -174,6 +174,7 @@ describe('rare/csmoney — Regenerate report', () => {
         priceUsd: s.price,
         wear: s.wear,
         imageUrl: s.img ?? null,
+        overprice: 0,
       }));
       const stickersTotalUsd = stickers.reduce((acc, s) => acc + s.priceUsd, 0);
       return {
@@ -183,6 +184,7 @@ describe('rare/csmoney — Regenerate report', () => {
         weaponPriceUsd: raw.price,
         stickersTotalUsd,
         netUsd: stickersTotalUsd - raw.price,
+        overpayStickers: 0,
         stickers,
       };
     });

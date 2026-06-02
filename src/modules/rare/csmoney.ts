@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/csmoney.js.
  */
 import { sleep } from '../shared/fmt';
+import { debugLog, isDebug } from '../shared/debug';
 import type { CsMoneyItem } from './types';
 
 const LIMIT = 60;
@@ -14,6 +15,10 @@ interface RawCsmSticker {
   price?: number;
   wear?: number;
   img?: string;
+  /** CS.Money's per-sticker overpay contribution (USD). Captured for the
+   *  overpay-formula calibration dump (debug only). Field name per the user's
+   *  API inspection; verified at runtime by the debug raw-keys diagnostic. */
+  overprice?: number;
 }
 interface RawCsmItem {
   id?: string | number;
@@ -22,6 +27,9 @@ interface RawCsmItem {
   asset?: { names?: { full?: string; short?: string } };
   price?: number;
   pricing?: { computed?: number; default?: number };
+  /** CS.Money's per-item overpay breakdown. `stickers` is the sticker-overpay
+   *  total (USD). Captured for calibration (debug only). */
+  overpay?: { stickers?: number } | null;
   stickers?: (RawCsmSticker | null)[];
   /** Image fields, in fallback order. v0.4 HAR confirmed `img` is the
    *  primary; the others exist as defense against API changes. */
@@ -90,6 +98,19 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       const items = data.items ?? [];
       if (typeof data.total === 'number' && data.total > 0) totalExpected = data.total;
       if (!items.length) break;
+      // Debug-only: on the first page, print the raw item/sticker key sets so we
+      // can confirm the overpay/overprice field names against the live API
+      // (don't assume — verify). Off unless localStorage['skinsight:debug'] set.
+      if (isDebug() && page === 0 && items[0]) {
+        debugLog('[Skinsight][debug] raw CS.Money item keys:', Object.keys(items[0]));
+        const firstSticker = (items[0].stickers ?? []).filter(Boolean)[0] as
+          | RawCsmSticker
+          | undefined;
+        if (firstSticker) {
+          debugLog('[Skinsight][debug] raw sticker keys:', Object.keys(firstSticker));
+        }
+        debugLog('[Skinsight][debug] raw item sample:', items[0]);
+      }
       fetched += items.length;
       for (const item of items) {
         const rawStickers = (item.stickers ?? []).filter(Boolean) as RawCsmSticker[];
@@ -102,6 +123,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
           priceUsd: toNumber(s.price),
           wear: toNumber(s.wear),
           imageUrl: typeof s.img === 'string' && s.img.length > 0 ? s.img : null,
+          overprice: toNumber(s.overprice),
         }));
         const stickersTotalUsd = stickers.reduce((a, s) => a + s.priceUsd, 0);
         const netUsd = stickersTotalUsd - weaponPriceUsd;
@@ -112,6 +134,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
           weaponPriceUsd,
           stickersTotalUsd,
           netUsd,
+          overpayStickers: toNumber(item.overpay?.stickers),
           stickers,
         });
       }

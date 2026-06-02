@@ -39,11 +39,22 @@ export interface CsMoneyItem {
   weaponPriceUsd: number;
   stickersTotalUsd: number;
   netUsd: number;
+  /**
+   * CS.Money's own per-item sticker-overpay figure (USD), from the raw
+   * `item.overpay.stickers` field. Captured for the v0.7 overpay-formula
+   * calibration dump (debug only). 0 when absent. Not used by the UI yet.
+   */
+  overpayStickers: number;
   stickers: Array<{
     name: string;
     priceUsd: number;
     wear: number;
     /** Sticker icon URL (Steam CDN). Null when the API omitted it. */
     imageUrl: string | null;
+    /**
+     * CS.Money's per-sticker overpay contribution (USD), from the raw sticker
+     * `overprice` field. Captured for calibration (debug only). 0 when absent.
+     */
+    overprice: number;
   }>;
 }
