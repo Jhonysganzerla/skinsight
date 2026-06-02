@@ -103,8 +103,16 @@ const STRINGS: Record<string, Entry> = {
   'filter.maxPrice': { en: 'Max price ($)', 'pt-BR': 'Preço máx ($)' },
   'filter.delayMs': { en: 'Delay (ms)', 'pt-BR': 'Delay (ms)' },
   'filter.sort': { en: 'Sort', 'pt-BR': 'Ordenar' },
+  'filter.search': { en: 'Search', 'pt-BR': 'Buscar' },
+  'filter.pages': { en: 'Pages', 'pt-BR': 'Páginas' },
+  'filter.exteriors': { en: 'Exteriors', 'pt-BR': 'Exteriores' },
   'filter.ph.none': { en: 'none', 'pt-BR': 'nenhum' },
   'filter.ph.all': { en: 'all', 'pt-BR': 'tudo' },
+  'filter.ph.allStar': { en: '* (all)', 'pt-BR': '* (tudo)' },
+  // ── Exterior options (SkinsMonkey arbitrage) ───────────────────────
+  'ext.all': { en: 'All', 'pt-BR': 'Tudo' },
+  'ext.fnmw': { en: 'FN + MW', 'pt-BR': 'FN + MW' },
+  'ext.ftwwbs': { en: 'FT + WW + BS', 'pt-BR': 'FT + WW + BS' },
   // ── Sort options ───────────────────────────────────────────────────
   'sort.roi': { en: 'ROI ↓', 'pt-BR': 'ROI ↓' },
   'sort.stickerSum': { en: 'Stickers $ ↓', 'pt-BR': 'Stickers $ ↓' },
@@ -170,6 +178,78 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Scan completo — {n} items, {p} lucrativos.',
   },
   'csm.collected': { en: 'Collected {n} items.', 'pt-BR': '{n} items coletados.' },
+  // ── SkinsMonkey (arbitrage + rare) ─────────────────────────────────
+  'sm.arbReadyHint': {
+    en: 'Ready. Configure filters and start a scan.',
+    'pt-BR': 'Pronto. Configure os filtros e inicie um scan.',
+  },
+  'sm.handoffHint': {
+    en: 'Results show up in the CSFloat tab once analysis finishes.',
+    'pt-BR': 'Os resultados aparecem na aba do CSFloat quando a análise termina.',
+  },
+  'sm.noCsrf': {
+    en: 'No CSRF token detected — log in on SkinsMonkey and reload.',
+    'pt-BR': 'Token CSRF não detectado — faça login no SkinsMonkey e recarregue.',
+  },
+  'sm.scanning': { en: 'Scanning SkinsMonkey…', 'pt-BR': 'Escaneando o SkinsMonkey…' },
+  'sm.starting': { en: 'Starting scan…', 'pt-BR': 'Iniciando scan…' },
+  'sm.collecting': { en: 'Collected {n}…', 'pt-BR': 'Coletados {n}…' },
+  'sm.collectingInv': {
+    en: 'Collecting SkinsMonkey inventory…',
+    'pt-BR': 'Coletando inventário do SkinsMonkey…',
+  },
+  'sm.handingOff': {
+    en: 'Collected {n} items. Handing off to CSFloat…',
+    'pt-BR': 'Coletados {n} items. Enviando ao CSFloat…',
+  },
+  'sm.sending': {
+    en: 'Sending {n} items to CSFloat analyzer…',
+    'pt-BR': 'Enviando {n} items ao analisador do CSFloat…',
+  },
+  'sm.doneOpenTab': {
+    en: 'Done. Open the CSFloat tab.',
+    'pt-BR': 'Pronto. Abra a aba do CSFloat.',
+  },
+  'sm.sent': {
+    en: 'Sent {n} items. Analysis runs in the CSFloat tab.',
+    'pt-BR': 'Enviados {n} items. A análise roda na aba do CSFloat.',
+  },
+  'sm.handoffFail': { en: 'Failed to hand off: {err}', 'pt-BR': 'Falha ao enviar: {err}' },
+  // ── CSFloat (arbitrage oracle) ─────────────────────────────────────
+  'csf.waiting': {
+    en: 'Waiting for items from SkinsMonkey…',
+    'pt-BR': 'Aguardando items do SkinsMonkey…',
+  },
+  'csf.refresh': { en: 'Refresh', 'pt-BR': 'Atualizar' },
+  'csf.rescan': { en: 'Rescan', 'pt-BR': 'Reescanear' },
+  'csf.idleHint': {
+    en: 'Run a scan on SkinsMonkey. The list will appear here automatically.',
+    'pt-BR': 'Rode um scan no SkinsMonkey. A lista aparece aqui automaticamente.',
+  },
+  'csf.header.left': { en: 'Item · price · stickers', 'pt-BR': 'Item · preço · stickers' },
+  'csf.profit': { en: 'Profit', 'pt-BR': 'Lucro' },
+  'csf.analyzing': { en: 'Analyzing {done}/{total}…', 'pt-BR': 'Analisando {done}/{total}…' },
+  'csf.analyzingN': { en: 'Analyzing {n} listings…', 'pt-BR': 'Analisando {n} listagens…' },
+  'csf.complete': {
+    en: 'Analysis complete — {n} listings.',
+    'pt-BR': 'Análise completa — {n} listagens.',
+  },
+  'csf.stopped': { en: 'Analysis stopped.', 'pt-BR': 'Análise interrompida.' },
+  'csf.empty.title': { en: 'No opportunities', 'pt-BR': 'Nenhuma oportunidade' },
+  'csf.empty.sub': {
+    en: 'Try widening the filters on SkinsMonkey and rescan.',
+    'pt-BR': 'Amplie os filtros no SkinsMonkey e reescaneie.',
+  },
+  'csf.found': {
+    en: 'Found {n} listings. {p} profitable.',
+    'pt-BR': '{n} listagens. {p} lucrativas.',
+  },
+  'csf.open': { en: 'Open CSFloat ↗', 'pt-BR': 'Abrir CSFloat ↗' },
+  'csf.meta.est': { en: '⚠ Est', 'pt-BR': '⚠ Est' },
+  'csf.meta.stickers': { en: '{n} stickers', 'pt-BR': '{n} stickers' },
+  'csf.meta.stickerGtSkin': { en: 'sticker > skin', 'pt-BR': 'sticker > skin' },
+  'csf.meta.charmGtSkin': { en: 'charm > skin', 'pt-BR': 'charm > skin' },
+  'csf.meta.lock': { en: '🔒 lock', 'pt-BR': '🔒 lock' },
   // ── Relative time (fmtAgo) ─────────────────────────────────────────
   'time.now': { en: 'just now', 'pt-BR': 'agora mesmo' },
   'time.min': { en: '{n}m ago', 'pt-BR': 'há {n} min' },

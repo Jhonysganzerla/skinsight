@@ -19,6 +19,7 @@ import {
   type FilterField,
 } from '../modules/shared/ui';
 import { send } from '../modules/shared/messaging';
+import { t } from '../modules/shared/i18n';
 import { getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
 import {
   applyFilter,
@@ -38,20 +39,28 @@ const PERSIST_KEY_RARE = 'skinsmonkey-rare';
 
 /* ──────────────────────────────────────────────────── ARBITRAGE ── */
 
-const ARB_FILTERS: FilterField[] = [
-  { id: 'q', label: 'Search', type: 'text', placeholder: '* (all)', value: '*' },
-  { id: 'pages', label: 'Max pages', type: 'number', value: '5' },
-  {
-    id: 'exteriors',
-    label: 'Exteriors',
-    type: 'select',
-    options: [
-      { value: 'all', label: 'All' },
-      { value: 'fn,mw', label: 'FN + MW' },
-      { value: 'ft,ww,bs', label: 'FT + WW + BS' },
-    ],
-  },
-];
+function arbFilters(): FilterField[] {
+  return [
+    {
+      id: 'q',
+      label: t('filter.search'),
+      type: 'text',
+      placeholder: t('filter.ph.allStar'),
+      value: '*',
+    },
+    { id: 'pages', label: t('filter.maxPages'), type: 'number', value: '5' },
+    {
+      id: 'exteriors',
+      label: t('filter.exteriors'),
+      type: 'select',
+      options: [
+        { value: 'all', label: t('ext.all') },
+        { value: 'fn,mw', label: t('ext.fnmw') },
+        { value: 'ft,ww,bs', label: t('ext.ftwwbs') },
+      ],
+    },
+  ];
+}
 
 const EXT_MAP: Record<string, string[]> = {
   all: [],
@@ -74,9 +83,9 @@ function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
 
 function arbBodyHtml(): string {
   return [
-    renderFilterGrid(ARB_FILTERS),
-    renderScanBar({ info: 'Ready. Configure filters and start a scan.', actionLabel: 'Scan' }),
-    `<div class="sh-hint">Results show up in the CSFloat tab once analysis finishes.</div>`,
+    renderFilterGrid(arbFilters()),
+    renderScanBar({ info: t('sm.arbReadyHint'), actionLabel: t('scan.scan') }),
+    `<div class="sh-hint">${t('sm.handoffHint')}</div>`,
   ].join('');
 }
 
@@ -84,7 +93,7 @@ async function runArbScan(): Promise<void> {
   if (!overlay || arbState.running) return;
   const csrf = getCsrf();
   if (!csrf) {
-    setStatus('No CSRF token detected — log in on SkinsMonkey and reload.', 'err');
+    setStatus(t('sm.noCsrf'), 'err');
     return;
   }
   const filters = readFilterValues(overlay.body);
@@ -94,8 +103,12 @@ async function runArbScan(): Promise<void> {
 
   arbState.running = true;
   arbState.abort = new AbortController();
-  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Starting scan…', progressPct: 0 });
-  setStatus('Scanning SkinsMonkey…', 'info');
+  updateScanBar(overlay.body, {
+    actionLabel: t('scan.stop'),
+    info: t('sm.starting'),
+    progressPct: 0,
+  });
+  setStatus(t('sm.scanning'), 'info');
 
   let all: RawAsset[] = [];
   try {
@@ -113,14 +126,14 @@ async function runArbScan(): Promise<void> {
           : Math.min(88, Math.round((loaded / (maxPages * 120)) * 88));
         updateScanBar(overlay.body, {
           progressPct: pct,
-          info: `Collected ${loaded}${total ? ' / ' + total : ''}…`,
+          info: t('sm.collecting', { n: total ? `${loaded} / ${total}` : `${loaded}` }),
         });
       },
     });
   } catch (e) {
     const err = e as Error;
-    if (err.name === 'AbortError') setStatus('Scan stopped.', 'info');
-    else setStatus('Scan failed: ' + err.message, 'err');
+    if (err.name === 'AbortError') setStatus(t('scan.stopped'), 'info');
+    else setStatus(t('scan.error', { msg: err.message }), 'err');
     finishArbScan();
     return;
   }
@@ -132,9 +145,9 @@ async function runArbScan(): Promise<void> {
   }
   updateScanBar(overlay.body, {
     progressPct: 95,
-    info: `Collected ${filtered.length} items. Handing off to CSFloat…`,
+    info: t('sm.handingOff', { n: filtered.length }),
   });
-  setStatus(`Sending ${filtered.length} items to CSFloat analyzer…`, 'info');
+  setStatus(t('sm.sending', { n: filtered.length }), 'info');
 
   const payload = buildExportPayload(filtered);
   const res = await send({ type: 'arbitrage:start', payload });
@@ -143,10 +156,10 @@ async function runArbScan(): Promise<void> {
     return;
   }
   if (res.ok) {
-    updateScanBar(overlay.body, { progressPct: 100, info: 'Done. Open the CSFloat tab.' });
-    setStatus(`Sent ${payload.items.length} items. Analysis runs in the CSFloat tab.`, 'ok');
+    updateScanBar(overlay.body, { progressPct: 100, info: t('sm.doneOpenTab') });
+    setStatus(t('sm.sent', { n: payload.items.length }), 'ok');
   } else {
-    setStatus('Failed to hand off: ' + (res.error ?? 'unknown'), 'err');
+    setStatus(t('sm.handoffFail', { err: res.error ?? 'unknown' }), 'err');
   }
   finishArbScan();
 }
@@ -154,7 +167,7 @@ async function runArbScan(): Promise<void> {
 function finishArbScan(): void {
   arbState.running = false;
   arbState.abort = null;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: 'Scan' });
+  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
 }
 
 function abortArbScan(): void {
@@ -163,22 +176,29 @@ function abortArbScan(): void {
 
 /* ──────────────────────────────────────────────────────── RARE ── */
 
-const RARE_FILTERS: FilterField[] = [
-  { id: 'pages', label: 'Pages', type: 'number', value: '5' },
-  { id: 'maxPrice', label: 'Max price ($)', type: 'number', placeholder: 'none' },
-  {
-    id: 'sort',
-    label: 'Sort',
-    type: 'select',
-    options: [
-      { value: 'roi', label: 'ROI ↓' },
-      { value: 'stickerSum', label: 'Stickers $ ↓' },
-      { value: 'profit', label: 'Profit ↓' },
-      { value: 'priceAsc', label: 'Price ↑' },
-      { value: 'priceDesc', label: 'Price ↓' },
-    ],
-  },
-];
+function rareFilters(): FilterField[] {
+  return [
+    { id: 'pages', label: t('filter.pages'), type: 'number', value: '5' },
+    {
+      id: 'maxPrice',
+      label: t('filter.maxPrice'),
+      type: 'number',
+      placeholder: t('filter.ph.none'),
+    },
+    {
+      id: 'sort',
+      label: t('filter.sort'),
+      type: 'select',
+      options: [
+        { value: 'roi', label: t('sort.roi') },
+        { value: 'stickerSum', label: t('sort.stickerSum') },
+        { value: 'profit', label: t('sort.profit') },
+        { value: 'priceAsc', label: t('sort.priceAsc') },
+        { value: 'priceDesc', label: t('sort.priceDesc') },
+      ],
+    },
+  ];
+}
 
 interface RareState {
   running: boolean;
@@ -217,13 +237,13 @@ function renderRareResults(): void {
   if (!list) return;
   const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
   list.innerHTML =
-    renderResultsHeader('Item · stickers detected', 'Worth') +
+    renderResultsHeader(t('results.header.detected'), t('results.worth')) +
     (filtered.length
       ? filtered.map(renderRareCard).join('')
       : `<div class="sh-empty">
           <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">No rare stickers found</div>
-          <div class="sh-empty-sub">Widen filters or scan more pages.</div>
+          <div class="sh-empty-title">${t('rare.empty.title')}</div>
+          <div class="sh-empty-sub">${t('rare.empty.sub')}</div>
         </div>`);
 }
 
@@ -245,8 +265,8 @@ function scheduleRareFilterApply(instant: boolean): void {
 
 function rareBodyHtml(): string {
   return [
-    renderFilterGrid(RARE_FILTERS),
-    renderScanBar({ info: 'Ready. Click Scan to begin.', actionLabel: 'Scan' }),
+    renderFilterGrid(rareFilters()),
+    renderScanBar({ info: t('scan.readyHint'), actionLabel: t('scan.scan') }),
     `<div data-role="results"></div>`,
   ].join('');
 }
@@ -260,8 +280,12 @@ async function runRareScan(): Promise<void> {
   const filters = readFilterValues(overlay.body);
   const pages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
 
-  updateScanBar(overlay.body, { actionLabel: 'Stop', info: 'Collecting…', progressPct: 0 });
-  setStatus('Collecting SkinsMonkey inventory…', 'info');
+  updateScanBar(overlay.body, {
+    actionLabel: t('scan.stop'),
+    info: t('csm.collecting'),
+    progressPct: 0,
+  });
+  setStatus(t('sm.collectingInv'), 'info');
 
   const items = await collectAll({
     site: 'skinsmonkey',
@@ -275,13 +299,13 @@ async function runRareScan(): Promise<void> {
   });
 
   if (rareState.aborted.aborted) {
-    setStatus('Scan stopped.', 'info');
+    setStatus(t('scan.stopped'), 'info');
     finishRareScan();
     return;
   }
 
   updateScanBar(overlay.body, {
-    info: `Matching ${items.length} items against rare DB…`,
+    info: t('scan.matching', { n: items.length }),
     progressPct: 80,
   });
   rareState.results = await findRareResults(items);
@@ -293,10 +317,10 @@ async function runRareScan(): Promise<void> {
   renderRareResults();
   const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
   updateScanBar(overlay.body, {
-    info: `Scan complete — ${filtered.length} hits.`,
+    info: t('scan.complete.hits', { n: filtered.length }),
     progressPct: 100,
   });
-  setStatus(`Found ${filtered.length} items with rare stickers.`, 'ok');
+  setStatus(t('rare.found', { n: filtered.length }), 'ok');
 
   const top = filtered[0];
   if (top) {
@@ -313,7 +337,7 @@ async function runRareScan(): Promise<void> {
 
 function finishRareScan(): void {
   rareState.running = false;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: 'Scan' });
+  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
 }
 
 function abortRareScan(): void {
@@ -333,7 +357,7 @@ function mount(mode: 'arbitrage' | 'rare'): void {
   overlay = createOverlay({
     rootId: ROOT_ID,
     mode,
-    modeLabel: mode === 'arbitrage' ? 'Arbitrage' : 'Rare stickers',
+    modeLabel: mode === 'arbitrage' ? t('popup.modes.arb.title') : t('popup.modes.rare.title'),
     persistKey: mode === 'arbitrage' ? PERSIST_KEY_ARB : PERSIST_KEY_RARE,
     onClose: () => {
       if (mode === 'arbitrage') abortArbScan();
@@ -345,7 +369,7 @@ function mount(mode: 'arbitrage' | 'rare'): void {
   });
   overlay.body.innerHTML = mode === 'arbitrage' ? arbBodyHtml() : rareBodyHtml();
   wireSteamButtons(overlay.body);
-  setStatus('Ready.', 'info');
+  setStatus(t('scan.ready'), 'info');
 
   overlay.body.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;

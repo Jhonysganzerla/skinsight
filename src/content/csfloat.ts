@@ -29,6 +29,7 @@ import { runAnalysis } from '../modules/arbitrage/analyzer';
 import { buildCsfUrl } from '../modules/arbitrage/csf-url';
 import type { AnalysisRow, ArbitrageItem, ExportPayload } from '../modules/arbitrage/types';
 import { shortExterior, wearCode } from '../modules/shared/fmt';
+import { t } from '../modules/shared/i18n';
 
 const ROOT_ID = 'skinsight-csf-overlay';
 const PERSIST_KEY = 'csfloat';
@@ -42,32 +43,32 @@ function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
 
 function bodyHtmlIdle(): string {
   return [
-    renderScanBar({ info: 'Waiting for items from SkinsMonkey…', actionLabel: 'Refresh' }),
-    `<div class="sh-hint">Run a scan on SkinsMonkey. The list will appear here automatically.</div>`,
+    renderScanBar({ info: t('csf.waiting'), actionLabel: t('csf.refresh') }),
+    `<div class="sh-hint">${t('csf.idleHint')}</div>`,
   ].join('');
 }
 
 function bodyHtmlRunning(progress: number, total: number): string {
   return [
     renderScanBar({
-      info: `Analyzing ${progress}/${total}…`,
-      actionLabel: 'Stop',
+      info: t('csf.analyzing', { done: progress, total }),
+      actionLabel: t('scan.stop'),
       progressPct: total ? Math.round((progress / total) * 95) : 0,
     }),
-    renderResultsHeader('Item · price · stickers', 'Profit'),
+    renderResultsHeader(t('csf.header.left'), t('csf.profit')),
     `<div data-role="results-list"></div>`,
   ].join('');
 }
 
 function bodyHtmlDone(rows: AnalysisRow[]): string {
   return [
-    renderScanBar({ info: `Analysis complete — ${rows.length} listings.`, actionLabel: 'Rescan' }),
-    renderResultsHeader('Item · price · stickers', 'Profit'),
+    renderScanBar({ info: t('csf.complete', { n: rows.length }), actionLabel: t('csf.rescan') }),
+    renderResultsHeader(t('csf.header.left'), t('csf.profit')),
     rows.map(itemCardForRow).join('') ||
       `<div class="sh-empty">
       <div class="sh-empty-icon">⌖</div>
-      <div class="sh-empty-title">No opportunities</div>
-      <div class="sh-empty-sub">Try widening the filters on SkinsMonkey and rescan.</div>
+      <div class="sh-empty-title">${t('csf.empty.title')}</div>
+      <div class="sh-empty-sub">${t('csf.empty.sub')}</div>
     </div>`,
   ].join('');
 }
@@ -76,11 +77,12 @@ function metaForItem(item: ArbitrageItem, row: AnalysisRow['result']): MetaChip[
   const out: MetaChip[] = [];
   out.push({ label: 'SM $' + (item.smPrice / 100).toFixed(2) });
   if (row.csfPrice != null) out.push({ label: 'CSF $' + (row.csfPrice / 100).toFixed(2) });
-  if (row.estimated) out.push({ label: '⚠ Est', kind: 'warn' });
-  if (item.stickers.length) out.push({ label: item.stickers.length + ' stickers' });
-  if (row.flagStickers) out.push({ label: 'sticker > skin', kind: 'success' });
-  if (row.flagCharm) out.push({ label: 'charm > skin', kind: 'success' });
-  if (item.tradeLock) out.push({ label: '🔒 lock', kind: 'warn' });
+  if (row.estimated) out.push({ label: t('csf.meta.est'), kind: 'warn' });
+  if (item.stickers.length)
+    out.push({ label: t('csf.meta.stickers', { n: item.stickers.length }) });
+  if (row.flagStickers) out.push({ label: t('csf.meta.stickerGtSkin'), kind: 'success' });
+  if (row.flagCharm) out.push({ label: t('csf.meta.charmGtSkin'), kind: 'success' });
+  if (item.tradeLock) out.push({ label: t('csf.meta.lock'), kind: 'warn' });
   return out;
 }
 
@@ -105,7 +107,7 @@ function itemCardForRow(row: AnalysisRow): string {
     profitFraction,
     variant,
     openUrl,
-    openLabel: 'Open CSFloat ↗',
+    openLabel: t('csf.open'),
     steamHtml: renderSteamCell(row.item.marketName, getSteamPriceCached(row.item.marketName)),
   };
   return renderItemCard(props);
@@ -116,7 +118,7 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   aborted = false;
   const total = payload.items.length;
   overlay.body.innerHTML = bodyHtmlRunning(0, total);
-  setStatus(`Analyzing ${total} listings…`, 'info');
+  setStatus(t('csf.analyzingN', { n: total }), 'info');
   wireScanBar();
 
   const rows: AnalysisRow[] = [];
@@ -125,7 +127,7 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
     onProgress: (done) => {
       if (!overlay) return;
       updateScanBar(overlay.body, {
-        info: `Analyzing ${done}/${total}…`,
+        info: t('csf.analyzing', { done, total }),
         progressPct: Math.round((done / total) * 95),
       });
     },
@@ -134,14 +136,17 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   });
 
   if (aborted) {
-    setStatus('Analysis stopped.', 'info');
+    setStatus(t('csf.stopped'), 'info');
     return;
   }
 
   overlay.body.innerHTML = bodyHtmlDone(rows);
   wireScanBar();
   setStatus(
-    `Found ${rows.length} listings. ${rows.filter((r) => r.result.grossProfit > 0).length} profitable.`,
+    t('csf.found', {
+      n: rows.length,
+      p: rows.filter((r) => r.result.grossProfit > 0).length,
+    }),
     'ok',
   );
 
@@ -164,7 +169,7 @@ function wireScanBar(): void {
     (e) => {
       e.preventDefault();
       const label = btn.textContent?.trim();
-      if (label === 'Stop') {
+      if (label === t('scan.stop')) {
         aborted = true;
       } else {
         // Refresh / Rescan — ask the SW to forward the pending payload again.
@@ -180,7 +185,7 @@ function mount(): void {
   overlay = createOverlay({
     rootId: ROOT_ID,
     mode: 'arbitrage',
-    modeLabel: 'Arbitrage',
+    modeLabel: t('popup.modes.arb.title'),
     persistKey: PERSIST_KEY,
     onClose: () => {
       aborted = true;
@@ -191,7 +196,7 @@ function mount(): void {
   overlay.body.innerHTML = bodyHtmlIdle();
   wireScanBar();
   wireSteamButtons(overlay.body);
-  setStatus('Ready.', 'info');
+  setStatus(t('scan.ready'), 'info');
 
   // Announce ourselves to the SW so it can forward any pending payload.
   void send({ type: 'arbitrage:ready' });
