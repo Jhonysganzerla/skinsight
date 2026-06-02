@@ -9,6 +9,19 @@
 
 ---
 
+## Ritual de versão (OBRIGATÓRIO a partir do v0.7.0)
+
+O manifest puxa `pkg.version` do `package.json`. As tags `v0.2.0`…`v0.6.1` saíram
+com `package.json` ainda em `0.1.0` → o Chrome mostrava 0.1.0 em todas. Corrigido
+em v0.6.1 (bump para 0.6.1; histórico das tags antigas NÃO reescrito).
+
+**Daqui pra frente, ao fechar uma fase:** fecha o trabalho → **bump do
+`package.json` no MESMO commit que será tagueado** → commit → `git tag vX.Y.Z` →
+push (main + tag). Assim `manifest.version === tag` sempre. A versão **nunca
+regride nem repete** (regra dura da Chrome Web Store para o v1.0).
+
+---
+
 ## Resumo do briefing (5 bullets — alinhamento confirmado)
 
 - **Produto:** Skinsight — extensão MV3 Chrome/Firefox para CS2 skin traders. Tagline "See what others miss." Posicionamento: _opportunity scanner_ (ativo, varre, ranqueia), **não** decorator (passivo) como BetterFloat.
