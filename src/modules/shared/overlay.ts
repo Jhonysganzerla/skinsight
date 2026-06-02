@@ -14,6 +14,7 @@
  */
 import { OVERLAY_CSS } from './tokens';
 import { patchSettings, getSettings } from './storage';
+import { t } from './i18n';
 
 export type Mode = 'arbitrage' | 'rare';
 
@@ -78,8 +79,8 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
         <span class="sh-mode-tag ${opts.mode === 'rare' ? 'rare' : ''}">${escape(opts.modeLabel)}</span>
       </div>
       <div class="sh-actions">
-        <button class="sh-icon-btn" data-act="min" title="Minimize">−</button>
-        <button class="sh-icon-btn" data-act="close" title="Close">×</button>
+        <button class="sh-icon-btn" data-act="min" title="${escape(t('overlay.minimize'))}">−</button>
+        <button class="sh-icon-btn" data-act="close" title="${escape(t('overlay.close'))}">×</button>
       </div>
     </div>
     <div class="sh-status" data-role="status"></div>
@@ -93,7 +94,7 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
   minbar.innerHTML = `
     <span class="sh-minbar-ico">⌖</span>
     <span class="sh-minbar-count" data-role="count">0</span>
-    <span class="sh-minbar-sub">open</span>
+    <span class="sh-minbar-sub">${escape(t('overlay.minbar.open'))}</span>
   `;
   document.documentElement.appendChild(minbar);
 

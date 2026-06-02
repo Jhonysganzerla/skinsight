@@ -90,6 +90,10 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Abra um dos sites de trade suportados e o scanner ativa automaticamente.',
   },
   'popup.open': { en: 'Open ↗', 'pt-BR': 'Abrir ↗' },
+  // ── Overlay shell ──────────────────────────────────────────────────
+  'overlay.minimize': { en: 'Minimize', 'pt-BR': 'Minimizar' },
+  'overlay.close': { en: 'Close', 'pt-BR': 'Fechar' },
+  'overlay.minbar.open': { en: 'open', 'pt-BR': 'abrir' },
   // ── Relative time (fmtAgo) ─────────────────────────────────────────
   'time.now': { en: 'just now', 'pt-BR': 'agora mesmo' },
   'time.min': { en: '{n}m ago', 'pt-BR': 'há {n} min' },
