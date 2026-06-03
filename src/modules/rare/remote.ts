@@ -15,6 +15,7 @@
  * — no separate data repo, no auth token (the repo is public). host_permission
  * is scoped to `raw.githubusercontent.com/Jhonysganzerla/*`, never `<all_urls>`.
  */
+import { fetchWithTimeout } from '../shared/net';
 
 export const REMOTE_RARE_URL =
   'https://raw.githubusercontent.com/Jhonysganzerla/skinsight/main/public/rare_stickers.json';
@@ -81,7 +82,7 @@ export async function refreshRareRemote(force = false): Promise<RefreshResult> {
     }
   }
   try {
-    const res = await fetch(REMOTE_RARE_URL, { cache: 'no-store' });
+    const res = await fetchWithTimeout(REMOTE_RARE_URL, { cache: 'no-store' });
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const json: unknown = await res.json();
     if (!isValidRareList(json)) return { ok: false, error: 'malformed list' };

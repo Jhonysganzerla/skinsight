@@ -17,6 +17,7 @@
  * Prices are USD (priceoverview currency=1). Never mix with a BRL display.
  */
 import { steamBucket } from '../shared/throttle';
+import { fetchWithTimeout } from '../shared/net';
 
 export interface SteamPrice {
   /** Lowest listed price, in USD cents. null when Steam omitted it. */
@@ -120,7 +121,8 @@ export async function getSteamPrice(marketHashName: string): Promise<SteamPrice 
     const url =
       'https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=' +
       encodeURIComponent(marketHashName);
-    const res = await fetch(url);
+    // Timeout so a hung Steam connection can't pin a rate-limit slot forever.
+    const res = await fetchWithTimeout(url);
     if (res.status === 429) {
       // Exponential backoff: 30s, 60s, 120s … capped at 5min.
       _consecutive429 += 1;
