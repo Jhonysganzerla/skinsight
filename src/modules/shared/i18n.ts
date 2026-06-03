@@ -118,6 +118,44 @@ const STRINGS: Record<string, Entry> = {
   'options.about.label': { en: 'About', 'pt-BR': 'Sobre' },
   'options.about.version': { en: 'Version {v}', 'pt-BR': 'Versão {v}' },
   'options.saved': { en: 'Saved ✓', 'pt-BR': 'Salvo ✓' },
+  // ── Welcome / onboarding (v0.7 T5) ─────────────────────────────────
+  'welcome.title': { en: 'Welcome to Skinsight', 'pt-BR': 'Bem-vindo ao Skinsight' },
+  'welcome.tagline': {
+    en: 'Rare sticker scanner for CS2 skin trading.',
+    'pt-BR': 'Scanner de stickers raros para trade de skins de CS2.',
+  },
+  'welcome.default': { en: 'default', 'pt-BR': 'padrão' },
+  'welcome.modes.title': { en: 'Two modes', 'pt-BR': 'Dois modos' },
+  'welcome.modes.rare.desc': {
+    en: 'Scans inventories for items whose stickers are worth more than the listing — the under-priced finds.',
+    'pt-BR':
+      'Varre inventários atrás de itens cujos stickers valem mais que o anúncio — os achados subprecificados.',
+  },
+  'welcome.modes.arb.desc': {
+    en: 'Cross-site price arbitrage: hands a SkinsMonkey scan to CSFloat and scores the spread.',
+    'pt-BR':
+      'Arbitragem de preço entre sites: leva um scan do SkinsMonkey ao CSFloat e pontua a diferença.',
+  },
+  'welcome.sites.title': { en: 'Supported sites', 'pt-BR': 'Sites suportados' },
+  'welcome.role.both': { en: 'Rare + Arbitrage', 'pt-BR': 'Rare + Arbitragem' },
+  'welcome.role.rare': { en: 'always-on Rare', 'pt-BR': 'Rare sempre ativo' },
+  'welcome.role.arb': { en: 'Arbitrage oracle', 'pt-BR': 'oráculo de Arbitragem' },
+  'welcome.flow.title': { en: 'How it works', 'pt-BR': 'Como funciona' },
+  'welcome.flow.step1': {
+    en: 'Open a supported site — the Skinsight overlay activates automatically.',
+    'pt-BR': 'Abra um site suportado — o overlay do Skinsight ativa sozinho.',
+  },
+  'welcome.flow.step2': {
+    en: 'Hit Scan. Rare mode lists items with valuable stickers; Arbitrage hands off to CSFloat.',
+    'pt-BR':
+      'Clique em Escanear. O modo Rare lista itens com stickers valiosos; Arbitragem repassa ao CSFloat.',
+  },
+  'welcome.flow.step3': {
+    en: 'Review the cards — Steam price, sticker breakdown and the estimated CS.Money bonus.',
+    'pt-BR': 'Confira os cards — preço Steam, detalhe dos stickers e o bônus estimado da CS.Money.',
+  },
+  'welcome.cta.open': { en: 'Open SkinsMonkey ↗', 'pt-BR': 'Abrir o SkinsMonkey ↗' },
+  'welcome.cta.options': { en: 'Open options', 'pt-BR': 'Abrir opções' },
   // ── Overlay shell ──────────────────────────────────────────────────
   'overlay.minimize': { en: 'Minimize', 'pt-BR': 'Minimizar' },
   'overlay.close': { en: 'Close', 'pt-BR': 'Fechar' },

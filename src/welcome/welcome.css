@@ -1,0 +1,202 @@
+:root {
+  color-scheme: dark;
+  --bg: #0c0f16;
+  --bg-elevated: #11151c;
+  --bg-input: #0a1020;
+  --border: #2a3142;
+  --border-strong: #303a52;
+  --text: #e7eaf0;
+  --text-muted: #9aa3b8;
+  --text-dim: #6b7488;
+  --primary: #3a76ff;
+  --primary-hover: #5187ff;
+  --success-bright: #4cc870;
+  --accent: #88aaff;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    14px/1.6 'Inter',
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.wel {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 20px 56px;
+}
+.wel-header {
+  text-align: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.wel-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.wel-title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 12px 0 4px;
+}
+.wel-tagline {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.wel-section {
+  margin-top: 28px;
+}
+.wel-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin: 0 0 12px;
+}
+
+.wel-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.wel-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.wel-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.wel-card .badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--success-bright);
+  background: rgba(76, 200, 112, 0.14);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.wel-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.wel-sites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wel-site {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.wel-site .dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+.wel-site .role {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.wel-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: step;
+}
+.wel-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+.wel-steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wel-cta {
+  margin-top: 32px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.wel-btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.wel-btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.wel-btn.primary:hover {
+  background: var(--primary-hover);
+}
+.wel-btn:hover {
+  border-color: var(--border-strong);
+}
+.wel-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+.wel-link:hover {
+  text-decoration: underline;
+}

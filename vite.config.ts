@@ -9,7 +9,13 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
     rollupOptions: {
-      // crxjs auto-discovers entry points from manifest
+      // crxjs auto-discovers entry points from the manifest (popup, options,
+      // content scripts, SW). The welcome page is NOT a manifest surface — it's
+      // opened by the SW via chrome.tabs.create on first install — so we add it
+      // as an explicit HTML input here so Vite bundles it.
+      input: {
+        welcome: 'src/welcome/welcome.html',
+      },
     },
   },
   server: {

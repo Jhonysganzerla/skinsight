@@ -158,9 +158,15 @@ chrome.runtime.onStartup.addListener(() => {
   void runHitsGc();
   void refreshRareRemote(false);
 });
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   void runHitsGc();
   // Pull the live rare list once on install/update (force, since a fresh
   // install has no cache and an update may ship behind the published list).
   void refreshRareRemote(true);
+  // First-install onboarding (v0.7 T5): open the welcome tab exactly once.
+  // Scoped to reason === 'install' so it never fires on update/chrome_update —
+  // i.e. not a recurring flow, so opening a tab outside a user gesture is fine.
+  if (details.reason === 'install') {
+    void chrome.tabs.create({ url: chrome.runtime.getURL('src/welcome/welcome.html') });
+  }
 });
