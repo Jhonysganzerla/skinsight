@@ -1,7 +1,7 @@
 {
   "name": "skinsight",
   "displayName": "Skinsight",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "private": true,
   "description": "CS2 skin arbitrage + rare sticker scanner for SkinsMonkey, CSFloat, PirateSwap and CS.Money.",
   "author": "Sganzerla",
