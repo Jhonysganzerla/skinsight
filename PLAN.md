@@ -866,9 +866,9 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 
 ---
 
-## v0.7 — Polish (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
+## v0.7 — Polish (✅ ENTREGUE · tag `v0.7.0`)
 
-> **Status: detalhamento para aprovação (briefing §12).** Roadmap corrigido: v0.7 (Polish) → v0.8 (Beta privado) → v1.0 (publicação). Prep de publicação NÃO é agora (screenshots/listing dependem da UI polida; pular geraria retrabalho). Implementar T2–T6 só após o "ok"; **T1 (Fase A) é read-only e já pode rodar quando aprovado** — é o item de maior risco.
+> **Status: SHIPPED em v0.7.0.** T1 leak-audit + fixes, T2 ícones, T3 i18n (PT-BR+EN: popup/overlay/4 content scripts), T4 options (idioma + modo padrão), T5 onboarding (welcome on install), T6 docs. Extras da fase: QR de Pix + copia-e-cola, "possível lucro" (overpay CS.Money est. nos cards SM/PS), dump de calibração debug-gated. Roadmap: v0.7 (Polish) → **v0.8 (Beta privado)** → v1.0 (publicação).
 
 **Objetivo:** lapidar a extensão para um beta privado de qualidade — sem features novas de dado, foco em robustez, i18n, UX de configuração/entrada e docs.
 
@@ -953,4 +953,42 @@ T1 (Fase A, read-only) → T2 → T3 → T4 → T5 → T6. T1 primeiro porque é
 
 T2: `scripts/build-icons.mjs` + SVG source + `manifest.config.ts`. T3: novo `modules/shared/i18n.ts` + `_locales/*` (se `chrome.i18n`) + toques nos content scripts/popup. T4: `src/options/{options.html,options.ts,options.css}` + `manifest.config.ts`. T5: `service-worker.ts` (onInstalled) + página/asset de welcome. T6: `docs/*` + `README.md`. **Custo: M–L** (T1 read-only; T3 é o mais espalhado).
 
-> **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T2–T6 (e o "ok" para rodar T1 read-only).
+> **v0.7 ENTREGUE** — T1–T6 implementados, gates verdes, tag `v0.7.0` publicada.
+
+---
+
+## v0.8 — Beta privado (EM ANDAMENTO)
+
+> **Objetivo:** deixar o beta robusto e fechar o modelo de lucro. Espírito do PLAN: **robustez, sem features novas de dado**. "Qualidade > prazo." Mesmo ritual de versão (bump no commit tagueado; nunca regride/repete).
+
+### T1 — Economia do "possível lucro" (🔒 BLOQUEADO: precisa de 2 parâmetros do Jhony)
+
+Transformar o bônus bruto de overpay (já calibrado em `shared/overpay.ts`) em **lucro líquido SM→CS.Money** no headline dos cards SM/PS, **sempre rotulado "(est.)"**. Falta o input econômico que o Jhony pediu pra fornecer:
+
+- **Fee de saque/venda** na CS.Money (fração, ex.: 0.10 = 10%).
+- **Desconto de trade-lock** (fator aplicado quando o item está em lock, ex.: ×0.85), e quando se aplica.
+
+Fórmula-alvo (a confirmar com os números): `lucro_liq_est ≈ (skin_price + overpay_est) × (1 − fee) − preço_SM − ajuste_lock`. **Não implementar com números inventados** — aguardar o Jhony.
+
+### T2 — Hardening de robustez (CÓDIGO · desbloqueado)
+
+Auditar (read-only, padrão "Fase A") e endurecer os caminhos de erro dos 4 content scripts + oráculo Steam + SW: `fetch` sem try/catch, timeouts/abort, estado de scan preso em erro (garantir `finish()`/reset via `try/finally`), estados vazios/falha no overlay, mensagens de erro localizadas (já há `scan.error`), guardas de rate-limit. Sem features novas de dado.
+
+### T3 — QA/smoke do beta
+
+Checklist de smoke por site × modo; corrigir o que aparecer. Validar i18n/options/onboarding ponta-a-ponta.
+
+### T4 — (opcional) Options: parâmetros de scan + reset de cache
+
+O T4 do v0.7 entregou idioma + modo padrão; o PLAN previa também delay/max-pages default e reset de cache (rares/steam). Completar se útil pro beta.
+
+### Ordem
+
+T2 (desbloqueado, começa já) → T1 (quando vierem os params) → T3 → T4.
+
+### Exit criteria
+
+- Caminhos de erro robustos (nenhum scan preso; toda falha vira status claro e localizado).
+- Lucro líquido (T1) com os parâmetros reais do Jhony, sempre "(est.)".
+- Gates verdes: typecheck + lint + format:check + testes + build. Conventional Commits.
+- Sem `<all_urls>`, sem alargar permissões.
