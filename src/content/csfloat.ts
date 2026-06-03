@@ -122,42 +122,55 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   setStatus(t('csf.analyzingN', { n: total }), 'info');
   wireScanBar();
 
-  const rows: AnalysisRow[] = [];
-  await runAnalysis(payload.items, {
-    isAborted: () => aborted,
-    onProgress: (done) => {
-      if (!overlay) return;
-      updateScanBar(overlay.body, {
-        info: t('csf.analyzing', { done, total }),
-        progressPct: Math.round((done / total) * 95),
-      });
-    },
-  }).then((analyzed) => {
-    rows.push(...analyzed);
-  });
+  // try/catch so a throw in the analyzer/render never leaves the overlay stuck
+  // on "Analyzing…": surface a localized error and re-wire the action button so
+  // the user can rescan.
+  try {
+    const rows: AnalysisRow[] = [];
+    await runAnalysis(payload.items, {
+      isAborted: () => aborted,
+      onProgress: (done) => {
+        if (!overlay) return;
+        updateScanBar(overlay.body, {
+          info: t('csf.analyzing', { done, total }),
+          progressPct: Math.round((done / total) * 95),
+        });
+      },
+    }).then((analyzed) => {
+      rows.push(...analyzed);
+    });
 
-  if (aborted) {
-    setStatus(t('csf.stopped'), 'info');
-    return;
-  }
+    if (aborted) {
+      setStatus(t('csf.stopped'), 'info');
+      return;
+    }
+    if (!overlay) return;
 
-  overlay.body.innerHTML = bodyHtmlDone(rows);
-  wireScanBar();
-  setStatus(
-    t('csf.found', {
-      n: rows.length,
-      p: rows.filter((r) => r.result.grossProfit > 0).length,
-    }),
-    'ok',
-  );
+    overlay.body.innerHTML = bodyHtmlDone(rows);
+    wireScanBar();
+    setStatus(
+      t('csf.found', {
+        n: rows.length,
+        p: rows.filter((r) => r.result.grossProfit > 0).length,
+      }),
+      'ok',
+    );
 
-  // Report hits back to the SW so the popup feed updates.
-  const hitRows = rows
-    .filter((r) => r.result.grossProfit > 0)
-    .slice(0, 10)
-    .map(hitRowFromAnalysisRow);
-  if (hitRows.length) {
-    await send({ type: 'arbitrage:result', rows: hitRows });
+    // Report hits back to the SW so the popup feed updates.
+    const hitRows = rows
+      .filter((r) => r.result.grossProfit > 0)
+      .slice(0, 10)
+      .map(hitRowFromAnalysisRow);
+    if (hitRows.length) {
+      await send({ type: 'arbitrage:result', rows: hitRows });
+    }
+  } catch (e) {
+    if (overlay) {
+      // Reset to the idle body (with a Refresh action) so the user can retry.
+      overlay.body.innerHTML = bodyHtmlIdle();
+      wireScanBar();
+      setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
+    }
   }
 }
 

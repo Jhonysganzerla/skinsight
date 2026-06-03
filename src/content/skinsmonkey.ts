@@ -21,13 +21,7 @@ import {
 import { send } from '../modules/shared/messaging';
 import { t } from '../modules/shared/i18n';
 import { applyStoredLocale, getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
-import {
-  applyFilter,
-  buildExportPayload,
-  getCsrf,
-  scanAll,
-  type RawAsset,
-} from '../modules/arbitrage/scanner';
+import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -96,23 +90,24 @@ async function runArbScan(): Promise<void> {
     setStatus(t('sm.noCsrf'), 'err');
     return;
   }
-  const filters = readFilterValues(overlay.body);
-  const q = (filters['q'] ?? '*').trim() || '*';
-  const maxPages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
-  const exteriors = EXT_MAP[filters['exteriors'] ?? 'all'] ?? [];
-
   arbState.running = true;
   arbState.abort = new AbortController();
-  updateScanBar(overlay.body, {
-    actionLabel: t('scan.stop'),
-    info: t('sm.starting'),
-    progressPct: 0,
-  });
-  setStatus(t('sm.scanning'), 'info');
-
-  let all: RawAsset[] = [];
+  // try/catch/finally: an abort or any throw becomes a clear status and
+  // `finally` always resets state — the bar never stays stuck on "Stop".
   try {
-    all = await scanAll({
+    const filters = readFilterValues(overlay.body);
+    const q = (filters['q'] ?? '*').trim() || '*';
+    const maxPages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
+    const exteriors = EXT_MAP[filters['exteriors'] ?? 'all'] ?? [];
+
+    updateScanBar(overlay.body, {
+      actionLabel: t('scan.stop'),
+      info: t('sm.starting'),
+      progressPct: 0,
+    });
+    setStatus(t('sm.scanning'), 'info');
+
+    const all = await scanAll({
       q,
       exteriors,
       withCharm: false,
@@ -130,38 +125,31 @@ async function runArbScan(): Promise<void> {
         });
       },
     });
+
+    const filtered = applyFilter(all, {});
+    if (!overlay) return;
+    updateScanBar(overlay.body, {
+      progressPct: 95,
+      info: t('sm.handingOff', { n: filtered.length }),
+    });
+    setStatus(t('sm.sending', { n: filtered.length }), 'info');
+
+    const payload = buildExportPayload(filtered);
+    const res = await send({ type: 'arbitrage:start', payload });
+    if (!overlay) return;
+    if (res.ok) {
+      updateScanBar(overlay.body, { progressPct: 100, info: t('sm.doneOpenTab') });
+      setStatus(t('sm.sent', { n: payload.items.length }), 'ok');
+    } else {
+      setStatus(t('sm.handoffFail', { err: res.error ?? 'unknown' }), 'err');
+    }
   } catch (e) {
     const err = e as Error;
     if (err.name === 'AbortError') setStatus(t('scan.stopped'), 'info');
-    else setStatus(t('scan.error', { msg: err.message }), 'err');
+    else if (overlay) setStatus(t('scan.error', { msg: err.message }), 'err');
+  } finally {
     finishArbScan();
-    return;
   }
-
-  const filtered = applyFilter(all, {});
-  if (!overlay) {
-    finishArbScan();
-    return;
-  }
-  updateScanBar(overlay.body, {
-    progressPct: 95,
-    info: t('sm.handingOff', { n: filtered.length }),
-  });
-  setStatus(t('sm.sending', { n: filtered.length }), 'info');
-
-  const payload = buildExportPayload(filtered);
-  const res = await send({ type: 'arbitrage:start', payload });
-  if (!overlay) {
-    finishArbScan();
-    return;
-  }
-  if (res.ok) {
-    updateScanBar(overlay.body, { progressPct: 100, info: t('sm.doneOpenTab') });
-    setStatus(t('sm.sent', { n: payload.items.length }), 'ok');
-  } else {
-    setStatus(t('sm.handoffFail', { err: res.error ?? 'unknown' }), 'err');
-  }
-  finishArbScan();
 }
 
 function finishArbScan(): void {
@@ -275,64 +263,69 @@ async function runRareScan(): Promise<void> {
   if (!overlay || rareState.running) return;
   rareState.running = true;
   rareState.aborted = { aborted: false };
-  // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
-  void send({ type: 'rares:refresh', force: false });
-  const filters = readFilterValues(overlay.body);
-  const pages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
+  // try/catch/finally so a throw never leaves the bar stuck on "Stop".
+  try {
+    // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
+    void send({ type: 'rares:refresh', force: false });
+    const filters = readFilterValues(overlay.body);
+    const pages = Math.max(1, Math.min(80, parseInt(filters['pages'] ?? '5', 10) || 5));
 
-  updateScanBar(overlay.body, {
-    actionLabel: t('scan.stop'),
-    info: t('csm.collecting'),
-    progressPct: 0,
-  });
-  setStatus(t('sm.collectingInv'), 'info');
-
-  const items = await collectAll({
-    site: 'skinsmonkey',
-    maxPages: pages,
-    signal: rareState.aborted,
-    onProgress: (msg, collected) => {
-      if (!overlay) return;
-      const pct = Math.min(70, Math.round((collected / (pages * 120)) * 70));
-      updateScanBar(overlay.body, { info: msg, progressPct: pct });
-    },
-  });
-
-  if (rareState.aborted.aborted) {
-    setStatus(t('scan.stopped'), 'info');
-    finishRareScan();
-    return;
-  }
-
-  updateScanBar(overlay.body, {
-    info: t('scan.matching', { n: items.length }),
-    progressPct: 80,
-  });
-  rareState.results = await findRareResults(items);
-
-  if (!overlay) {
-    finishRareScan();
-    return;
-  }
-  renderRareResults();
-  const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
-  updateScanBar(overlay.body, {
-    info: t('scan.complete.hits', { n: filtered.length }),
-    progressPct: 100,
-  });
-  setStatus(t('rare.found', { n: filtered.length }), 'ok');
-
-  const top = filtered[0];
-  if (top) {
-    void send({
-      type: 'hit:record',
-      site: 'skinsmonkey',
-      name: top.name,
-      sub: `${top.matches.length} rare stickers · listed $${top.price.toFixed(2)}`,
-      profitUsd: top.profit,
+    updateScanBar(overlay.body, {
+      actionLabel: t('scan.stop'),
+      info: t('csm.collecting'),
+      progressPct: 0,
     });
+    setStatus(t('sm.collectingInv'), 'info');
+
+    const items = await collectAll({
+      site: 'skinsmonkey',
+      maxPages: pages,
+      signal: rareState.aborted,
+      onProgress: (msg, collected) => {
+        if (!overlay) return;
+        const pct = Math.min(70, Math.round((collected / (pages * 120)) * 70));
+        updateScanBar(overlay.body, { info: msg, progressPct: pct });
+      },
+    });
+
+    if (rareState.aborted.aborted) {
+      setStatus(t('scan.stopped'), 'info');
+      return;
+    }
+
+    updateScanBar(overlay.body, {
+      info: t('scan.matching', { n: items.length }),
+      progressPct: 80,
+    });
+    rareState.results = await findRareResults(items);
+
+    if (!overlay) return;
+    renderRareResults();
+    const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
+    updateScanBar(overlay.body, {
+      info: t('scan.complete.hits', { n: filtered.length }),
+      progressPct: 100,
+    });
+    setStatus(t('rare.found', { n: filtered.length }), 'ok');
+
+    const top = filtered[0];
+    if (top) {
+      void send({
+        type: 'hit:record',
+        site: 'skinsmonkey',
+        name: top.name,
+        sub: `${top.matches.length} rare stickers · listed $${top.price.toFixed(2)}`,
+        profitUsd: top.profit,
+      });
+    }
+  } catch (e) {
+    if (overlay) {
+      updateScanBar(overlay.body, { info: t('scan.failed') });
+      setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
+    }
+  } finally {
+    finishRareScan();
   }
-  finishRareScan();
 }
 
 function finishRareScan(): void {

@@ -167,81 +167,87 @@ async function runScan(): Promise<void> {
   if (!overlay || state.running) return;
   state.running = true;
   state.aborted = { aborted: false };
-  // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
-  void send({ type: 'rares:refresh', force: false });
-  const filters = readFilterValues(overlay.body);
-  const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
-  const sortKey = filters['sort'] ?? 'net_desc';
+  // try/catch/finally so a throw mid-scan never leaves the bar stuck on "Stop":
+  // the error becomes a localized status and `finally` always resets state.
+  try {
+    // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
+    void send({ type: 'rares:refresh', force: false });
+    const filters = readFilterValues(overlay.body);
+    const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
+    const sortKey = filters['sort'] ?? 'net_desc';
 
-  // "Max pages" is optional: blank → scan the whole inventory (collector breaks
-  // on empty/short page), guarded by SCAN_SAFETY_CAP_PAGES. A positive number
-  // caps the scan early, clamped to the safety limit.
-  const maxPagesRaw = (filters['maxPages'] ?? '').trim();
-  const maxPagesNum = parseInt(maxPagesRaw, 10);
-  const maxPages =
-    maxPagesRaw && maxPagesNum > 0
-      ? Math.min(maxPagesNum, SCAN_SAFETY_CAP_PAGES)
-      : SCAN_SAFETY_CAP_PAGES;
+    // "Max pages" is optional: blank → scan the whole inventory (collector breaks
+    // on empty/short page), guarded by SCAN_SAFETY_CAP_PAGES. A positive number
+    // caps the scan early, clamped to the safety limit.
+    const maxPagesRaw = (filters['maxPages'] ?? '').trim();
+    const maxPagesNum = parseInt(maxPagesRaw, 10);
+    const maxPages =
+      maxPagesRaw && maxPagesNum > 0
+        ? Math.min(maxPagesNum, SCAN_SAFETY_CAP_PAGES)
+        : SCAN_SAFETY_CAP_PAGES;
 
-  updateScanBar(overlay.body, {
-    actionLabel: t('scan.stop'),
-    info: t('csm.collecting'),
-    progressPct: 0,
-  });
-  setStatus(t('csm.collectingInv'), 'info');
-
-  const collected = await collectCsMoney({
-    maxPages,
-    delayMs,
-    signal: state.aborted,
-    onStatus: (msg) => {
-      if (!overlay) return;
-      updateScanBar(overlay.body, { info: msg });
-    },
-  });
-
-  if (state.aborted.aborted) {
-    setStatus(t('scan.stopped'), 'info');
-    finish();
-    return;
-  }
-
-  state.items = collected;
-
-  // Debug-only: dump per-item sticker-overpay for offline formula calibration.
-  // No UI change — gated behind localStorage['skinsight:debug'].
-  if (isDebug()) dumpOverpaySample(collected);
-
-  if (!overlay) {
-    finish();
-    return;
-  }
-  renderResults();
-
-  // Enable the Regenerate button.
-  const drawer = overlay.body.querySelector<HTMLElement>('details');
-  if (drawer) drawer.outerHTML = regenerateBlockHtml(false);
-
-  updateScanBar(overlay.body, {
-    info: t('csm.complete', {
-      n: collected.length,
-      p: collected.filter((i) => i.netUsd > 0).length,
-    }),
-    progressPct: 100,
-  });
-  setStatus(t('csm.collected', { n: collected.length }), 'ok');
-
-  const top = sortItems(collected, sortKey)[0];
-  if (top && top.netUsd > 0) {
-    void send({
-      type: 'hit:record',
-      site: 'csmoney',
-      name: top.name,
-      sub: `${top.stickers.length} stickers · ${esc(toFixed(top.stickersTotalUsd))}$ in stickers`,
-      profitUsd: top.netUsd,
+    updateScanBar(overlay.body, {
+      actionLabel: t('scan.stop'),
+      info: t('csm.collecting'),
+      progressPct: 0,
     });
+    setStatus(t('csm.collectingInv'), 'info');
+
+    const collected = await collectCsMoney({
+      maxPages,
+      delayMs,
+      signal: state.aborted,
+      onStatus: (msg) => {
+        if (!overlay) return;
+        updateScanBar(overlay.body, { info: msg });
+      },
+    });
+
+    if (state.aborted.aborted) {
+      setStatus(t('scan.stopped'), 'info');
+      return;
+    }
+
+    state.items = collected;
+
+    // Debug-only: dump per-item sticker-overpay for offline formula calibration.
+    // No UI change — gated behind localStorage['skinsight:debug'].
+    if (isDebug()) dumpOverpaySample(collected);
+
+    if (!overlay) return;
+    renderResults();
+
+    // Enable the Regenerate button.
+    const drawer = overlay.body.querySelector<HTMLElement>('details');
+    if (drawer) drawer.outerHTML = regenerateBlockHtml(false);
+
+    updateScanBar(overlay.body, {
+      info: t('csm.complete', {
+        n: collected.length,
+        p: collected.filter((i) => i.netUsd > 0).length,
+      }),
+      progressPct: 100,
+    });
+    setStatus(t('csm.collected', { n: collected.length }), 'ok');
+
+    const top = sortItems(collected, sortKey)[0];
+    if (top && top.netUsd > 0) {
+      void send({
+        type: 'hit:record',
+        site: 'csmoney',
+        name: top.name,
+        sub: `${top.stickers.length} stickers · ${esc(toFixed(top.stickersTotalUsd))}$ in stickers`,
+        profitUsd: top.netUsd,
+      });
+    }
+  } catch (e) {
+    if (overlay) {
+      updateScanBar(overlay.body, { info: t('scan.failed') });
+      setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
+    }
+  } finally {
+    finish();
   }
-  finish();
 }
 
 function toFixed(n: number): string {
