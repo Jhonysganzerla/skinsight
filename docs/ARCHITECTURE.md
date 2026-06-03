@@ -7,28 +7,43 @@
 
 ```
 src/
-├── background/service-worker.ts     # MV3 SW — message router, cross-tab orchestration
+├── background/service-worker.ts     # MV3 SW — message router, cross-tab orchestration, onInstalled
 ├── content/                         # one entry per site (matches in manifest.config.ts)
 │   ├── skinsmonkey.ts               # v0.2 Arbitrage scanner + v0.3 Rare
 │   ├── csfloat.ts                   # v0.2 Arbitrage oracle
 │   ├── pirateswap.ts                # v0.3 Rare
-│   └── csmoney.ts                   # v0.3 Rare + DB regenerator
-├── popup/                           # toolbar icon UI
+│   └── csmoney.ts                   # v0.3 Rare + DB regenerator + v0.7 overpay dump
+├── popup/                           # toolbar icon UI (+ Pix QR/donate, options link)
+├── options/                         # v0.7 options page (language + default mode)
+├── welcome/                         # v0.7 first-install onboarding tab
 └── modules/
-    ├── shared/                      # OverlayShell, ui primitives, storage, messaging, fmt, tokens
+    ├── shared/                      # overlay, ui, storage, settings, messaging, fmt, tokens,
+    │                                #   throttle, virtual-list, i18n, overpay, debug
     ├── arbitrage/                   # scanner, analyzer, score, csf-url, types
-    └── rare/                        # finder (SM/PS), csmoney, rare-data, types
+    ├── rare/                        # finder (SM/PS), csmoney, rare-data, remote, render, types
+    └── oracles/                     # steam, steam-ui (per-item Steam Market price)
 ```
+
+Build-time asset scripts (`scripts/*.mjs`, run via `prebuild`): `build-rare-data`
+(slim rare DB), `build-icons` (per-size PNGs from SVG), `build-pix-qr`
+(`public/pix-qr.svg` from `src/modules/shared/pix.json`). Store-listing strings
+live in `public/_locales/{en,pt_BR}` (manifest `__MSG__`); the runtime UI uses
+`modules/shared/i18n.ts` instead (see "Internationalization" below).
 
 ## Modules wired vs dormant per phase
 
-| Module                        | First wired in         |
-| ----------------------------- | ---------------------- |
-| `modules/shared/*`            | v0.1 (popup + overlay) |
-| `modules/arbitrage/*`         | v0.2 ✅                |
-| `modules/rare/*`              | v0.3 ✅                |
-| `modules/oracles/steam.ts`    | v0.4                   |
-| `modules/oracles/skinport.ts` | v0.5                   |
+| Module                      | First wired in          |
+| --------------------------- | ----------------------- |
+| `modules/shared/*`          | v0.1 (popup + overlay)  |
+| `modules/arbitrage/*`       | v0.2 ✅                 |
+| `modules/rare/*`            | v0.3 ✅                 |
+| `modules/oracles/steam.ts`  | v0.5 ✅ (per-item)      |
+| `modules/shared/i18n.ts`    | v0.7 ✅ (PT-BR + EN)    |
+| `modules/shared/overpay.ts` | v0.7 ✅ (CS.Money est.) |
+| `modules/shared/debug.ts`   | v0.7 ✅ (opt-in dumps)  |
+
+> A `modules/oracles/skinport.ts` was prototyped in v0.6 and removed in v0.6.1
+> (Cloudflare challenge on `/v1/items`). The per-item Steam oracle covers it.
 
 ## Data flow — Arbitrage (v0.2, wired)
 
@@ -83,9 +98,10 @@ a new scan on SkinsMonkey.
 
 ## Why service worker matters
 
-- **CORS:** certain APIs (Steam priceoverview, future v0.4) cannot be called
-  from arbitrary origins. The SW has the `host_permissions` and can fetch
-  cross-origin.
+- **CORS:** certain APIs (Steam Market `priceoverview`, wired v0.5) cannot be
+  called from arbitrary origins. The SW has the `host_permissions` and fetches
+  cross-origin on a content script's behalf (`steam:price`, gated by a 15/min
+  token bucket).
 - **Tab orchestration:** opening/focusing the CSFloat tab in response to a
   scan happens from a SW message handler — content scripts cannot call
   `chrome.tabs.create` directly with `tabs` permission alone but can ask the
@@ -136,17 +152,59 @@ sequenceDiagram
   Note over Disk: File saved locally. NOT applied at runtime.<br/>Maintainer reviews & ships in a release.
 ```
 
-### Mode mutex
+### Per-site mode (v0.4 mutex)
 
-`storage.activeMode` is `'arbitrage' | 'rare' | null`. The popup is the
-only UI that sets it; every content script reads it via
-`isModeActive(mode)` and re-evaluates on `watchSettings()`. Sites that
-don't support a given mode (CSFloat for Rare, PirateSwap/CS.Money for
-Arbitrage) simply don't mount an overlay when their mode is inactive.
+`storage.skinsmonkeyMode` is `'arbitrage' | 'rare'` (default `'rare'` —
+v0.4 repositioning). It governs **SkinsMonkey only**; the other sites have
+fixed roles and ignore it: PirateSwap and CS.Money are always-on Rare,
+CSFloat is the always-on Arbitrage oracle.
 
-The SkinsMonkey content script supports both modes and switches between
-them when the user flips the popup — the old overlay is destroyed (with
-its in-flight scan aborted) and the matching one is mounted.
+The popup's two mode cards are mutually exclusive and write
+`skinsmonkeyMode` via `patchSettings`. The SkinsMonkey content script reads
+it (`getSkinsmonkeyMode()`) and re-evaluates on `watchSettings()`: flipping
+the mode destroys the old overlay (aborting its in-flight scan) and mounts
+the matching one. The default mode can also be set from the options page.
+
+## Internationalization (v0.7)
+
+Two layers:
+
+- **Store listing** — `public/_locales/{en,pt_BR}/messages.json` + manifest
+  `__MSG_appName__` / `__MSG_appDesc__` (`default_locale: 'en'`). This is what
+  `chrome.i18n` localizes for the Web Store.
+- **Runtime UI** — `modules/shared/i18n.ts` exports `t(key, vars)` over a flat
+  `{ en, 'pt-BR' }` dictionary. Used instead of `chrome.i18n` because the
+  options page needs a **runtime locale override** (`setLocaleOverride`), which
+  `chrome.i18n` can't do. `settings.locale` (`'auto' | 'en' | 'pt-BR'`) is
+  applied at the start of every context (popup, 4 content scripts, options,
+  welcome) via `settings.applyStoredLocale()` before the first render; `t()` is
+  synchronous so it can be called inline while building HTML.
+
+## CS.Money sticker overpay — "possível lucro" (v0.7)
+
+`modules/shared/overpay.ts` estimates the bonus CS.Money pays for stickers, so
+SM/PS Rare cards surface the resale upside:
+
+```
+overpay_est = min(0.07 × Σ(sticker_market_price), 0.25 × skin_price)
+```
+
+Calibrated on ~300 CS.Money items (item-level ground truth:
+`overpay.stickers ≈ Σ(sticker.overprice) × 0.93`). Shown as a
+`bônus CS.Money (est.) +$X` chip — **always** labelled "(est.)" on SM/PS. On
+CS.Money itself the overpay is already in the listing, so no chip is drawn; the
+raw `overpay.stickers` is still captured (gated by `localStorage['skinsight:debug']`,
+see `modules/shared/debug.ts`) into `window.__skinsightOverpay` /
+`localStorage['skinsight:overpay']` for offline re-calibration. The full
+SM→CS.Money net economics (withdrawal fee, trade lock) is not modelled yet.
+
+## First-install onboarding (v0.7 T5)
+
+`onInstalled` opens `src/welcome/welcome.html` once, scoped to
+`details.reason === 'install'` (never on update/`chrome_update`) — so it's not a
+recurring flow and `tabs.create` outside a user gesture is acceptable. The page
+is a Vite entry (added to `rollupOptions.input`, since it isn't a manifest
+surface that crxjs auto-discovers) and is localized via the same `t()`.
 
 ## CSS isolation
 

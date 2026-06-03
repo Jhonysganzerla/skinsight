@@ -8,6 +8,10 @@ price **arbitrage** as a secondary feature.
 
 - **Rare stickers** (primary) — finds items on SkinsMonkey, PirateSwap, and CS.Money whose stickers or charms are worth more than the listing.
 - **Arbitrage** (secondary) — scans SkinsMonkey listings and cross-checks real CSFloat prices to rank by profit.
+- **Possível lucro** — Rare cards on SkinsMonkey/PirateSwap show an estimated CS.Money sticker-overpay bonus (always labelled "(est.)").
+
+The UI is bilingual (English + Português-BR) with a language selector in the
+options page, and a one-time welcome tab on first install.
 
 Manifest V3, TypeScript strict, Vite + `@crxjs/vite-plugin`.
 
@@ -48,9 +52,13 @@ For Firefox: same flow via `about:debugging#/runtime/this-firefox` → _Load Tem
 | cs.money                  | Rare (always-on) + DB regenerator | v0.3        |
 | csfloat.com               | Arbitrage oracle (always-on)      | v0.2        |
 | steamcommunity.com/market | Per-item Steam price (on-demand)  | v0.5        |
-| api.skinport.com          | Skinport oracle                   | v0.6        |
 
-UI text is English. Visual reference: `mockup-ui-skinsight.html`.
+> A Skinport oracle was prototyped in v0.6 and **dropped** in v0.6.1 — its
+> `/v1/items` endpoint sits behind a Cloudflare challenge that a content script
+> can't clear. Per-item Steam Market price covers the same need.
+
+UI text is localized — English + Português (BR) — via a runtime `t()` module;
+pick the language in the options page. Visual reference: `mockup-ui-skinsight.html`.
 
 ## Privacy
 
@@ -67,4 +75,5 @@ separate license from the maintainer. See [`LICENSE`](./LICENSE).
 If this saves you money, consider buying the maintainer a coffee:
 
 - Ko-fi: <https://ko-fi.com/sganzerla>
-- Pix: `ac344236-c335-4f89-aee2-e671101d4619`
+- Pix: open the popup → **Mostrar QR Pix** to scan, or **Copiar Pix** for the
+  full "copia e cola" (BR Code).
