@@ -18,6 +18,7 @@ import {
   type StickerKind,
 } from '../shared/ui';
 import { fmtUsd, shortExterior, stripStickerPrefix, wearCode } from '../shared/fmt';
+import { t } from '../shared/i18n';
 import { getSteamPriceCached } from '../oracles/steam';
 import type { CsMoneyItem, RareResult } from './types';
 
@@ -53,6 +54,14 @@ export function renderRareCard(r: RareResult): string {
     },
     { label: 'Stickers ' + fmtUsd(r.stickerSum) },
   ];
+  // "Possível lucro" bonus (v0.7): estimated CS.Money sticker overpay. Always an
+  // estimate on SM/PS — labelled "(est.)". Net economics (fees) deferred.
+  if (r.csMoneyOverpayEst > 0) {
+    meta.push({
+      label: `${t('rare.csmoneyBonusEst')} +${fmtUsd(r.csMoneyOverpayEst)}`,
+      kind: 'success',
+    });
+  }
 
   const chips: StickerChipProps[] = r.matches.map((m) => ({
     name: stripStickerPrefix(m.name),
@@ -90,6 +99,13 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     },
     { label: 'Stickers ' + fmtUsd(it.stickersTotalUsd) },
   ];
+  // CS.Money reports the real sticker overpay — show it directly, no estimate.
+  if (it.overpayStickers > 0) {
+    meta.push({
+      label: `${t('rare.csmoneyBonus')} +${fmtUsd(it.overpayStickers)}`,
+      kind: 'success',
+    });
+  }
 
   const chips: StickerChipProps[] = it.stickers.map((s) => ({
     name: stripStickerPrefix(s.name),

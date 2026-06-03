@@ -26,6 +26,13 @@ export interface RareResult extends RareItem {
   stickerSum: number;
   profit: number;
   roi: number;
+  /**
+   * Estimated CS.Money sticker overpay (USD) for this item — the "possível
+   * lucro" bonus from reselling on CS.Money (v0.7). Always an estimate on
+   * SM/PS (labelled "(est.)" in the UI); see shared/overpay.ts. The full
+   * SM→CS.Money net economics (fees, trade lock) is not folded in yet.
+   */
+  csMoneyOverpayEst: number;
 }
 
 /** CS.Money-specific shape — different fields. */

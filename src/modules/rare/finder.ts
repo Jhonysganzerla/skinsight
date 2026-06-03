@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/app.template.js.
  */
 import { sleep } from '../shared/fmt';
+import { estimateCsMoneyOverpay } from '../shared/overpay';
 import { getRareMap, lookup } from './rare-data';
 import type { RareItem, RareResult, RareStickerMatch } from './types';
 
@@ -328,7 +329,8 @@ export async function findRareResults(
       const stickerSum = matches.reduce((sum, m) => sum + (m.refMinPrice || 0), 0);
       const profit = stickerSum - (it.price || 0);
       const roi = it.price > 0 ? stickerSum / it.price : 0;
-      out.push({ ...it, matches, stickerSum, profit, roi });
+      const csMoneyOverpayEst = estimateCsMoneyOverpay(stickerSum, it.price || 0);
+      out.push({ ...it, matches, stickerSum, profit, roi, csMoneyOverpayEst });
     }
     // Yield only after we've actually held the thread for a frame's worth of
     // work — keeps the yield count in single digits regardless of item count.

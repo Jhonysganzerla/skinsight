@@ -190,6 +190,8 @@ const STRINGS: Record<string, Entry> = {
     en: 'Found {n} items with rare stickers.',
     'pt-BR': '{n} items com stickers raros.',
   },
+  'rare.csmoneyBonusEst': { en: 'CS.Money bonus (est.)', 'pt-BR': 'bônus CS.Money (est.)' },
+  'rare.csmoneyBonus': { en: 'CS.Money bonus', 'pt-BR': 'bônus CS.Money' },
   // ── CS.Money ───────────────────────────────────────────────────────
   'csm.collecting': { en: 'Collecting…', 'pt-BR': 'Coletando…' },
   'csm.collectingInv': {
