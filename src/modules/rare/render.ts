@@ -99,13 +99,9 @@ export function renderCsMoneyCard(it: CsMoneyItem): string {
     },
     { label: 'Stickers ' + fmtUsd(it.stickersTotalUsd) },
   ];
-  // CS.Money reports the real sticker overpay — show it directly, no estimate.
-  if (it.overpayStickers > 0) {
-    meta.push({
-      label: `${t('rare.csmoneyBonus')} +${fmtUsd(it.overpayStickers)}`,
-      kind: 'success',
-    });
-  }
+  // No CS.Money overpay chip here: this IS CS.Money, so the overpay is already
+  // baked into the listing — showing it would be redundant. (The raw figure is
+  // still captured into overpayStickers for the calibration dump.)
 
   const chips: StickerChipProps[] = it.stickers.map((s) => ({
     name: stripStickerPrefix(s.name),
