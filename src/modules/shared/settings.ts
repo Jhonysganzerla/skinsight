@@ -1,6 +1,7 @@
 /** Convenience accessors over the typed settings store. */
 import { getSettings, onSettingsChanged, type Settings, type SkinsmonkeyMode } from './storage';
 import { setLocaleOverride } from './i18n';
+import { setProfitParams } from './profit';
 
 let _cache: Settings | null = null;
 
@@ -22,6 +23,16 @@ export async function applyStoredLocale(): Promise<void> {
 }
 
 /**
+ * Push the stored net-profit economics into the profit module so the card
+ * renderers can read them synchronously. Call once at the start of the
+ * card-rendering contexts (SM / PS / CS.Money) before the first render.
+ */
+export async function applyStoredProfitParams(): Promise<void> {
+  const s = await loadSettings();
+  setProfitParams(s.profit);
+}
+
+/**
  * The mode SkinsMonkey should operate in. Other sites ignore this and
  * always behave per their fixed role:
  *   - PirateSwap / CS.Money: always-on Rare
@@ -36,9 +47,10 @@ export async function getSkinsmonkeyMode(): Promise<SkinsmonkeyMode> {
 export function watchSettings(cb: (s: Settings) => void): () => void {
   return onSettingsChanged((next) => {
     _cache = next;
-    // Keep this context's locale in sync if the user changed it elsewhere
-    // (e.g. the options page) so the next render picks up the new language.
+    // Keep this context's locale + profit params in sync if the user changed
+    // them elsewhere (e.g. the options page) so the next render uses them.
     setLocaleOverride(next.locale === 'auto' ? null : next.locale);
+    setProfitParams(next.profit);
     cb(next);
   });
 }

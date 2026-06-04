@@ -16,6 +16,7 @@ import {
   getSettings,
   patchSettings,
   type LocalePref,
+  type ProfitParams,
   type SkinsmonkeyMode,
 } from '../modules/shared/storage';
 import { applyStoredLocale } from '../modules/shared/settings';
@@ -77,6 +78,43 @@ function modeSectionHtml(current: SkinsmonkeyMode): string {
   `;
 }
 
+/** Fraction (0.05) → percent display string (5). */
+function pct(frac: number): string {
+  return String(Math.round(frac * 1000) / 10);
+}
+
+/**
+ * SM→CS.Money net-profit economics. Percentages are shown as % and stored as
+ * fractions; the threshold is USD. Changing a field persists immediately
+ * (no re-render, so input focus/caret is preserved while editing).
+ */
+function profitSectionHtml(p: ProfitParams): string {
+  const numField = (key: keyof ProfitParams, label: string, value: string, unit: string): string =>
+    `<label class="opt-field">
+       <span>${esc(label)}</span>
+       <span class="opt-num-wrap">
+         <input type="number" class="opt-num" data-pf="${key}" data-unit="${unit}" min="0" step="${unit === 'usd' ? '50' : '0.5'}" value="${esc(value)}" />
+         <span class="opt-unit">${unit === 'usd' ? '$' : '%'}</span>
+       </span>
+     </label>`;
+  return `
+    <section class="opt-card">
+      <div class="opt-card-head">
+        <h2 class="opt-card-title">${esc(t('options.profit.label'))}</h2>
+        <span class="opt-saved" data-saved="profit">${esc(t('options.saved'))}</span>
+      </div>
+      <p class="opt-card-desc">${esc(t('options.profit.desc'))}</p>
+      <div class="opt-grid">
+        ${numField('sellFeeUnder', t('options.profit.sellUnder'), pct(p.sellFeeUnder), 'pct')}
+        ${numField('sellFeeOver', t('options.profit.sellOver'), pct(p.sellFeeOver), 'pct')}
+        ${numField('sellFeeThreshold', t('options.profit.threshold'), String(p.sellFeeThreshold), 'usd')}
+        ${numField('withdrawFee', t('options.profit.withdraw'), pct(p.withdrawFee), 'pct')}
+        ${numField('tradeLockDiscount', t('options.profit.tradeLock'), pct(p.tradeLockDiscount), 'pct')}
+      </div>
+    </section>
+  `;
+}
+
 function aboutSectionHtml(version: string): string {
   return `
     <section class="opt-card">
@@ -99,7 +137,7 @@ function manifestVersion(): string {
   }
 }
 
-function flashSaved(which: 'locale' | 'mode'): void {
+function flashSaved(which: 'locale' | 'mode' | 'profit'): void {
   const el = document.querySelector<HTMLElement>(`[data-saved="${which}"]`);
   if (!el) return;
   el.classList.add('show');
@@ -123,6 +161,7 @@ async function render(): Promise<void> {
   content.innerHTML = [
     localeSectionHtml(settings.locale),
     modeSectionHtml(settings.skinsmonkeyMode),
+    profitSectionHtml(settings.profit),
     aboutSectionHtml(manifestVersion()),
   ].join('');
 }
@@ -143,6 +182,24 @@ async function onModeChange(mode: SkinsmonkeyMode): Promise<void> {
   flashSaved('mode');
 }
 
+/** Read every [data-pf] input back into a ProfitParams (% → fraction, $ raw)
+ *  and persist. No re-render — keeps caret/focus while the user edits. */
+async function onProfitChange(): Promise<void> {
+  const content = document.getElementById('content');
+  if (!content) return;
+  const cur = (await getSettings()).profit;
+  const next: ProfitParams = { ...cur };
+  content.querySelectorAll<HTMLInputElement>('[data-pf]').forEach((el) => {
+    const key = el.dataset['pf'] as keyof ProfitParams | undefined;
+    if (!key) return;
+    const raw = parseFloat(el.value);
+    if (!Number.isFinite(raw)) return;
+    next[key] = el.dataset['unit'] === 'usd' ? raw : raw / 100;
+  });
+  await patchSettings({ profit: next });
+  flashSaved('profit');
+}
+
 function wireUp(): void {
   const content = document.getElementById('content');
   if (!content) return;
@@ -150,6 +207,10 @@ function wireUp(): void {
     const target = e.target as HTMLElement;
     if (target.id === 'sel-locale') {
       void onLocaleChange((target as HTMLSelectElement).value as LocalePref);
+      return;
+    }
+    if (target.matches('[data-pf]')) {
+      void onProfitChange();
     }
   });
   content.addEventListener('click', (e) => {

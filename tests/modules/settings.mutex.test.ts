@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  DEFAULT_PROFIT_PARAMS,
   DEFAULT_SETTINGS,
   getSettings,
   patchSettings,
@@ -82,6 +83,7 @@ describe('settings — v0.4 per-site mutex', () => {
     bag['settings'] = {
       skinsmonkeyMode: 'arbitrage',
       locale: 'auto',
+      profit: DEFAULT_PROFIT_PARAMS,
       overlay: {},
     } satisfies Settings;
     const s = await getSettings();
@@ -98,7 +100,12 @@ describe('settings — v0.7 locale preference', () => {
 
   it('preserves a valid locale (en / pt-BR / auto)', async () => {
     for (const locale of ['en', 'pt-BR', 'auto'] as const) {
-      bag['settings'] = { skinsmonkeyMode: 'rare', locale, overlay: {} } satisfies Settings;
+      bag['settings'] = {
+        skinsmonkeyMode: 'rare',
+        locale,
+        profit: DEFAULT_PROFIT_PARAMS,
+        overlay: {},
+      } satisfies Settings;
       const s = await getSettings();
       expect(s.locale).toBe(locale);
     }
@@ -115,6 +122,37 @@ describe('settings — v0.7 locale preference', () => {
     await patchSettings({ locale: 'pt-BR' });
     const s = await getSettings();
     expect(s.locale).toBe('pt-BR');
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+});
+
+describe('settings — v0.8 profit params', () => {
+  it('defaults to the calibrated CS.Money fees when absent', async () => {
+    const s = await getSettings();
+    expect(s.profit).toEqual(DEFAULT_PROFIT_PARAMS);
+    expect(s.profit.sellFeeUnder).toBe(0.05);
+    expect(s.profit.sellFeeOver).toBe(0.03);
+    expect(s.profit.sellFeeThreshold).toBe(1000);
+  });
+
+  it('clamps fractions to [0, 0.95] and falls back per-field on garbage', async () => {
+    bag['settings'] = {
+      skinsmonkeyMode: 'rare',
+      profit: { sellFeeUnder: 2, sellFeeOver: -1, withdrawFee: 'x', tradeLockDiscount: 0.1 },
+    };
+    const s = await getSettings();
+    expect(s.profit.sellFeeUnder).toBe(0.95); // clamped from 2
+    expect(s.profit.sellFeeOver).toBe(0); // clamped from -1
+    expect(s.profit.withdrawFee).toBe(0); // default (non-number)
+    expect(s.profit.tradeLockDiscount).toBe(0.1); // valid
+    expect(s.profit.sellFeeThreshold).toBe(1000); // default (absent)
+  });
+
+  it('patchSettings persists profit without touching other fields', async () => {
+    await patchSettings({ skinsmonkeyMode: 'arbitrage' });
+    await patchSettings({ profit: { ...DEFAULT_PROFIT_PARAMS, sellFeeOver: 0.02 } });
+    const s = await getSettings();
+    expect(s.profit.sellFeeOver).toBe(0.02);
     expect(s.skinsmonkeyMode).toBe('arbitrage');
   });
 });

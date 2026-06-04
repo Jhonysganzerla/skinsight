@@ -9,6 +9,32 @@ export type SkinsmonkeyMode = 'arbitrage' | 'rare';
 /** UI language preference. 'auto' → detect from navigator.language. */
 export type LocalePref = Locale | 'auto';
 
+/**
+ * Economic parameters for the SM→CS.Money net-profit estimate (v0.8 T1).
+ * Configurable in the options page — NEVER hardcoded. Fractions are 0..1
+ * (0.05 = 5%); the threshold is in USD. All money is USD internally.
+ */
+export interface ProfitParams {
+  /** CS.Money Market sell fee for items below `sellFeeThreshold`. Default 0.05. */
+  sellFeeUnder: number;
+  /** CS.Money Market sell fee for items at/above `sellFeeThreshold`. Default 0.03. */
+  sellFeeOver: number;
+  /** USD boundary between the two sell-fee tiers. Default 1000. */
+  sellFeeThreshold: number;
+  /** Withdrawal/payout fee. CS.Money doesn't charge; varies by method. Default 0. */
+  withdrawFee: number;
+  /** Haircut applied to the sale value for a trade-locked item. Default 0. */
+  tradeLockDiscount: number;
+}
+
+export const DEFAULT_PROFIT_PARAMS: ProfitParams = {
+  sellFeeUnder: 0.05,
+  sellFeeOver: 0.03,
+  sellFeeThreshold: 1000,
+  withdrawFee: 0,
+  tradeLockDiscount: 0,
+};
+
 export interface Settings {
   /**
    * SkinsMonkey is the only site that supports both modes; the popup lets
@@ -25,6 +51,8 @@ export interface Settings {
    * each context via settings.applyStoredLocale().
    */
   locale: LocalePref;
+  /** SM→CS.Money net-profit economics (v0.8 T1). Configurable in options. */
+  profit: ProfitParams;
   /** Overlay state per hostname — minimized + remembered position. */
   overlay: Record<string, { minimized?: boolean; left?: number; top?: number } | undefined>;
 }
@@ -32,6 +60,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   skinsmonkeyMode: 'rare',
   locale: 'auto',
+  profit: DEFAULT_PROFIT_PARAMS,
   overlay: {},
 };
 
@@ -91,7 +120,26 @@ function normalizeSettings(raw: unknown): Settings {
   return {
     skinsmonkeyMode: mode,
     locale,
+    profit: normalizeProfit(obj.profit),
     overlay: obj.overlay ?? {},
+  };
+}
+
+/** Coerce a stored profit blob to valid ProfitParams (clamps + defaults). */
+function normalizeProfit(raw: unknown): ProfitParams {
+  const p = (raw ?? {}) as Partial<ProfitParams>;
+  const d = DEFAULT_PROFIT_PARAMS;
+  // Fractions clamp to [0, 0.95] (a 100% fee is nonsensical); threshold ≥ 0.
+  const frac = (v: unknown, def: number): number =>
+    typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(0.95, v)) : def;
+  const usd = (v: unknown, def: number): number =>
+    typeof v === 'number' && isFinite(v) && v >= 0 ? v : def;
+  return {
+    sellFeeUnder: frac(p.sellFeeUnder, d.sellFeeUnder),
+    sellFeeOver: frac(p.sellFeeOver, d.sellFeeOver),
+    sellFeeThreshold: usd(p.sellFeeThreshold, d.sellFeeThreshold),
+    withdrawFee: frac(p.withdrawFee, d.withdrawFee),
+    tradeLockDiscount: frac(p.tradeLockDiscount, d.tradeLockDiscount),
   };
 }
 
@@ -110,6 +158,7 @@ export async function patchSettings(patch: Partial<Settings>): Promise<Settings>
     skinsmonkeyMode:
       patch.skinsmonkeyMode !== undefined ? patch.skinsmonkeyMode : cur.skinsmonkeyMode,
     locale: patch.locale !== undefined ? patch.locale : cur.locale,
+    profit: patch.profit !== undefined ? normalizeProfit(patch.profit) : cur.profit,
     overlay: { ...cur.overlay, ...(patch.overlay ?? {}) },
   };
   await setSettings(next);

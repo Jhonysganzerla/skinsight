@@ -115,6 +115,26 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR':
       'Qual scanner roda no SkinsMonkey. PirateSwap e CS.Money são sempre Rare; o CSFloat é sempre o oráculo de Arbitragem.',
   },
+  'options.profit.label': {
+    en: 'Profit estimate (SM→CS.Money)',
+    'pt-BR': 'Estimativa de lucro (SM→CS.Money)',
+  },
+  'options.profit.desc': {
+    en: 'Fees used for the net "possível lucro" on rare cards. Defaults match CS.Money Market; adjust to your account.',
+    'pt-BR':
+      'Taxas usadas no "possível lucro" líquido dos cards. Padrões da CS.Money Market; ajuste para a sua conta.',
+  },
+  'options.profit.sellUnder': {
+    en: 'Sell fee · under threshold',
+    'pt-BR': 'Taxa de venda · abaixo do limite',
+  },
+  'options.profit.sellOver': {
+    en: 'Sell fee · at/above threshold',
+    'pt-BR': 'Taxa de venda · no/acima do limite',
+  },
+  'options.profit.threshold': { en: 'Fee tier threshold', 'pt-BR': 'Limite das faixas' },
+  'options.profit.withdraw': { en: 'Withdraw fee', 'pt-BR': 'Taxa de saque' },
+  'options.profit.tradeLock': { en: 'Trade-lock discount', 'pt-BR': 'Desconto de trade-lock' },
   'options.about.label': { en: 'About', 'pt-BR': 'Sobre' },
   'options.about.version': { en: 'Version {v}', 'pt-BR': 'Versão {v}' },
   'options.saved': { en: 'Saved ✓', 'pt-BR': 'Salvo ✓' },
@@ -229,6 +249,7 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': '{n} items com stickers raros.',
   },
   'rare.csmoneyBonusEst': { en: 'CS.Money bonus (est.)', 'pt-BR': 'bônus CS.Money (est.)' },
+  'rare.netProfitEst': { en: 'net (est.)', 'pt-BR': 'lucro líq. (est.)' },
   // ── CS.Money ───────────────────────────────────────────────────────
   'csm.collecting': { en: 'Collecting…', 'pt-BR': 'Coletando…' },
   'csm.collectingInv': {

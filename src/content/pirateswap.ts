@@ -20,7 +20,7 @@ import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/fi
 import { renderRareCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
-import { applyStoredLocale } from '../modules/shared/settings';
+import { applyStoredLocale, applyStoredProfitParams } from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
 import type { RareResult } from '../modules/rare/types';
 
@@ -434,6 +434,7 @@ function mount(): void {
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on pirateswap (build=diag-capture)');
   await applyStoredLocale();
+  await applyStoredProfitParams();
   mount();
 }
 

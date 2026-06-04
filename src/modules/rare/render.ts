@@ -19,6 +19,7 @@ import {
 } from '../shared/ui';
 import { fmtUsd, shortExterior, stripStickerPrefix, wearCode } from '../shared/fmt';
 import { t } from '../shared/i18n';
+import { estimateNetProfit } from '../shared/profit';
 import { getSteamPriceCached } from '../oracles/steam';
 import type { CsMoneyItem, RareResult } from './types';
 
@@ -55,11 +56,20 @@ export function renderRareCard(r: RareResult): string {
     { label: 'Stickers ' + fmtUsd(r.stickerSum) },
   ];
   // "Possível lucro" bonus (v0.7): estimated CS.Money sticker overpay. Always an
-  // estimate on SM/PS — labelled "(est.)". Net economics (fees) deferred.
+  // estimate on SM/PS — labelled "(est.)".
   if (r.csMoneyOverpayEst > 0) {
     meta.push({
       label: `${t('rare.csmoneyBonusEst')} +${fmtUsd(r.csMoneyOverpayEst)}`,
       kind: 'success',
+    });
+    // Net SM→CS.Money profit after CS.Money fees (v0.8 T1). valor_CSM uses the
+    // listing as the base-price proxy + overpay_est; fees come from the
+    // configurable profit params. Negative = the fees outweigh the overpay.
+    const net = estimateNetProfit(r.price, r.price + r.csMoneyOverpayEst);
+    const sign = net >= 0 ? '+' : '−';
+    meta.push({
+      label: `${t('rare.netProfitEst')} ${sign}${fmtUsd(Math.abs(net))}`,
+      kind: net > 0 ? 'success' : 'warn',
     });
   }
 

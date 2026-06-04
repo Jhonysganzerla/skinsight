@@ -22,7 +22,7 @@ import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
-import { applyStoredLocale } from '../modules/shared/settings';
+import { applyStoredLocale, applyStoredProfitParams } from '../modules/shared/settings';
 import { esc } from '../modules/shared/fmt';
 import { debugLog, isDebug } from '../modules/shared/debug';
 import { t } from '../modules/shared/i18n';
@@ -443,6 +443,7 @@ async function bootstrap(): Promise<void> {
   // SkinsMonkey; a scan running here survives any change there.
   console.debug('[Skinsight] loaded on cs.money');
   await applyStoredLocale();
+  await applyStoredProfitParams();
   mount();
 }
 

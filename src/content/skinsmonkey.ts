@@ -20,7 +20,12 @@ import {
 } from '../modules/shared/ui';
 import { send } from '../modules/shared/messaging';
 import { t } from '../modules/shared/i18n';
-import { applyStoredLocale, getSkinsmonkeyMode, watchSettings } from '../modules/shared/settings';
+import {
+  applyStoredLocale,
+  applyStoredProfitParams,
+  getSkinsmonkeyMode,
+  watchSettings,
+} from '../modules/shared/settings';
 import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { renderRareCard } from '../modules/rare/render';
@@ -410,6 +415,7 @@ function registerRareFilterListeners(): void {
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
   await applyStoredLocale();
+  await applyStoredProfitParams();
   registerRareFilterListeners();
   mount(await getSkinsmonkeyMode());
   watchSettings((s) => {
