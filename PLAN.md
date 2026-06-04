@@ -961,7 +961,9 @@ T2: `scripts/build-icons.mjs` + SVG source + `manifest.config.ts`. T3: novo `mod
 
 > **Objetivo:** deixar o beta robusto e fechar o modelo de lucro. Espírito do PLAN: **robustez, sem features novas de dado**. "Qualidade > prazo." Mesmo ritual de versão (bump no commit tagueado; nunca regride/repete).
 
-### T1 — Economia do "possível lucro" (🔒 BLOQUEADO: precisa de 2 parâmetros do Jhony)
+### T1 — Economia do "possível lucro" (✅ ENTREGUE · `99308c3`)
+
+> Entregue como **settings configuráveis** (options): sellFee tiered (5% < $1000, 3% ≥ $1000, limite configurável), withdrawFee (0), tradeLockDiscount (0). `shared/profit.ts`: `proceeds = valor_CSM × (1−tradeLock) × (1−sellFee) × (1−withdraw)`, `net = proceeds − custo_SM`, `valor_CSM = base (proxy: listagem) + overpay_est`. Chip `lucro líq. (est.) ±$X` nos cards SM/PS. USD interno; "(est.)" sempre. (Plano original abaixo, para histórico.)
 
 Transformar o bônus bruto de overpay (já calibrado em `shared/overpay.ts`) em **lucro líquido SM→CS.Money** no headline dos cards SM/PS, **sempre rotulado "(est.)"**. Falta o input econômico que o Jhony pediu pra fornecer:
 
@@ -970,21 +972,23 @@ Transformar o bônus bruto de overpay (já calibrado em `shared/overpay.ts`) em 
 
 Fórmula-alvo (a confirmar com os números): `lucro_liq_est ≈ (skin_price + overpay_est) × (1 − fee) − preço_SM − ajuste_lock`. **Não implementar com números inventados** — aguardar o Jhony.
 
-### T2 — Hardening de robustez (CÓDIGO · desbloqueado)
+### T2 — Hardening de robustez (CÓDIGO · ✅ ENTREGUE)
 
-Auditar (read-only, padrão "Fase A") e endurecer os caminhos de erro dos 4 content scripts + oráculo Steam + SW: `fetch` sem try/catch, timeouts/abort, estado de scan preso em erro (garantir `finish()`/reset via `try/finally`), estados vazios/falha no overlay, mensagens de erro localizadas (já há `scan.error`), guardas de rate-limit. Sem features novas de dado.
+- **Estado de scan preso** (`33779d6`): `try/catch/finally` nos 4 fluxos (SM arb+rare, CS.Money, CSFloat; PS já tinha) — erro vira status localizado e `finally` sempre reseta o botão.
+- **Timeout de fetch** (`f587a2a`): `fetchWithTimeout` (AbortController, 12s) no oráculo Steam + remote rares; loops paginados mantêm o signal próprio.
+- **Roteador do SW**: auditado — já seguro (`Promise.resolve(handler).then(sendResponse).catch(...)`), sem mudança.
 
-### T3 — QA/smoke do beta
+### T3 — QA/smoke do beta (✅ ENTREGUE)
 
-Checklist de smoke por site × modo; corrigir o que aparecer. Validar i18n/options/onboarding ponta-a-ponta.
+Checklist organizado em `docs/SMOKE.md` (setup + onboarding + popup + options + scans por site×modo + possível lucro + robustez + i18n). Smoke executado pelo Jhony — aprovado.
 
-### T4 — (opcional) Options: parâmetros de scan + reset de cache
+### T4 — (opcional · DIFERIDO) Options: parâmetros de scan + reset de cache
 
-O T4 do v0.7 entregou idioma + modo padrão; o PLAN previa também delay/max-pages default e reset de cache (rares/steam). Completar se útil pro beta.
+Delay/max-pages default + reset de cache (rares/steam). **Diferido pós-v0.8** — não bloqueia o beta (as opções já têm idioma, modo e taxas de lucro).
 
-### Ordem
+### Ordem (executada)
 
-T2 (desbloqueado, começa já) → T1 (quando vierem os params) → T3 → T4.
+T2 ✅ → T1 ✅ → T3 ✅ → T4 (diferido). **v0.8 pronto para tag `v0.8.0`.**
 
 ### Exit criteria
 
