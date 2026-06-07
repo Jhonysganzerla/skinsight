@@ -996,3 +996,68 @@ T2 ✅ → T1 ✅ → T3 ✅ → T4 (diferido). **v0.8 pronto para tag `v0.8.0`.
 - Lucro líquido (T1) com os parâmetros reais do Jhony, sempre "(est.)".
 - Gates verdes: typecheck + lint + format:check + testes + build. Conventional Commits.
 - Sem `<all_urls>`, sem alargar permissões.
+
+---
+
+## v0.9 — Rare Pattern (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
+
+> **Status: detalhamento para aprovação (briefing §12).** Modo paralelo ao Rare Sticker: detecta **paint seeds raros** em skins de **arma** (exclui faca ★/luva). Sites: **SkinsMonkey + PirateSwap + CS.Money** (CSFloat fora — decisão do Jhony). Banco pronto: `C:\Users\Windows 11\Desktop\rare_patterns.json` (19 skins). Implementar T2–T5 só após o "ok"; **T1 (Fase A) é read-only**.
+
+**Objetivo:** sinalizar itens com seed raro (selo/tier + seed + %, p/ fade), com link externo de verificação. **Sem inventar valor de overpay em $** (overpay de pattern é fuzzy).
+
+### Banco (já mapeado em leitura)
+
+19 skins de arma, 3 famílias:
+
+- **case-hardened (4)** — AK-47, Five-SeveN, MAC-10 (Case Hardened) + Desert Eagle Heat Treated. `method: seed-list`, tiers Blue Gem T1..T4 (seeds explícitos). **Deagle** tem ainda `variants.gold` e `variants.purple` (listas de seed próprias). Match: seed → tier/variant.
+- **fade (14)** — Fade / Amber Fade / Acid Fade em várias armas. `method: fade-calc` — **sem seeds bundled**; o % é computado do seed via `csgo-fade-percentage-calculator`. Cada skin traz `max_pct_seed` e `thresholds {flag_min_pct:95, query_min_pct:99}`. ⚠️ **3 calculadoras distintas** por finish (a `source` indica): `FadeCalculator` (Fade), `AmberFadeCalculator` (Amber Fade), `AcidFadeCalculator` (Acid Fade) — o módulo precisa mapear finish→calculadora **e** mapear o nome da arma para a chave que a lib aceita.
+- **art-position (1)** — Galil AR | Phoenix Blacklight. `method: seed-list`, tiers Blacklight T1..T4. Match: seed → tier.
+
+### Decisões (Fase A fechada)
+
+- **Caminho único = SCAN-AND-DETECT** nos 3 sites (reusa o collector do rare-sticker; lê o seed do item e casa no banco). **Query-by-seed = otimização opcional** (não obrigatória).
+- **Seed por site:** SM `game730.paintSeed` · PS `item.pattern` (+ `fadePercentage` pronto, `category`) · CSM `item.pattern`.
+- **Fade:** PS usa o `fadePercentage` da resposta; SM/CSM computam via `csgo-fade-percentage-calculator` (runtime). Flag **≥ flag_min_pct (95%)**, mostra o %. (Sem geração de listas no build — era só pro query-by-seed.)
+- **UI:** card mostra **selo/tier** + **paint seed** + (fade: **% exato**) + **link externo** (CSFloat search por def/paint/seed e/ou csgobluegem). **Sem valor em $** (overpay de pattern é fuzzy).
+- **Excluir faca (★)/luva** por `category`/nome, sempre (banco é weapon-only).
+- USD interno, conversão só no display.
+
+### T1 — Fase A (✅ FECHADA pelo Jhony)
+
+Os 3 sites trazem o **paint seed na resposta do inventário** → **caminho uniforme = SCAN-AND-DETECT** nos 3 (lê o pattern do item, casa no `rare_patterns.json`). Pega **carona no scan que o modo rare-sticker já roda** em cada site — uma passada coleta sticker E pattern.
+
+- **SkinsMonkey:** `game730.paintSeed`.
+- **PirateSwap:** `item.pattern` + **`item.fadePercentage` JÁ CALCULADO** + `item.category` (= "Knife" p/ excluir faca/luva). `marketHashNameHashCodes` **não** são necessários (eram do caminho de busca, e não são deriváveis; o PS entrega `marketNameHashCode` por item se um dia precisar).
+- **CS.Money:** `item.pattern` na resposta.
+- **Fade:** PS já dá `fadePercentage`; **SM/CS.Money computam** via `csgo-fade-percentage-calculator` (runtime).
+- **Excluir faca/luva** por `category`/weapon (PS `category="Knife"`; espelhar a exclusão por nome/def nos outros).
+- **Query-by-seed da CS.Money** fica como **otimização opcional**, não obrigatória → a geração de listas ≥99% no build **não é necessária** pro caminho principal.
+- **Throttle:** zero queries extras — reusa a paginação do scan existente.
+
+### T2 — Bundle do banco + lib de fade
+
+- Mover `rare_patterns.json` (Desktop) → `public/rare_patterns.json`; **adicionar à `web_accessible_resources`** do manifest (mesma entrada do `rare_stickers.json`; **NÃO** é host novo — não fere a regra). `pattern-data.ts` carrega via `chrome.runtime.getURL` (espelha `rare-data.ts`).
+- Adicionar dep **runtime** `csgo-fade-percentage-calculator`. Módulo `fade.ts`: mapeia finish→calculadora (`FadeCalculator`/`AmberFadeCalculator`/`AcidFadeCalculator`) + arma→chave da lib; computa % no detect do SM/CSM. (PS já dá `fadePercentage`.) **Sem** script de build de seeds — query-by-seed ficou opcional.
+- ⚠️ É **dependência de runtime** (entra no bundle dos content scripts) — avaliar peso. Sem host novo.
+
+### T3 — Detecção: `src/modules/rare/pattern-finder.ts`
+
+- **detect** (SM): lê seed do item → casa no banco (case-hardened/art seeds; Deagle gold/purple) ou computa fade % (flag ≥95%).
+- **query** (PS, CSM): itera skins do banco → monta URLs de query (seeds agrupados; fade usa lista ≥99% do build) → marca hits com o tier consultado; rotula pela resposta.
+- Filtra **só armas** (exclui faca/luva). Tipos novos em `types.ts` (`PatternResult`, tier/family/seed/fadePct/links).
+
+### T4 — UI
+
+- `render-pattern.ts` (espelha `render.ts`) + overlay **Mode 'pattern'** + `.sh-mode-tag.pattern`; **toggle de modo** no popup p/ SM, PS, CSM. Card: selo/tier + seed + %(fade) + link externo. Sobrevive à virtualização (PS). i18n (`pattern.*`).
+
+### T5 — Testes
+
+AK seed 151 → Blue Gem T1; Deagle 490 → Blue Gem T1 (e gold/purple por seed); Hyper Beast / seed sem match → nada; faca → excluída; fade AWP seed 412 → ~100% (flag); arma fora do banco → ignorada. Gates verdes.
+
+### Ordem / Exit / Regras
+
+- **Ordem:** T1 (Fase A, read-only) → T2 → T3 → T4 → T5. T1 primeiro (maior incógnita: PS hashcodes + shapes).
+- **Exit:** Pattern em SM+PS+CSM; detecta CH (4 armas), Fade (≥95% flag + %), Galil; ignora faca/luva e falsos-positivos (Hyper Beast etc.); selo/tier + link, **sem $ inventado**.
+- **Regras:** sem alargar `host_permissions` (o bundle não exige host novo; **pergunta antes** de adicionar host). Conventional Commits; bump junto da tag (ritual v0.7+). Gates verdes.
+
+> **PARA AQUI** — aguardando aprovação do PLAN antes de T2–T5 (e o "ok"/captura p/ rodar a Fase A read-only).
