@@ -250,6 +250,28 @@ const STRINGS: Record<string, Entry> = {
   },
   'rare.csmoneyBonusEst': { en: 'CS.Money bonus (est.)', 'pt-BR': 'bônus CS.Money (est.)' },
   'rare.netProfitEst': { en: 'net (est.)', 'pt-BR': 'lucro líq. (est.)' },
+  // ── Rare Pattern (v0.9) ────────────────────────────────────────────
+  'pattern.title': { en: 'Rare patterns', 'pt-BR': 'Patterns raros' },
+  'pattern.submode.sticker': { en: 'Stickers', 'pt-BR': 'Stickers' },
+  'pattern.submode.pattern': { en: 'Patterns', 'pt-BR': 'Patterns' },
+  'pattern.submode.label': { en: 'Rare scanner', 'pt-BR': 'Scanner Rare' },
+  'pattern.seed': { en: 'seed', 'pt-BR': 'seed' },
+  'pattern.listed': { en: 'Listed', 'pt-BR': 'Anúncio' },
+  'pattern.verify': { en: 'Verify ↗', 'pt-BR': 'Conferir ↗' },
+  'pattern.results.header': { en: 'Item · seed · tier', 'pt-BR': 'Item · seed · tier' },
+  'pattern.results.right': { en: 'Pattern', 'pt-BR': 'Pattern' },
+  'pattern.empty.title': {
+    en: 'No rare patterns found',
+    'pt-BR': 'Nenhum pattern raro encontrado',
+  },
+  'pattern.empty.sub': {
+    en: 'Scan more pages — rare seeds are uncommon.',
+    'pt-BR': 'Escaneie mais páginas — seeds raros são incomuns.',
+  },
+  'pattern.found': {
+    en: 'Found {n} items with rare patterns.',
+    'pt-BR': '{n} items com patterns raros.',
+  },
   // ── CS.Money ───────────────────────────────────────────────────────
   'csm.collecting': { en: 'Collecting…', 'pt-BR': 'Coletando…' },
   'csm.collectingInv': {

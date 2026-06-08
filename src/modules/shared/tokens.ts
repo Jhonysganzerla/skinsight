@@ -43,6 +43,7 @@ export const OVERLAY_CSS = `
   font-weight: 600; letter-spacing: .3px; text-transform: uppercase;
 }
 .sh-mode-tag.rare { background: rgba(245,166,35,.15); color: var(--warn); }
+.sh-mode-tag.pattern { background: rgba(76,200,255,.15); color: #4cc8ff; }
 .sh-actions { display: flex; gap: 6px; }
 .sh-icon-btn {
   all: unset; cursor: pointer; width: 26px; height: 26px;
@@ -165,6 +166,14 @@ export const OVERLAY_CSS = `
   margin-top: 4px; display: inline-block; cursor: pointer;
 }
 .sh-open-link:hover { text-decoration: underline; }
+.sh-pattern-seal {
+  font-size: 12px; font-weight: 700; line-height: 1.1; color: #4cc8ff;
+  border: 1px solid rgba(76,200,255,.4); border-radius: 6px;
+  padding: 3px 7px; display: inline-block; white-space: nowrap;
+}
+.sh-item-card.hot .sh-pattern-seal { color: var(--success-bright); border-color: rgba(76,200,112,.5); }
+.sh-item-card.warm .sh-pattern-seal { color: var(--warn); border-color: rgba(245,166,35,.5); }
+.sh-pattern-seed { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
 
 /* Sticker breakdown */
 .sh-sticker-breakdown {
