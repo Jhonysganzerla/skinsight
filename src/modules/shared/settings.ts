@@ -1,5 +1,11 @@
 /** Convenience accessors over the typed settings store. */
-import { getSettings, onSettingsChanged, type Settings, type SkinsmonkeyMode } from './storage';
+import {
+  getSettings,
+  onSettingsChanged,
+  type RareSubmode,
+  type Settings,
+  type SkinsmonkeyMode,
+} from './storage';
 import { setLocaleOverride } from './i18n';
 import { setProfitParams } from './profit';
 
@@ -41,6 +47,12 @@ export async function applyStoredProfitParams(): Promise<void> {
 export async function getSkinsmonkeyMode(): Promise<SkinsmonkeyMode> {
   const s = await loadSettings();
   return s.skinsmonkeyMode;
+}
+
+/** Which detector the Rare scanners run — sticker (default) or pattern (v0.9). */
+export async function getRareSubmode(): Promise<RareSubmode> {
+  const s = await loadSettings();
+  return s.rareSubmode;
 }
 
 /** Subscribe to live settings changes; updates the cache and fires `cb`. */

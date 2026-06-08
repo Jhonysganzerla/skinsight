@@ -83,6 +83,7 @@ describe('settings — v0.4 per-site mutex', () => {
     bag['settings'] = {
       skinsmonkeyMode: 'arbitrage',
       locale: 'auto',
+      rareSubmode: 'sticker',
       profit: DEFAULT_PROFIT_PARAMS,
       overlay: {},
     } satisfies Settings;
@@ -103,6 +104,7 @@ describe('settings — v0.7 locale preference', () => {
       bag['settings'] = {
         skinsmonkeyMode: 'rare',
         locale,
+        rareSubmode: 'sticker',
         profit: DEFAULT_PROFIT_PARAMS,
         overlay: {},
       } satisfies Settings;
@@ -122,6 +124,29 @@ describe('settings — v0.7 locale preference', () => {
     await patchSettings({ locale: 'pt-BR' });
     const s = await getSettings();
     expect(s.locale).toBe('pt-BR');
+    expect(s.skinsmonkeyMode).toBe('arbitrage');
+  });
+});
+
+describe('settings — v0.9 rareSubmode', () => {
+  it('defaults to sticker', async () => {
+    const s = await getSettings();
+    expect(s.rareSubmode).toBe('sticker');
+    expect(DEFAULT_SETTINGS.rareSubmode).toBe('sticker');
+  });
+
+  it('accepts pattern; anything else falls to sticker', async () => {
+    bag['settings'] = { skinsmonkeyMode: 'rare', rareSubmode: 'pattern' };
+    expect((await getSettings()).rareSubmode).toBe('pattern');
+    bag['settings'] = { skinsmonkeyMode: 'rare', rareSubmode: 'nope' };
+    expect((await getSettings()).rareSubmode).toBe('sticker');
+  });
+
+  it('patchSettings flips rareSubmode without touching mode', async () => {
+    await patchSettings({ skinsmonkeyMode: 'arbitrage' });
+    await patchSettings({ rareSubmode: 'pattern' });
+    const s = await getSettings();
+    expect(s.rareSubmode).toBe('pattern');
     expect(s.skinsmonkeyMode).toBe('arbitrage');
   });
 });

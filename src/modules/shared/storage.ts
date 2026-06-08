@@ -10,6 +10,14 @@ export type SkinsmonkeyMode = 'arbitrage' | 'rare';
 export type LocalePref = Locale | 'auto';
 
 /**
+ * Which detector the Rare scanners run (v0.9). Applies to every Rare scanner
+ * (SkinsMonkey-rare, PirateSwap, CS.Money) via one popup sub-toggle:
+ *   - 'sticker': rare-sticker finder (default).
+ *   - 'pattern': rare paint-seed finder (Rare Pattern).
+ */
+export type RareSubmode = 'sticker' | 'pattern';
+
+/**
  * Economic parameters for the SM→CS.Money net-profit estimate (v0.8 T1).
  * Configurable in the options page — NEVER hardcoded. Fractions are 0..1
  * (0.05 = 5%); the threshold is in USD. All money is USD internally.
@@ -51,6 +59,8 @@ export interface Settings {
    * each context via settings.applyStoredLocale().
    */
   locale: LocalePref;
+  /** Rare detector sub-mode (v0.9): sticker (default) or pattern. */
+  rareSubmode: RareSubmode;
   /** SM→CS.Money net-profit economics (v0.8 T1). Configurable in options. */
   profit: ProfitParams;
   /** Overlay state per hostname — minimized + remembered position. */
@@ -60,6 +70,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   skinsmonkeyMode: 'rare',
   locale: 'auto',
+  rareSubmode: 'sticker',
   profit: DEFAULT_PROFIT_PARAMS,
   overlay: {},
 };
@@ -120,6 +131,7 @@ function normalizeSettings(raw: unknown): Settings {
   return {
     skinsmonkeyMode: mode,
     locale,
+    rareSubmode: obj.rareSubmode === 'pattern' ? 'pattern' : 'sticker',
     profit: normalizeProfit(obj.profit),
     overlay: obj.overlay ?? {},
   };
@@ -158,6 +170,7 @@ export async function patchSettings(patch: Partial<Settings>): Promise<Settings>
     skinsmonkeyMode:
       patch.skinsmonkeyMode !== undefined ? patch.skinsmonkeyMode : cur.skinsmonkeyMode,
     locale: patch.locale !== undefined ? patch.locale : cur.locale,
+    rareSubmode: patch.rareSubmode !== undefined ? patch.rareSubmode : cur.rareSubmode,
     profit: patch.profit !== undefined ? normalizeProfit(patch.profit) : cur.profit,
     overlay: { ...cur.overlay, ...(patch.overlay ?? {}) },
   };
