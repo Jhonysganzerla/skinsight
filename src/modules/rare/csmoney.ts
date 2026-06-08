@@ -30,6 +30,8 @@ interface RawCsmItem {
   /** CS.Money's per-item overpay breakdown. `stickers` is the sticker-overpay
    *  total (USD). Captured for calibration (debug only). */
   overpay?: { stickers?: number } | null;
+  /** Paint seed (v0.9 Rare Pattern). */
+  pattern?: number;
   stickers?: (RawCsmSticker | null)[];
   /** Image fields, in fallback order. v0.4 HAR confirmed `img` is the
    *  primary; the others exist as defense against API changes. */
@@ -135,6 +137,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
           stickersTotalUsd,
           netUsd,
           overpayStickers: toNumber(item.overpay?.stickers),
+          paintSeed: typeof item.pattern === 'number' ? item.pattern : null,
           stickers,
         });
       }

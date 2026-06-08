@@ -57,6 +57,7 @@ describe('rare/finder — chunked main-thread yields (v0.4.1)', () => {
       inspectUrl: '',
       marketHashName: 'Synth ' + i,
       stickers: [{ name: 'Sticker | None', price: null, image: null }],
+      paintSeed: null,
     }));
     const map = new Map<string, number>();
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
@@ -81,6 +82,7 @@ describe('rare/finder — chunked main-thread yields (v0.4.1)', () => {
       inspectUrl: '',
       marketHashName: 'Tiny ' + i,
       stickers: [],
+      paintSeed: null,
     }));
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
     await findRareResults(items, new Map());
@@ -185,6 +187,7 @@ describe('rare/csmoney — Regenerate report', () => {
         stickersTotalUsd,
         netUsd: stickersTotalUsd - raw.price,
         overpayStickers: 0,
+        paintSeed: null,
         stickers,
       };
     });

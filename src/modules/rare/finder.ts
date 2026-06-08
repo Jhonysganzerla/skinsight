@@ -25,7 +25,7 @@ interface SmRawAsset {
     price?: number;
     details?: { exterior?: string };
   };
-  game730?: { inspectUrl?: string; stickers?: SmRawSticker[] };
+  game730?: { inspectUrl?: string; stickers?: SmRawSticker[]; paintSeed?: number };
 }
 interface SmInventoryResp {
   assets?: SmRawAsset[];
@@ -75,6 +75,7 @@ export function normalizeSm(json: SmInventoryResp): RareItem[] {
       inspectUrl: g.inspectUrl ?? '',
       marketHashName: it.marketName ?? '',
       stickers,
+      paintSeed: typeof g.paintSeed === 'number' ? g.paintSeed : null,
     });
   }
   return out;
@@ -89,6 +90,12 @@ interface PsItem {
   inspectInGameLink?: string;
   icon?: string;
   stickers?: Array<{ name?: string; imageUrl?: string }>;
+  /** Paint seed (v0.9 Rare Pattern). */
+  pattern?: number;
+  /** Fade % already computed by PirateSwap. */
+  fadePercentage?: number;
+  /** Item category — "Knife" / "Gloves" / weapon class — for weapon-only filtering. */
+  category?: string;
 }
 interface PsResp {
   items?: PsItem[];
@@ -141,6 +148,9 @@ export function normalizePs(json: PsResp): RareItem[] {
       inspectUrl: it.inspectInGameLink ?? '',
       marketHashName: it.marketHashName ?? '',
       stickers,
+      paintSeed: typeof it.pattern === 'number' ? it.pattern : null,
+      fadePercentage: typeof it.fadePercentage === 'number' ? it.fadePercentage : null,
+      category: typeof it.category === 'string' ? it.category : null,
     });
   }
   return out;

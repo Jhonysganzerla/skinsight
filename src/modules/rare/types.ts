@@ -1,4 +1,5 @@
 /** Normalized item shape used by the Rare Sticker finder across SM/PS. */
+import type { PatternFamily } from './pattern-data';
 
 export interface RareStickerMatch {
   name: string;
@@ -19,6 +20,12 @@ export interface RareItem {
   inspectUrl: string;
   marketHashName: string;
   stickers: Array<{ name: string; price: number | null; image: string | null }>;
+  /** Paint seed (pattern index). SM: game730.paintSeed; PS: item.pattern. null when absent. */
+  paintSeed: number | null;
+  /** PirateSwap-provided fade % (already computed). Absent on SM. */
+  fadePercentage?: number | null;
+  /** PirateSwap item category ("Knife" / "Gloves" / …) — for weapon-only filtering. */
+  category?: string | null;
 }
 
 export interface RareResult extends RareItem {
@@ -46,6 +53,8 @@ export interface CsMoneyItem {
   weaponPriceUsd: number;
   stickersTotalUsd: number;
   netUsd: number;
+  /** Paint seed from CS.Money's `item.pattern`. null when absent. (v0.9 Rare Pattern) */
+  paintSeed: number | null;
   /**
    * CS.Money's own per-item sticker-overpay figure (USD), from the raw
    * `item.overpay.stickers` field. Captured for the v0.7 overpay-formula
@@ -64,4 +73,40 @@ export interface CsMoneyItem {
      */
     overprice: number;
   }>;
+}
+
+/* ── Rare Pattern (v0.9) ─────────────────────────────────────────────── */
+
+/** Minimal per-item input to the pattern finder (adapted from RareItem /
+ *  CsMoneyItem by each content script). USD internal. */
+export interface PatternInput {
+  id: string;
+  /** Display name (may include wear). */
+  name: string;
+  /** Canonical market hash name — used for bank lookup, def-index + the link. */
+  marketHashName: string;
+  image: string | null;
+  /** Listing price (USD). Context only — pattern overpay is NOT priced in $. */
+  price: number;
+  exterior: string;
+  inspectUrl: string;
+  paintSeed: number | null;
+  /** Site-provided fade % (PirateSwap); else computed from the seed. */
+  fadePercentage?: number | null;
+  /** Site-provided category (PirateSwap "Knife"); else derived from the name. */
+  category?: string | null;
+}
+
+/** A confirmed rare-pattern hit. */
+export interface PatternResult extends PatternInput {
+  paintSeed: number;
+  family: PatternFamily;
+  /** Human label: tier ("Blue Gem T1 (top)"), variant ("Gold Pattern") or "98.4% fade". */
+  tierLabel: string;
+  /** Tier number (1..4) for seed-list hits; null for variants and fade. */
+  tier: number | null;
+  /** Computed/provided fade % for fade hits; null otherwise. */
+  fadePct: number | null;
+  /** External verification link (CSFloat search by name + seed). */
+  link: string;
 }
