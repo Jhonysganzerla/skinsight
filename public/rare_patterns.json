@@ -1,0 +1,380 @@
+{
+  "generated_at": "2026-06-07T16:51:31Z",
+  "source_notes": "CS2 weapon-only rare paint-seed patterns for query-by-seed marketplace lookup. Knives and gloves excluded. Families: case-hardened (blue-gem seed tiers; AK-47/Five-SeveN/MAC-10 Case Hardened + Desert Eagle Heat Treated, the Armory-2024 case-hardened variant, incl. gold/purple variant seeds), fade (% computed from seed via Valve algorithm; high_fade_seeds = all seeds >=90%, method fade-calc), art-position (Galil Phoenix Blacklight). Sources: cs-tierlist (GODrums) generated JSON, csgobluegem.com / csgoskins.gg / sellyourskins / isitabluegem seed tables, npm csgo-fade-percentage-calculator v2.0.0. Re-swept for other weapon seed-overpay finishes: csgobluegem master blue-gem list confirms no weapon Case-Hardened/Heat-Treated beyond the four here; Hyper Beast/Asiimov-type skins excluded (seed irrelevant).",
+  "families": ["case-hardened", "fade", "art-position"],
+  "skins": [
+    {
+      "weapon": "AK-47",
+      "finish": "Case Hardened",
+      "name": "AK-47 | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [151, 179, 321, 387, 661, 670, 955]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [4, 13, 168, 429, 592, 905]
+        },
+        {
+          "tier": 3,
+          "label": "Blue Gem T3",
+          "seeds": [
+            11, 74, 82, 92, 103, 112, 139, 147, 172, 189, 228, 236, 278, 310, 322, 363, 375, 426,
+            430, 434, 442, 450, 463, 497, 512, 555, 690, 695, 698, 708, 711, 713, 721, 733, 750,
+            760, 782, 791, 823, 828, 844, 849, 862, 868, 887, 917, 950, 961, 969, 978, 996
+          ]
+        },
+        {
+          "tier": 4,
+          "label": "Blue Gem T4 (low)",
+          "seeds": [
+            2, 28, 32, 34, 65, 73, 126, 130, 169, 178, 182, 194, 200, 205, 209, 230, 242, 248, 256,
+            269, 296, 306, 325, 341, 344, 381, 397, 407, 418, 420, 428, 431, 447, 453, 456, 458,
+            468, 470, 479, 481, 493, 494, 507, 522, 525, 526, 532, 541, 557, 575, 577, 605, 622,
+            627, 648, 664, 681, 685, 689, 694, 715, 724, 770, 775, 788, 795, 798, 803, 809, 842,
+            847, 872, 878, 879, 888, 891, 922, 927, 935, 965, 985, 1000
+          ]
+        }
+      ],
+      "source": "csgoskins.gg/blog/ak-47-case-hardened-blue-gem-seed-patterns"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Case Hardened",
+      "name": "Five-SeveN | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [189, 278, 363, 532, 648, 689, 690, 872]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [25, 151, 177, 215, 321, 631, 670, 700, 724, 868, 875, 879, 888]
+        },
+        {
+          "tier": 3,
+          "label": "Blue Gem T3",
+          "seeds": [13, 28, 101, 103]
+        }
+      ],
+      "note": "T3 only partial in source",
+      "source": "sellyourskins.com/blog/five-seven-case-hardened-blue-gem-patterns-and-seeds; isitabluegem.com/discover/five-seven"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Case Hardened",
+      "name": "MAC-10 | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [114, 222, 239, 349, 406, 503, 667]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [80, 195, 199, 251, 292, 315, 345, 381, 400, 414, 475, 598, 807, 972]
+        }
+      ],
+      "note": "T1/T2 enumerated; lower tiers exist on csgobluegem.com but not fully listed in source",
+      "source": "csgoskins.gg/blog/mac-10-case-hardened-blue-gem-seed-patterns; hotspawn.com; csgobluegem.com/mac-10"
+    },
+    {
+      "weapon": "Desert Eagle",
+      "finish": "Heat Treated",
+      "name": "Desert Eagle | Heat Treated",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "note": "Armory 2024 Classified blue-gem skin (case-hardened look under 'Heat Treated' name). Blue gems = bright-blue body; also collectible gold and purple pattern variants. #1=490, #2-tier=148/69/704.",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [69, 148, 490, 704]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [
+            16, 48, 66, 67, 96, 111, 117, 159, 259, 263, 273, 297, 308, 321, 324, 341, 347, 461,
+            482, 517, 530, 567, 587, 674, 695, 723, 764, 772, 781, 790, 792, 843, 880, 885, 904,
+            948, 990
+          ]
+        },
+        {
+          "tier": 3,
+          "label": "Blue Gem T3",
+          "seeds": [
+            109, 116, 134, 158, 168, 225, 338, 354, 356, 365, 370, 386, 406, 426, 433, 441, 483,
+            537, 542, 592, 607, 611, 651, 668, 673, 696, 730, 743, 820, 846, 856, 857, 870, 876,
+            878, 882, 898, 900, 925, 942, 946, 951, 953, 970, 998
+          ]
+        }
+      ],
+      "variants": {
+        "gold": {
+          "label": "Gold Pattern",
+          "seeds": [
+            4, 6, 14, 24, 37, 74, 78, 79, 80, 87, 102, 103, 124, 132, 135, 144, 167, 177, 180, 181,
+            182, 184, 205, 243, 247, 248, 252, 256, 264, 269, 270, 277, 289, 292, 301, 323, 325,
+            334, 360, 362, 367, 374, 382, 392, 403, 428, 432, 443, 446, 466, 491, 492, 495, 505,
+            511, 527, 549, 555, 558, 564, 568, 577, 594, 604, 608, 623, 624, 629, 637, 638, 645,
+            646, 686, 692, 733, 735, 738, 746, 783, 798, 802, 803, 813, 837, 868, 887, 903, 907,
+            911, 914, 921, 923, 945, 986, 994
+          ]
+        },
+        "purple": {
+          "label": "Purple Pattern",
+          "seeds": [
+            29, 31, 33, 43, 72, 85, 88, 99, 104, 105, 128, 133, 136, 139, 140, 146, 156, 172, 174,
+            176, 189, 216, 217, 249, 265, 290, 293, 310, 322, 339, 340, 343, 363, 395, 404, 411,
+            437, 449, 451, 453, 458, 463, 487, 496, 509, 532, 550, 572, 574, 598, 599, 605, 606,
+            614, 621, 627, 631, 653, 666, 667, 672, 683, 707, 710, 717, 727, 734, 740, 750, 766,
+            778, 795, 800, 804, 806, 811, 815, 816, 817, 839, 842, 848, 849, 850, 862, 877, 891,
+            913, 926, 927, 944, 952, 969, 971, 989
+          ]
+        }
+      },
+      "source": "csgobluegem.com/desert-eagle-heat-treated-best-rare-blue-pattern (primary, tiered blue/gold/purple seed lists); cross-checked skin.land/blog/full-deagle-heat-treated-patterns-guide + pricempire/cs.money/skinport/hotspawn (rank #1=490, then 148/69/704)"
+    },
+    {
+      "weapon": "AWP",
+      "finish": "Fade",
+      "name": "AWP | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 412,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Fade",
+      "name": "Glock-18 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "M4A1-S",
+      "finish": "Fade",
+      "name": "M4A1-S | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 374,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Fade",
+      "name": "MAC-10 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "MP7",
+      "finish": "Fade",
+      "name": "MP7 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 80,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "R8 Revolver",
+      "finish": "Fade",
+      "name": "R8 Revolver | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "UMP-45",
+      "finish": "Fade",
+      "name": "UMP-45 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "AUG",
+      "finish": "Amber Fade",
+      "name": "AUG | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Amber Fade",
+      "name": "Galil AR | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Amber Fade",
+      "name": "MAC-10 | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "P2000",
+      "finish": "Amber Fade",
+      "name": "P2000 | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "R8 Revolver",
+      "finish": "Amber Fade",
+      "name": "R8 Revolver | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "Sawed-Off",
+      "finish": "Amber Fade",
+      "name": "Sawed-Off | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "SSG 08",
+      "finish": "Acid Fade",
+      "name": "SSG 08 | Acid Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AcidFadeCalculator)",
+      "max_pct_seed": 576,
+      "thresholds": {
+        "flag_min_pct": 95,
+        "query_min_pct": 99
+      }
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Phoenix Blacklight",
+      "name": "Galil AR | Phoenix Blacklight",
+      "family": "art-position",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blacklight T1",
+          "seeds": [169, 289, 303, 419, 432, 475, 573, 619, 643, 729, 755, 893, 963, 978]
+        },
+        {
+          "tier": 2,
+          "label": "Blacklight T2",
+          "seeds": [58, 69, 73, 224, 270, 322, 358, 406, 469, 622, 749, 798, 865, 886]
+        },
+        {
+          "tier": 3,
+          "label": "Blacklight T3",
+          "seeds": [211, 324, 915, 979]
+        },
+        {
+          "tier": 4,
+          "label": "Blacklight T4",
+          "seeds": [819]
+        }
+      ],
+      "note": "Blacklight = phoenix positioned so gun appears all-black; SeanErren tierlist",
+      "source": "github.com/GODrums/cs-tierlist generated/phoenix_galil.json (orig: SeanErren steam guide 2352059734)"
+    }
+  ],
+  "generated_note": "Fade seed lists are NOT bundled (computed from the fade lib). Explicit seed lists only for case-hardened (AK/Five-SeveN/MAC-10/Deagle Heat Treated) + Galil Phoenix Blacklight."
+}

@@ -74,7 +74,7 @@ export default defineManifest({
   ],
   web_accessible_resources: [
     {
-      resources: ['rare_stickers.json'],
+      resources: ['rare_stickers.json', 'rare_patterns.json'],
       matches: [
         'https://skinsmonkey.com/*',
         'https://*.skinsmonkey.com/*',
