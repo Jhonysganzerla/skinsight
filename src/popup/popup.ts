@@ -17,6 +17,7 @@ import {
   getSettings,
   patchSettings,
   getHits,
+  type RareSubmode,
   type Settings,
   type SkinsmonkeyMode,
   type TodayHit,
@@ -176,6 +177,26 @@ function renderModesSection(s: Settings, active: SiteDef | null): string {
   `;
 }
 
+/** Rare detector sub-toggle (v0.9): Stickers ⇄ Patterns. Applies to every
+ *  Rare scanner (SM-rare, PirateSwap, CS.Money) — one switch covers all three. */
+function renderRareSubmodeSection(s: Settings): string {
+  const sticker = s.rareSubmode === 'sticker';
+  const pattern = s.rareSubmode === 'pattern';
+  return `
+    <div class="popup-section">
+      <div class="section-label">${escHtml(t('pattern.submode.label'))}</div>
+      <div class="mode-row">
+        <button class="mode-card ${sticker ? 'active' : ''}" data-submode="sticker" type="button">
+          <div class="mode-card-title"><span class="toggle-dot"></span> ${escHtml(t('pattern.submode.sticker'))}</div>
+        </button>
+        <button class="mode-card ${pattern ? 'active' : ''}" data-submode="pattern" type="button">
+          <div class="mode-card-title"><span class="toggle-dot"></span> ${escHtml(t('pattern.submode.pattern'))}</div>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function siteSubtitle(site: SiteDef): string {
   if (site.key === 'skinsmonkey') return t('popup.sites.sub.skinsmonkey');
   if (site.key === 'csfloat') return t('popup.sites.sub.csfloat');
@@ -306,6 +327,7 @@ function renderEmptyState(): string {
 function renderSupported(state: PopupState, active: SiteDef): string {
   return [
     renderModesSection(state.settings, active),
+    renderRareSubmodeSection(state.settings),
     renderSitesSection(state.activeHost),
     renderRareListSection(state.rareStatus),
     renderHitsSection(state.hits),
@@ -319,6 +341,13 @@ async function toggleMode(clicked: SkinsmonkeyMode): Promise<void> {
   const cur = await getSettings();
   if (cur.skinsmonkeyMode === clicked) return;
   await patchSettings({ skinsmonkeyMode: clicked });
+  await render();
+}
+
+async function toggleSubmode(clicked: RareSubmode): Promise<void> {
+  const cur = await getSettings();
+  if (cur.rareSubmode === clicked) return;
+  await patchSettings({ rareSubmode: clicked });
   await render();
 }
 
@@ -351,6 +380,12 @@ function wireUp(root: HTMLElement): void {
     if (modeBtn) {
       e.preventDefault();
       void toggleMode(modeBtn.dataset['mode'] as 'arbitrage' | 'rare');
+      return;
+    }
+    const subBtn = t.closest<HTMLElement>('.mode-card[data-submode]');
+    if (subBtn) {
+      e.preventDefault();
+      void toggleSubmode(subBtn.dataset['submode'] as RareSubmode);
       return;
     }
     const opener = t.closest<HTMLElement>('[data-open]');

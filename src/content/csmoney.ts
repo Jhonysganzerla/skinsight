@@ -20,13 +20,20 @@ import {
 } from '../modules/shared/ui';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
+import { renderPatternCard } from '../modules/rare/render-pattern';
+import { findPatternResults } from '../modules/rare/pattern-finder';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
-import { applyStoredLocale, applyStoredProfitParams } from '../modules/shared/settings';
+import {
+  applyStoredLocale,
+  applyStoredProfitParams,
+  getRareSubmode,
+} from '../modules/shared/settings';
 import { esc } from '../modules/shared/fmt';
 import { debugLog, isDebug } from '../modules/shared/debug';
 import { t } from '../modules/shared/i18n';
-import type { CsMoneyItem } from '../modules/rare/types';
+import type { RareSubmode } from '../modules/shared/storage';
+import type { CsMoneyItem, PatternInput, PatternResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
@@ -62,6 +69,10 @@ interface State {
   /** Last collected inventory — kept so reactive filters can re-sort +
    *  re-render in place without a fresh network scan. */
   items: CsMoneyItem[];
+  /** Rare detector sub-mode for the current scan (v0.9). */
+  submode: RareSubmode;
+  /** Last pattern hits (when submode === 'pattern'). */
+  patternResults: PatternResult[];
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
   /** Regenerate (deep DB scan) in flight + its own abort signal. */
@@ -83,10 +94,27 @@ const state: State = {
   running: false,
   aborted: { aborted: false },
   items: [],
+  submode: 'sticker',
+  patternResults: [],
   debounce: null,
   regenerating: false,
   regenAborted: { aborted: false },
 };
+
+/** Adapt a CS.Money item to the pattern finder's input (name carries the
+ *  market hash name; wearCode derives the wear from it). */
+function csmToPatternInput(it: CsMoneyItem): PatternInput {
+  return {
+    id: String(it.id),
+    name: it.name,
+    marketHashName: it.name,
+    image: it.imageUrl,
+    price: it.weaponPriceUsd,
+    exterior: '',
+    inspectUrl: '',
+    paintSeed: it.paintSeed,
+  };
+}
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
@@ -129,7 +157,27 @@ function sortItems(arr: CsMoneyItem[], key: string): CsMoneyItem[] {
 
 /** Re-sort `state.items` by the current Sort filter and (re)render in place.
  *  Called once after a scan and again on every reactive filter change. */
+function renderPatternResults(): void {
+  if (!overlay) return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list) return;
+  const rows = state.patternResults;
+  list.innerHTML =
+    renderResultsHeader(t('pattern.results.header'), t('pattern.results.right')) +
+    (rows.length
+      ? rows.map(renderPatternCard).join('')
+      : `<div class="sh-empty">
+          <div class="sh-empty-icon">⌖</div>
+          <div class="sh-empty-title">${t('pattern.empty.title')}</div>
+          <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
+        </div>`);
+}
+
 function renderResults(): void {
+  if (state.submode === 'pattern') {
+    renderPatternResults();
+    return;
+  }
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
@@ -170,6 +218,7 @@ async function runScan(): Promise<void> {
   // try/catch/finally so a throw mid-scan never leaves the bar stuck on "Stop":
   // the error becomes a localized status and `finally` always resets state.
   try {
+    state.submode = await getRareSubmode();
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -215,6 +264,20 @@ async function runScan(): Promise<void> {
     if (isDebug()) dumpOverpaySample(collected);
 
     if (!overlay) return;
+
+    if (state.submode === 'pattern') {
+      // Rare Pattern: detect rare paint seeds in the SAME collected inventory.
+      state.patternResults = await findPatternResults(collected.map(csmToPatternInput));
+      if (!overlay) return;
+      renderResults();
+      updateScanBar(overlay.body, {
+        info: t('pattern.found', { n: state.patternResults.length }),
+        progressPct: 100,
+      });
+      setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
+      return;
+    }
+
     renderResults();
 
     // Enable the Regenerate button.
