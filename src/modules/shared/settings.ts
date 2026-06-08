@@ -49,9 +49,16 @@ export async function getSkinsmonkeyMode(): Promise<SkinsmonkeyMode> {
   return s.skinsmonkeyMode;
 }
 
-/** Which detector the Rare scanners run — sticker (default) or pattern (v0.9). */
+/**
+ * Which detector the Rare scanners run — sticker (default) or pattern (v0.9).
+ * Reads FRESH from storage (not the cache): only SkinsMonkey wires
+ * `watchSettings`, so PirateSwap/CS.Money would otherwise keep a stale submode
+ * from bootstrap and ignore a popup flip until the page reloads. Called once
+ * per scan, so a fresh read is cheap.
+ */
 export async function getRareSubmode(): Promise<RareSubmode> {
-  const s = await loadSettings();
+  const s = await getSettings();
+  _cache = s;
   return s.rareSubmode;
 }
 

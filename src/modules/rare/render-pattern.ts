@@ -16,6 +16,13 @@ function variantCls(r: PatternResult): string {
   return '';
 }
 
+/** Compact badge for the action column — the long label rides a left chip. */
+function sealText(r: PatternResult): string {
+  if (r.fadePct != null) return `${Math.round(r.fadePct * 10) / 10}%`;
+  if (r.tier != null) return `T${r.tier}`;
+  return r.tierLabel.split(' ')[0] || '★'; // variant short (Gold / Purple)
+}
+
 const WEAR_STYLE =
   'font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--border);' +
   'border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:middle;';
@@ -25,7 +32,11 @@ export function renderPatternCard(r: PatternResult): string {
   const thumb = r.image
     ? `<img src="${safeUrl(r.image)}" alt="" loading="lazy" onerror="this.style.display='none'" />`
     : `<span class="sh-item-thumb-fallback">⌖</span>`;
-  const chips = [`${t('pattern.seed')} ${r.paintSeed}`, r.price > 0 ? fmtUsd(r.price) : '']
+  const chips = [
+    r.tierLabel,
+    `${t('pattern.seed')} ${r.paintSeed}`,
+    r.price > 0 ? fmtUsd(r.price) : '',
+  ]
     .filter(Boolean)
     .map((c) => `<span class="sh-meta-chip">${esc(c)}</span>`)
     .join('');
@@ -38,8 +49,7 @@ export function renderPatternCard(r: PatternResult): string {
         <div class="sh-item-meta">${chips}</div>
       </div>
       <div class="sh-item-action">
-        <div class="sh-pattern-seal">${esc(r.tierLabel)}</div>
-        <div class="sh-pattern-seed">#${esc(r.paintSeed)}</div>
+        <div class="sh-pattern-seal">${esc(sealText(r))}</div>
         <a class="sh-open-link" href="${safeUrl(r.link)}" target="_blank" rel="noopener" data-role="open">${esc(t('pattern.verify'))}</a>
       </div>
     </div>
