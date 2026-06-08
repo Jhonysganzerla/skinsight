@@ -20,7 +20,8 @@ src/
     ├── shared/                      # overlay, ui, storage, settings, messaging, fmt, tokens,
     │                                #   throttle, virtual-list, i18n, overpay, debug
     ├── arbitrage/                   # scanner, analyzer, score, csf-url, types
-    ├── rare/                        # finder (SM/PS), csmoney, rare-data, remote, render, types
+    ├── rare/                        # finder (SM/PS), csmoney, rare-data, remote, render, types,
+    │                                #   pattern-finder, pattern-data, fade, render-pattern (v0.9)
     └── oracles/                     # steam, steam-ui (per-item Steam Market price)
 ```
 
@@ -41,6 +42,7 @@ live in `public/_locales/{en,pt_BR}` (manifest `__MSG__`); the runtime UI uses
 | `modules/shared/i18n.ts`    | v0.7 ✅ (PT-BR + EN)    |
 | `modules/shared/overpay.ts` | v0.7 ✅ (CS.Money est.) |
 | `modules/shared/debug.ts`   | v0.7 ✅ (opt-in dumps)  |
+| `modules/rare/pattern-*`    | v0.9 ✅ (Rare Pattern)  |
 
 > A `modules/oracles/skinport.ts` was prototyped in v0.6 and removed in v0.6.1
 > (Cloudflare challenge on `/v1/items`). The per-item Steam oracle covers it.
@@ -197,6 +199,31 @@ raw `overpay.stickers` is still captured (gated by `localStorage['skinsight:debu
 see `modules/shared/debug.ts`) into `window.__skinsightOverpay` /
 `localStorage['skinsight:overpay']` for offline re-calibration. The full
 SM→CS.Money net economics (withdrawal fee, trade lock) is not modelled yet.
+
+## Rare Pattern (v0.9)
+
+A second Rare detector, parallel to the rare-sticker finder, toggled by one
+popup sub-switch (`settings.rareSubmode: 'sticker' | 'pattern'`) that covers all
+three Rare scanners (SkinsMonkey-rare, PirateSwap, CS.Money — CSFloat is out).
+
+- **Scan-and-detect, uniform.** All three sites carry the paint seed in the
+  inventory response (SM `game730.paintSeed`, PS `item.pattern` + `fadePercentage`
+  - `category`, CS.Money `item.pattern`), so Pattern mode **reuses the same
+    collectors** the rare-sticker scan already runs — one pass, no extra queries.
+    Each scanner branches on `submode`: `findPatternResults(items)` →
+    `renderPatternCard` instead of the sticker path.
+- **Bank** (`public/rare_patterns.json`, web-accessible, loaded by
+  `pattern-data.ts`): 19 weapon skins, 3 families — case-hardened blue-gem seed
+  tiers (AK-47/Five-SeveN/MAC-10/Desert Eagle Heat-Treated, the last with
+  gold/purple variants), fade (% computed, not seed-listed), and the Galil
+  Phoenix Blacklight (art position). Keyed by a normalized market-hash-name.
+- **Detection** (`pattern-finder.ts`): seed → tier/variant for seed-list
+  families; for fade, the % comes from PirateSwap's `fadePercentage` when
+  present, else `fade.ts` computes it via `csgo-fade-percentage-calculator`
+  (calculator picked by finish: Fade/Amber/Acid), flagged at ≥ `flag_min_pct`
+  (95%). Knives/gloves are excluded (★ prefix / `category`).
+- **No $ value** — pattern overpay is fuzzy. The card shows seal/tier + seed +
+  (fade) % and links to CSFloat search by name + seed for verification.
 
 ## First-install onboarding (v0.7 T5)
 

@@ -9,6 +9,7 @@ price **arbitrage** as a secondary feature.
 - **Rare stickers** (primary) — finds items on SkinsMonkey, PirateSwap, and CS.Money whose stickers or charms are worth more than the listing.
 - **Arbitrage** (secondary) — scans SkinsMonkey listings and cross-checks real CSFloat prices to rank by profit.
 - **Possível lucro** — Rare cards on SkinsMonkey/PirateSwap show an estimated CS.Money sticker-overpay bonus (always labelled "(est.)").
+- **Rare patterns** — a Rare sub-toggle (Stickers ⇄ Patterns) that flags rare paint seeds on weapon skins: case-hardened blue gems, fades (% computed), and the Galil Blacklight, with a seal/tier + seed + verification link (knives/gloves excluded; no $ value — pattern overpay is fuzzy).
 
 The UI is bilingual (English + Português-BR) with a language selector in the
 options page, and a one-time welcome tab on first install.
