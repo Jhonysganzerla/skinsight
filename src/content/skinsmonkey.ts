@@ -23,14 +23,18 @@ import { t } from '../modules/shared/i18n';
 import {
   applyStoredLocale,
   applyStoredProfitParams,
+  getRareSubmode,
   getSkinsmonkeyMode,
   watchSettings,
 } from '../modules/shared/settings';
 import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
+import { findPatternResults, rareItemToPatternInput } from '../modules/rare/pattern-finder';
 import { renderRareCard } from '../modules/rare/render';
+import { renderPatternCard } from '../modules/rare/render-pattern';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
-import type { RareResult } from '../modules/rare/types';
+import type { PatternResult, RareResult } from '../modules/rare/types';
+import type { RareSubmode } from '../modules/shared/storage';
 
 const ROOT_ID = 'skinsight-sm-overlay';
 const PERSIST_KEY_ARB = 'skinsmonkey-arb';
@@ -199,6 +203,10 @@ interface RareState {
   /** Last collected match set — kept so reactive filters can re-apply +
    *  re-render in place without a fresh network scan. */
   results: RareResult[];
+  /** Rare detector sub-mode for the current scan (v0.9). */
+  submode: RareSubmode;
+  /** Last pattern hits (when submode === 'pattern'). */
+  patternResults: PatternResult[];
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
 }
@@ -208,6 +216,8 @@ const rareState: RareState = {
   running: false,
   aborted: { aborted: false },
   results: [],
+  submode: 'sticker',
+  patternResults: [],
   debounce: null,
 };
 
@@ -228,6 +238,19 @@ function renderRareResults(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
+  if (rareState.submode === 'pattern') {
+    const rows = rareState.patternResults;
+    list.innerHTML =
+      renderResultsHeader(t('pattern.results.header'), t('pattern.results.right')) +
+      (rows.length
+        ? rows.map(renderPatternCard).join('')
+        : `<div class="sh-empty">
+            <div class="sh-empty-icon">⌖</div>
+            <div class="sh-empty-title">${t('pattern.empty.title')}</div>
+            <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
+          </div>`);
+    return;
+  }
   const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
   list.innerHTML =
     renderResultsHeader(t('results.header.detected'), t('results.worth')) +
@@ -270,6 +293,7 @@ async function runRareScan(): Promise<void> {
   rareState.aborted = { aborted: false };
   // try/catch/finally so a throw never leaves the bar stuck on "Stop".
   try {
+    rareState.submode = await getRareSubmode();
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -302,6 +326,19 @@ async function runRareScan(): Promise<void> {
       info: t('scan.matching', { n: items.length }),
       progressPct: 80,
     });
+
+    if (rareState.submode === 'pattern') {
+      rareState.patternResults = await findPatternResults(items.map(rareItemToPatternInput));
+      if (!overlay) return;
+      renderRareResults();
+      updateScanBar(overlay.body, {
+        info: t('pattern.found', { n: rareState.patternResults.length }),
+        progressPct: 100,
+      });
+      setStatus(t('pattern.found', { n: rareState.patternResults.length }), 'ok');
+      return;
+    }
+
     rareState.results = await findRareResults(items);
 
     if (!overlay) return;

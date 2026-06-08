@@ -18,7 +18,23 @@ import {
   type PatternSkin,
   type PatternFamily,
 } from './pattern-data';
-import type { PatternInput, PatternResult } from './types';
+import type { PatternInput, PatternResult, RareItem } from './types';
+
+/** Adapt a RareItem (SkinsMonkey / PirateSwap) to the pattern finder's input. */
+export function rareItemToPatternInput(it: RareItem): PatternInput {
+  return {
+    id: it.id,
+    name: it.name,
+    marketHashName: it.marketHashName || it.name,
+    image: it.image,
+    price: it.price,
+    exterior: it.exterior,
+    inspectUrl: it.inspectUrl,
+    paintSeed: it.paintSeed,
+    fadePercentage: it.fadePercentage ?? null,
+    category: it.category ?? null,
+  };
+}
 
 export interface PatternMatch {
   family: PatternFamily;

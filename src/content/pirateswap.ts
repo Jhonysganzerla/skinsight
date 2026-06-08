@@ -17,12 +17,19 @@ import {
 } from '../modules/shared/ui';
 import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
+import { findPatternResults, rareItemToPatternInput } from '../modules/rare/pattern-finder';
 import { renderRareCard } from '../modules/rare/render';
+import { renderPatternCard } from '../modules/rare/render-pattern';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
-import { applyStoredLocale, applyStoredProfitParams } from '../modules/shared/settings';
+import {
+  applyStoredLocale,
+  applyStoredProfitParams,
+  getRareSubmode,
+} from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
-import type { RareResult } from '../modules/rare/types';
+import type { PatternResult, RareResult } from '../modules/rare/types';
+import type { RareSubmode } from '../modules/shared/storage';
 
 const ROOT_ID = 'skinsight-ps-overlay';
 const PERSIST_KEY = 'pirateswap';
@@ -77,6 +84,10 @@ interface State {
   /** Last collected match set — kept in memory so reactive filters can
    *  re-apply + re-render without a fresh network scan. */
   results: RareResult[];
+  /** Rare detector sub-mode for the current scan (v0.9). */
+  submode: RareSubmode;
+  /** Last pattern hits (when submode === 'pattern'). */
+  patternResults: PatternResult[];
   /** Active render handle (chunked or virtualized) so a filter change can
    *  tear it down before starting a new one. */
   renderHandle: { destroy(): void } | null;
@@ -89,6 +100,8 @@ const state: State = {
   running: false,
   aborted: { aborted: false },
   results: [],
+  submode: 'sticker',
+  patternResults: [],
   renderHandle: null,
   debounce: null,
 };
@@ -202,6 +215,35 @@ function applyAndRenderUnsafe(): void {
   state.renderHandle?.destroy();
   state.renderHandle = null;
 
+  // Rare Pattern submode: render the (small) pattern hit set. No virtual list
+  // — rare seeds are uncommon, so the result count is tiny.
+  if (state.submode === 'pattern') {
+    const rows = state.patternResults;
+    const header = renderResultsHeader(t('pattern.results.header'), t('pattern.results.right'));
+    if (!rows.length) {
+      list.innerHTML =
+        header +
+        `<div class="sh-empty">
+          <div class="sh-empty-icon">⌖</div>
+          <div class="sh-empty-title">${t('pattern.empty.title')}</div>
+          <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
+        </div>`;
+      return;
+    }
+    const ph = renderChunked({
+      container: list,
+      items: rows,
+      render: renderPatternCard,
+      prefixHtml: header,
+    });
+    const patHandle = { destroy: ph.abort };
+    state.renderHandle = patHandle;
+    void ph.done.then(() => {
+      if (state.renderHandle === patHandle) state.renderHandle = null;
+    });
+    return;
+  }
+
   const t0 = performance.now();
   const opts = currentFilterOpts();
   const filtered = applyRareFilter(state.results, opts);
@@ -269,6 +311,7 @@ async function runScan(): Promise<void> {
   state.aborted = { aborted: false };
 
   try {
+    state.submode = await getRareSubmode();
     // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
     // only hits the network if the cache is older than 24h, and the freshly
     // cached list applies on the next page load (this scan uses the loaded map).
@@ -321,6 +364,19 @@ async function runScan(): Promise<void> {
     updateScanBar(overlay.body, {
       info: t('scan.matching', { n: items.length }),
     });
+
+    if (state.submode === 'pattern') {
+      state.patternResults = await findPatternResults(items.map(rareItemToPatternInput));
+      flog(`match: done — ${state.patternResults.length} pattern hits`);
+      if (!overlay) return;
+      applyAndRender();
+      updateScanBar(overlay.body, {
+        info: t('pattern.found', { n: state.patternResults.length }),
+      });
+      setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
+      return;
+    }
+
     flog(`match: begin findRareResults over ${items.length} items`);
     state.results = await findRareResults(items);
     flog(`match: done — ${state.results.length} hits`);
