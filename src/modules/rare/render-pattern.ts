@@ -23,10 +23,6 @@ function sealText(r: PatternResult): string {
   return r.tierLabel.split(' ')[0] || '★'; // variant short (Gold / Purple)
 }
 
-const WEAR_STYLE =
-  'font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--border);' +
-  'border-radius:4px;padding:0 4px;margin-right:6px;vertical-align:middle;';
-
 export function renderPatternCard(r: PatternResult): string {
   const wear = wearCode(r.exterior || r.marketHashName);
   const thumb = r.image
@@ -40,7 +36,7 @@ export function renderPatternCard(r: PatternResult): string {
     .filter(Boolean)
     .map((c) => `<span class="sh-meta-chip">${esc(c)}</span>`)
     .join('');
-  const wearBadge = wear ? `<span class="sh-wear" style="${WEAR_STYLE}">${esc(wear)}</span>` : '';
+  const wearBadge = wear ? `<span class="sh-wear">${esc(wear)}</span>` : '';
   return `
     <div class="sh-item-card${variantCls(r)}" data-item-id="${esc(r.id)}">
       <div class="sh-item-thumb">${thumb}</div>
