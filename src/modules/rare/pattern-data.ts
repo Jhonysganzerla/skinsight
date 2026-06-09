@@ -8,7 +8,7 @@
  * remote layer — the bank is small and ships with the extension.
  */
 
-export type PatternFamily = 'case-hardened' | 'fade' | 'art-position';
+export type PatternFamily = 'case-hardened' | 'fade' | 'art-position' | 'color-gem';
 
 export interface PatternTier {
   tier: number;

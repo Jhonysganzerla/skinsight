@@ -58,6 +58,23 @@ describe('detectPatternForSkin — case-hardened / art-position (seed-list)', ()
   it('a non-listed seed → no match', () => {
     expect(detectPatternForSkin(skin('AK-47 | Case Hardened'), 999999)).toBeNull();
   });
+
+  it('imported community pattern (cs2pattern): Five-SeveN Kami → Pussy variant', () => {
+    const kami = skin('Five-SeveN | Kami');
+    const seeds = Object.values(kami.variants!)[0]!.seeds;
+    expect(seeds).toContain(909); // the community-famous seed
+    const m = detectPatternForSkin(kami, seeds[0]!);
+    expect(m?.tierLabel).toBe('Pussy');
+    expect(m?.tier).toBeNull();
+  });
+
+  it('merged gold variant on the curated AK Case Hardened', () => {
+    const ak = skin('AK-47 | Case Hardened');
+    const gold = ak.variants?.['gold'];
+    expect(gold?.seeds.length).toBeGreaterThan(0);
+    const m = detectPatternForSkin(ak, gold!.seeds[0]!);
+    expect(m?.tierLabel).toMatch(/gold/i);
+  });
 });
 
 describe('detectPatternForSkin — fade (computed)', () => {

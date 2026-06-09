@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-07T16:51:31Z",
+  "generated_at": "2026-06-09T22:51:34.563Z",
   "source_notes": "CS2 weapon-only rare paint-seed patterns for query-by-seed marketplace lookup. Knives and gloves excluded. Families: case-hardened (blue-gem seed tiers; AK-47/Five-SeveN/MAC-10 Case Hardened + Desert Eagle Heat Treated, the Armory-2024 case-hardened variant, incl. gold/purple variant seeds), fade (% computed from seed via Valve algorithm; high_fade_seeds = all seeds >=90%, method fade-calc), art-position (Galil Phoenix Blacklight). Sources: cs-tierlist (GODrums) generated JSON, csgobluegem.com / csgoskins.gg / sellyourskins / isitabluegem seed tables, npm csgo-fade-percentage-calculator v2.0.0. Re-swept for other weapon seed-overpay finishes: csgobluegem master blue-gem list confirms no weapon Case-Hardened/Heat-Treated beyond the four here; Hyper Beast/Asiimov-type skins excluded (seed irrelevant).",
   "families": ["case-hardened", "fade", "art-position"],
   "skins": [
@@ -41,7 +41,13 @@
           ]
         }
       ],
-      "source": "csgoskins.gg/blog/ak-47-case-hardened-blue-gem-seed-patterns"
+      "source": "csgoskins.gg/blog/ak-47-case-hardened-blue-gem-seed-patterns",
+      "variants": {
+        "gold": {
+          "label": "Gold Pattern",
+          "seeds": [219, 784]
+        }
+      }
     },
     {
       "weapon": "Five-SeveN",
@@ -67,7 +73,13 @@
         }
       ],
       "note": "T3 only partial in source",
-      "source": "sellyourskins.com/blog/five-seven-case-hardened-blue-gem-patterns-and-seeds; isitabluegem.com/discover/five-seven"
+      "source": "sellyourskins.com/blog/five-seven-case-hardened-blue-gem-patterns-and-seeds; isitabluegem.com/discover/five-seven",
+      "variants": {
+        "gold": {
+          "label": "Gold Pattern",
+          "seeds": [691]
+        }
+      }
     },
     {
       "weapon": "MAC-10",
@@ -374,6 +386,236 @@
       ],
       "note": "Blacklight = phoenix positioned so gun appears all-black; SeanErren tierlist",
       "source": "github.com/GODrums/cs-tierlist generated/phoenix_galil.json (orig: SeanErren steam guide 2352059734)"
+    },
+    {
+      "weapon": "SSG 08",
+      "finish": "Abyss",
+      "name": "SSG 08 | Abyss",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "white_scope": {
+          "label": "White Scope",
+          "seeds": [54, 148, 167, 208, 669, 806, 911, 985]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "MP7",
+      "finish": "Amberline",
+      "name": "MP7 | Amberline",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [350, 356, 382, 435, 581, 613, 890, 959]
+        },
+        "gem_gold": {
+          "label": "Gold Gem",
+          "seeds": [153, 205, 218, 238, 322, 426, 504, 519, 711, 906]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Berries And Cherries",
+      "name": "Five-SeveN | Berries And Cherries",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_blue": {
+          "label": "Blue Gem",
+          "seeds": [80]
+        },
+        "gem_red": {
+          "label": "Red Gem",
+          "seeds": [182]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "AWP",
+      "finish": "Electric Hive",
+      "name": "AWP | Electric Hive",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "blue_hive": {
+          "label": "Blue Hive",
+          "seeds": [23, 262, 273, 436, 853, 902]
+        },
+        "orange_hive": {
+          "label": "Orange Hive",
+          "seeds": [42, 54, 253, 611, 697, 767]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Grinder",
+      "name": "Glock-18 | Grinder",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_black": {
+          "label": "Black Gem",
+          "seeds": [384, 811, 907, 916]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Heat Treated",
+      "name": "Five-SeveN | Heat Treated",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "variants": {
+        "gem_blue": {
+          "label": "Blue Gem",
+          "seeds": [148, 704, 904]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Kami",
+      "name": "Five-SeveN | Kami",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "pussy": {
+          "label": "Pussy",
+          "seeds": [590, 909]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Moonrise",
+      "name": "Glock-18 | Moonrise",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "star": {
+          "label": "Star",
+          "seeds": [58, 59, 66, 90, 102, 224, 601, 628, 694, 706, 837, 864]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "AWP",
+      "finish": "PAW",
+      "name": "AWP | PAW",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "golden_cat": {
+          "label": "Golden Cat",
+          "seeds": [41, 350]
+        },
+        "stoner_cat": {
+          "label": "Stoner Cat",
+          "seeds": [420]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Pink DDPAT",
+      "name": "Glock-18 | Pink DDPAT",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_pink": {
+          "label": "Pink Gem",
+          "seeds": [255, 568, 589, 600, 741]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Sandstorm",
+      "name": "Galil AR | Sandstorm",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_purple": {
+          "label": "Purple Gem",
+          "seeds": [178, 583, 739, 761]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Tec-9",
+      "finish": "Sandstorm",
+      "name": "Tec-9 | Sandstorm",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_purple": {
+          "label": "Purple Gem",
+          "seeds": [70, 83, 328, 552, 583, 862]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Desert Eagle",
+      "finish": "Serpent Strike",
+      "name": "Desert Eagle | Serpent Strike",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_orange": {
+          "label": "Orange Gem",
+          "seeds": [174, 425, 658, 757, 953]
+        },
+        "gem_black": {
+          "label": "Black Gem",
+          "seeds": [225, 748]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Snow Splash",
+      "name": "MAC-10 | Snow Splash",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [60, 222, 234, 309, 463, 675, 824, 828]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Trace Lock",
+      "name": "Glock-18 | Trace Lock",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [130, 390, 650, 679, 838]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
     }
   ],
   "generated_note": "Fade seed lists are NOT bundled (computed from the fade lib). Explicit seed lists only for case-hardened (AK/Five-SeveN/MAC-10/Deagle Heat Treated) + Galil Phoenix Blacklight."

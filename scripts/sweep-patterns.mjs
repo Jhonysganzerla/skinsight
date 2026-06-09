@@ -37,6 +37,8 @@ const WRITE = process.argv.includes('--write');
 
 const GALIL_SRC =
   'https://raw.githubusercontent.com/GODrums/cs-tierlist/main/generated/phoenix_galil.json';
+const CS2PATTERN_SRC =
+  'https://raw.githubusercontent.com/Helyux/cs2pattern/master/cs2pattern/pattern.json';
 
 const CALC_BY_FINISH = {
   Fade: FadeCalculator,
@@ -101,6 +103,153 @@ async function sweepGalil() {
   skin.tiers = tiers;
   skin.source =
     'github.com/GODrums/cs-tierlist generated/phoenix_galil.json (orig: SeanErren steam guide 2352059734)';
+}
+
+/* ── community weapon patterns: import from Helyux/cs2pattern ────────── */
+// Schema there: { family: { weapon: [ { name, ordered, pattern: [seeds] } ] } }.
+// Weapon-only (knives/gloves skipped). Where OUR curated entry is richer
+// (tiered CH lists, the Galil tier list), the import only merges missing
+// gold-variant buckets; everything else is rebuilt from the source each run.
+
+const WEAPON_DISPLAY = {
+  'ak-47': 'AK-47',
+  awp: 'AWP',
+  'desert eagle': 'Desert Eagle',
+  'five-seven': 'Five-SeveN',
+  'galil ar': 'Galil AR',
+  'glock-18': 'Glock-18',
+  'm4a1-s': 'M4A1-S',
+  'mac-10': 'MAC-10',
+  mp7: 'MP7',
+  'ssg 08': 'SSG 08',
+  'tec-9': 'Tec-9',
+};
+
+const FAMILY_FINISH = {
+  abyss: 'Abyss',
+  amberline: 'Amberline',
+  'berries and cherries': 'Berries And Cherries',
+  'case hardened': 'Case Hardened',
+  'electric hive': 'Electric Hive',
+  grinder: 'Grinder',
+  'heat treated': 'Heat Treated',
+  kami: 'Kami',
+  moonrise: 'Moonrise',
+  paw: 'PAW',
+  'pink ddpat': 'Pink DDPAT',
+  sandstorm: 'Sandstorm',
+  'serpent strike': 'Serpent Strike',
+  'snow splash': 'Snow Splash',
+  'trace lock': 'Trace Lock',
+};
+
+const GROUP_LABEL = {
+  gem_blue: 'Blue Gem',
+  gem_gold: 'Gold Gem',
+  gem_white: 'White Gem',
+  gem_black: 'Black Gem',
+  gem_pink: 'Pink Gem',
+  gem_purple: 'Purple Gem',
+  gem_orange: 'Orange Gem',
+  gem_green: 'Green Gem',
+  gem_red: 'Red Gem',
+  gem_diamond: 'Diamond Gem',
+  white_scope: 'White Scope',
+  blue_hive: 'Blue Hive',
+  orange_hive: 'Orange Hive',
+  golden_cat: 'Golden Cat',
+  stoner_cat: 'Stoner Cat',
+  pussy: 'Pussy',
+  star: 'Star',
+};
+
+/** Skins where the curated bank is richer than cs2pattern — never replaced.
+ *  AK/Five-SeveN CH still receive the gem_gold bucket they lack. */
+const CURATED_KEEP = new Set([
+  'AK-47 | Case Hardened',
+  'Five-SeveN | Case Hardened',
+  'MAC-10 | Case Hardened',
+  'Desert Eagle | Heat Treated',
+  'Galil AR | Phoenix Blacklight',
+]);
+
+function classifyFamily(finish, groups) {
+  if (finish === 'Case Hardened' || finish === 'Heat Treated') return 'case-hardened';
+  if (groups.every((g) => g.name.startsWith('gem_'))) return 'color-gem';
+  return 'art-position';
+}
+
+async function sweepCs2pattern() {
+  const res = await fetch(CS2PATTERN_SRC);
+  if (!res.ok) {
+    log(`CS2PATTERN: source fetch failed (HTTP ${res.status}) — imports skipped`);
+    problems++;
+    return;
+  }
+  const src = await res.json();
+  for (const [family, weapons] of Object.entries(src)) {
+    const finish = FAMILY_FINISH[family];
+    for (const [weaponKey, groups] of Object.entries(weapons)) {
+      const weapon = WEAPON_DISPLAY[weaponKey];
+      if (!weapon) continue; // knife/glove or unmapped — weapon-only bank
+      if (!finish) continue; // family not imported (fade→calc, knives-only)
+      const name = `${weapon} | ${finish}`;
+      const existing = bank.skins.find((s) => s.name === name);
+
+      // Fade-calc skins keep the % engine; a seed list would double-flag them.
+      if (existing?.method === 'fade-calc') continue;
+
+      if (existing && CURATED_KEEP.has(name)) {
+        // Merge ONLY missing buckets (the curated tiers stay authoritative).
+        const gold = groups.find((g) => g.name === 'gem_gold');
+        if (gold && !existing.variants?.gold) {
+          existing.variants = existing.variants ?? {};
+          existing.variants.gold = {
+            label: 'Gold Pattern',
+            seeds: [...gold.pattern].sort((a, b) => a - b),
+          };
+          log(`CS2PATTERN ${name}: merged gem_gold variant (+${gold.pattern.length} seeds)`);
+          changed = true;
+        } else {
+          log(`CS2PATTERN ${name}: curated entry kept (richer than source) ✓`);
+        }
+        continue;
+      }
+
+      const variants = {};
+      for (const g of groups) {
+        variants[g.name] = {
+          label: GROUP_LABEL[g.name] ?? g.name.replace(/_/g, ' '),
+          seeds: [...g.pattern].sort((a, b) => a - b),
+        };
+      }
+      const entry = {
+        weapon,
+        finish,
+        name,
+        family: classifyFamily(finish, groups),
+        method: 'seed-list',
+        variants,
+        source: 'github.com/Helyux/cs2pattern cs2pattern/pattern.json',
+      };
+      const idx = bank.skins.findIndex((s) => s.name === name);
+      const seedCount = Object.values(variants).reduce((n, v) => n + v.seeds.length, 0);
+      if (idx >= 0) {
+        const before = JSON.stringify(bank.skins[idx]);
+        if (before !== JSON.stringify(entry)) {
+          bank.skins[idx] = entry;
+          log(`CS2PATTERN ${name}: refreshed from source (${seedCount} seeds)`);
+          changed = true;
+        } else {
+          log(`CS2PATTERN ${name}: in sync ✓ (${seedCount} seeds)`);
+        }
+      } else {
+        bank.skins.push(entry);
+        log(`CS2PATTERN ${name}: NEW — ${Object.keys(variants).join('/')} (${seedCount} seeds)`);
+        changed = true;
+      }
+    }
+  }
 }
 
 /* ── fade: validate against the calculator library (ground truth) ────── */
@@ -173,6 +322,7 @@ function checkCaseHardened() {
 }
 
 await sweepGalil();
+await sweepCs2pattern();
 sweepFades();
 checkCaseHardened();
 
