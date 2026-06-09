@@ -135,13 +135,11 @@ async function refreshModeTag(): Promise<void> {
 function regenerateBlockHtml(disabled: boolean): string {
   return `
     <details class="sh-hint" style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
-      <summary style="cursor:pointer;color:var(--text-muted);user-select:none;">⚙ Rare-DB maintenance</summary>
+      <summary style="cursor:pointer;color:var(--text-muted);user-select:none;">${esc(t('regen.title'))}</summary>
       <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
-        <p>Downloads a fresh <code>rare_stickers.json</code> report from the current
-          CS.Money inventory. The bundled DB is updated only via Skinsight releases —
-          this button just produces the file for the maintainer.</p>
+        <p>${esc(t('regen.desc'))}</p>
         <button class="sh-btn sh-btn-sm sh-btn-ghost" data-role="regen" type="button" ${disabled ? 'disabled' : ''}>
-          ${disabled ? 'Collect inventory first' : 'Regenerate rare_stickers.json'}
+          ${esc(disabled ? t('regen.collectFirst') : t('regen.button'))}
         </button>
       </div>
     </details>
@@ -405,23 +403,26 @@ async function regenerate(): Promise<void> {
   const elapsed = (): string => ((Date.now() - t0) / 1000).toFixed(0) + 's';
 
   const btn = regenButton();
-  if (btn) btn.textContent = 'Stop regenerate';
-  setStatus('Regenerating rare DB — deep-scanning CS.Money…', 'info');
+  if (btn) btn.textContent = t('regen.stop');
+  setStatus(t('regen.running'), 'info');
 
   let pagesSeen = 0;
   const collected = await collectCsMoney({
     maxPages: REGEN_MAX_PAGES,
     delayMs: REGEN_DELAY_MS,
     signal: state.regenAborted,
+    // Structured page counter — no regex over the (localized) status text.
+    onPage: () => {
+      pagesSeen += 1;
+    },
     onStatus: (msg) => {
       if (!overlay) return;
-      if (/^Collecting page/.test(msg)) pagesSeen += 1;
-      setStatus(`Scanned ${pagesSeen} pages — ${elapsed()} elapsed. ${msg}`, 'info');
+      setStatus(t('regen.progress', { p: pagesSeen, t: elapsed(), msg }), 'info');
     },
   });
 
   if (state.regenAborted.aborted) {
-    setStatus(`Regenerate stopped after ${pagesSeen} pages (${elapsed()}).`, 'info');
+    setStatus(t('regen.stopped', { p: pagesSeen, t: elapsed() }), 'info');
     finishRegen();
     return;
   }
@@ -437,7 +438,12 @@ async function regenerate(): Promise<void> {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setStatus(
-    `Downloaded rare_stickers.json — ${pagesSeen} pages, ${report.rare_count} rare stickers (≥ $${report.inferred_threshold_usd.toFixed(2)}) in ${elapsed()}.`,
+    t('regen.done', {
+      p: pagesSeen,
+      n: report.rare_count,
+      thr: report.inferred_threshold_usd.toFixed(2),
+      t: elapsed(),
+    }),
     'ok',
   );
   finishRegen();
@@ -448,7 +454,7 @@ function finishRegen(): void {
   const btn = regenButton();
   if (btn) {
     btn.disabled = false;
-    btn.textContent = 'Regenerate rare_stickers.json';
+    btn.textContent = t('regen.button');
   }
 }
 

@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/app.template.js.
  */
 import { sleep } from '../shared/fmt';
+import { t } from '../shared/i18n';
 import { estimateCsMoneyOverpay } from '../shared/overpay';
 import { getRareMap, lookup } from './rare-data';
 import type { RareItem, RareResult, RareStickerMatch } from './types';
@@ -181,14 +182,14 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
     const maxPages = opts.maxPages ?? 80;
     for (let i = 0; i < maxPages; i++) {
       if (opts.signal?.aborted) break;
-      opts.onProgress?.(`Page ${i + 1}/${maxPages} (offset ${i * limit})…`, items.length);
+      opts.onProgress?.(t('scan.page', { i: i + 1, n: maxPages, off: i * limit }), items.length);
       try {
         const json = await fetchSm(i * limit, limit);
         const page = normalizeSm(json);
         items.push(...page);
         if (page.length < limit) break;
       } catch (e) {
-        opts.onProgress?.('Error: ' + (e as Error).message, items.length);
+        opts.onProgress?.(t('scan.error', { msg: (e as Error).message }), items.length);
         break;
       }
       await sleep(400);
@@ -216,7 +217,7 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
     let p = 1;
     for (; p <= cap; p++) {
       if (opts.signal?.aborted) break;
-      opts.onProgress?.(`Scanned ${p - 1} pages (${items.length} items)…`, items.length);
+      opts.onProgress?.(t('scan.scannedPages', { p: p - 1, n: items.length }), items.length);
 
       let page: RareItem[] = [];
       let ended = false;
@@ -226,7 +227,7 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
         try {
           json = await fetchPs(p, results);
         } catch (e) {
-          opts.onProgress?.('Error: ' + (e as Error).message, items.length);
+          opts.onProgress?.(t('scan.error', { msg: (e as Error).message }), items.length);
           httpError = true;
           break;
         }
@@ -245,10 +246,7 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
         // Flagless empty → PS throttle. Back off (exponential) and retry.
         if (attempt < MAX_EMPTY_RETRIES) {
           const backoff = BASE_DELAY_MS * 2 ** (attempt + 1); // 1.2s,2.4s,4.8s,9.6s
-          opts.onProgress?.(
-            `PirateSwap throttling — aguardando ${(backoff / 1000).toFixed(1)}s (página ${p})…`,
-            items.length,
-          );
+          opts.onProgress?.(t('ps.throttle', { s: (backoff / 1000).toFixed(1), p }), items.length);
           await sleep(backoff);
         }
       }

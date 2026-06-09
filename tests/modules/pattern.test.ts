@@ -27,6 +27,8 @@ describe('patternKey', () => {
     );
     expect(patternKey('AWP | Fade (Factory New)')).toBe('awp | fade');
     expect(patternKey('★ Karambit | Fade (Minimal Wear)')).toBe('karambit | fade');
+    // Some sites omit the ™ glyph.
+    expect(patternKey('StatTrak AK-47 | Case Hardened (Well-Worn)')).toBe('ak-47 | case hardened');
   });
 });
 

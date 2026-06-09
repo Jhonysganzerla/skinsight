@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/csmoney.js.
  */
 import { sleep } from '../shared/fmt';
+import { t } from '../shared/i18n';
 import { debugLog, isDebug } from '../shared/debug';
 import type { CsMoneyItem } from './types';
 
@@ -77,6 +78,9 @@ export interface CsmCollectOpts {
   maxPages: number;
   delayMs?: number;
   onStatus?: (msg: string) => void;
+  /** Structured per-page callback (1-based). The regenerate flow counts pages
+   *  through this instead of regex-matching the (localized) status text. */
+  onPage?: (page: number) => void;
   signal?: { aborted: boolean };
 }
 
@@ -90,7 +94,8 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       if (opts.signal?.aborted) break;
       const offset = page * LIMIT;
       const url = `${ENDPOINT}?${qs({ ...BASE, limit: String(LIMIT), offset: String(offset) })}`;
-      opts.onStatus?.(`Collecting page ${page + 1} (${out.length} items)…`);
+      opts.onPage?.(page + 1);
+      opts.onStatus?.(t('csm.page', { p: page + 1, n: out.length }));
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = (await res.json()) as CsmResp;
@@ -146,7 +151,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       await sleep(delay);
     }
   } catch (e) {
-    opts.onStatus?.('Error: ' + (e as Error).message);
+    opts.onStatus?.(t('scan.error', { msg: (e as Error).message }));
   }
   return out;
 }

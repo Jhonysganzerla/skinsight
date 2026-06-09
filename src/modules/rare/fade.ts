@@ -37,6 +37,18 @@ export interface FadeInfo {
   ranking: number;
 }
 
+/** Supported-weapon sets, built once per finish — fadePercentage runs per
+ *  scanned item, so re-mapping the library array every call would be waste. */
+const _supported = new Map<string, Set<string>>();
+function supportedSet(finish: string, calc: Calc): Set<string> {
+  let s = _supported.get(finish);
+  if (!s) {
+    s = new Set(calc.getSupportedWeapons().map((w) => String(w)));
+    _supported.set(finish, s);
+  }
+  return s;
+}
+
 /**
  * Fade % for a (finish, weapon, seed). Returns null when the finish isn't a
  * fade family, the weapon isn't supported by that calculator, or the seed is
@@ -46,8 +58,7 @@ export function fadePercentage(finish: string, weapon: string, seed: number): Fa
   const calc = BY_FINISH[finish];
   if (!calc || !Number.isFinite(seed)) return null;
   try {
-    const supported = calc.getSupportedWeapons().map((w) => String(w));
-    if (!supported.includes(weapon)) return null;
+    if (!supportedSet(finish, calc).has(weapon)) return null;
     const r = calc.getFadePercentage(weapon, seed);
     return { percentage: r.percentage, ranking: r.ranking };
   } catch {

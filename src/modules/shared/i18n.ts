@@ -222,6 +222,14 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Comparando {n} items com a DB de raros…',
   },
   'scan.complete.hits': { en: 'Scan complete — {n} hits.', 'pt-BR': 'Scan completo — {n} hits.' },
+  'scan.page': {
+    en: 'Page {i}/{n} (offset {off})…',
+    'pt-BR': 'Página {i}/{n} (offset {off})…',
+  },
+  'scan.scannedPages': {
+    en: 'Scanned {p} pages ({n} items)…',
+    'pt-BR': '{p} páginas escaneadas ({n} items)…',
+  },
   // ── Results headers ────────────────────────────────────────────────
   'results.worth': { en: 'Worth', 'pt-BR': 'Valor' },
   'results.net': { en: 'Net', 'pt-BR': 'Líquido' },
@@ -236,6 +244,10 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Escaneando o inventário do PirateSwap até o fim…',
   },
   'ps.scanningShort': { en: 'Scanning inventory…', 'pt-BR': 'Escaneando inventário…' },
+  'ps.throttle': {
+    en: 'PirateSwap throttling — waiting {s}s (page {p})…',
+    'pt-BR': 'PirateSwap limitando — aguardando {s}s (página {p})…',
+  },
   'rare.empty.title': {
     en: 'No rare stickers found',
     'pt-BR': 'Nenhum sticker raro encontrado',
@@ -288,6 +300,39 @@ const STRINGS: Record<string, Entry> = {
     'pt-BR': 'Scan completo — {n} items, {p} lucrativos.',
   },
   'csm.collected': { en: 'Collected {n} items.', 'pt-BR': '{n} items coletados.' },
+  'csm.page': {
+    en: 'Collecting page {p} ({n} items)…',
+    'pt-BR': 'Coletando página {p} ({n} items)…',
+  },
+  // ── CS.Money rare-DB regenerate drawer ─────────────────────────────
+  'regen.title': { en: '⚙ Rare-DB maintenance', 'pt-BR': '⚙ Manutenção da Rare-DB' },
+  'regen.desc': {
+    en: 'Downloads a fresh rare_stickers.json report from the current CS.Money inventory. The bundled DB is updated only via Skinsight releases — this button just produces the file for the maintainer.',
+    'pt-BR':
+      'Baixa um relatório rare_stickers.json novo a partir do inventário atual da CS.Money. A DB embutida só é atualizada via releases do Skinsight — este botão apenas gera o arquivo para o mantenedor.',
+  },
+  'regen.collectFirst': { en: 'Collect inventory first', 'pt-BR': 'Colete o inventário primeiro' },
+  'regen.button': {
+    en: 'Regenerate rare_stickers.json',
+    'pt-BR': 'Regenerar rare_stickers.json',
+  },
+  'regen.stop': { en: 'Stop regenerate', 'pt-BR': 'Parar regeneração' },
+  'regen.running': {
+    en: 'Regenerating rare DB — deep-scanning CS.Money…',
+    'pt-BR': 'Regenerando a rare DB — varredura profunda da CS.Money…',
+  },
+  'regen.progress': {
+    en: 'Scanned {p} pages — {t} elapsed. {msg}',
+    'pt-BR': '{p} páginas — {t} decorridos. {msg}',
+  },
+  'regen.stopped': {
+    en: 'Regenerate stopped after {p} pages ({t}).',
+    'pt-BR': 'Regeneração parada após {p} páginas ({t}).',
+  },
+  'regen.done': {
+    en: 'Downloaded rare_stickers.json — {p} pages, {n} rare stickers (≥ ${thr}) in {t}.',
+    'pt-BR': 'rare_stickers.json baixado — {p} páginas, {n} stickers raros (≥ ${thr}) em {t}.',
+  },
   // ── SkinsMonkey (arbitrage + rare) ─────────────────────────────────
   'sm.arbReadyHint': {
     en: 'Ready. Configure filters and start a scan.',
