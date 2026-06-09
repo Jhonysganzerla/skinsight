@@ -18,6 +18,7 @@ import {
 import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { findPatternResults, rareItemToPatternInput } from '../modules/rare/pattern-finder';
+import { siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
 import { renderPatternCard } from '../modules/rare/render-pattern';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -379,7 +380,11 @@ async function runScan(): Promise<void> {
     });
 
     if (state.submode === 'pattern') {
-      state.patternResults = await findPatternResults(items.map(rareItemToPatternInput));
+      const hits = await findPatternResults(items.map(rareItemToPatternInput));
+      state.patternResults = hits.map((r) => ({
+        ...r,
+        siteLink: siteSearchUrl('pirateswap', r.marketHashName),
+      }));
       flog(`match: done — ${state.patternResults.length} pattern hits`);
       if (!overlay) return;
       applyAndRender();

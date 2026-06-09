@@ -4,7 +4,7 @@
  * (name + seed) for verification. Reuses the shared `sh-` card skeleton; the
  * action column carries the seal instead of a profit number.
  */
-import { esc, safeUrl, fmtUsd, shortExterior, wearCode } from '../shared/fmt';
+import { esc, safeSteamUrl, safeUrl, fmtUsd, shortExterior, wearCode } from '../shared/fmt';
 import { t } from '../shared/i18n';
 import type { PatternResult } from './types';
 
@@ -46,7 +46,17 @@ export function renderPatternCard(r: PatternResult): string {
       </div>
       <div class="sh-item-action">
         <div class="sh-pattern-seal">${esc(sealText(r))}</div>
-        <a class="sh-open-link" href="${safeUrl(r.link)}" target="_blank" rel="noopener" data-role="open">${esc(t('pattern.verify'))}</a>
+        ${
+          r.siteLink
+            ? `<a class="sh-open-link" href="${safeUrl(r.siteLink)}" target="_blank" rel="noopener" data-role="open-site">${esc(t('pattern.site'))}</a>`
+            : ''
+        }
+        ${
+          r.inspectUrl
+            ? `<a class="sh-open-link" href="${safeSteamUrl(r.inspectUrl)}" data-role="inspect">${esc(t('pattern.inspect'))}</a>`
+            : ''
+        }
+        <a class="sh-open-link" href="${safeUrl(r.link)}" target="_blank" rel="noopener" data-role="open">${esc(t('pattern.csfloat'))}</a>
       </div>
     </div>
   `;

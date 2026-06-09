@@ -269,7 +269,13 @@ const STRINGS: Record<string, Entry> = {
   'pattern.submode.label': { en: 'Rare scanner', 'pt-BR': 'Scanner Rare' },
   'pattern.seed': { en: 'seed', 'pt-BR': 'seed' },
   'pattern.listed': { en: 'Listed', 'pt-BR': 'Anúncio' },
-  'pattern.verify': { en: 'Verify ↗', 'pt-BR': 'Conferir ↗' },
+  'pattern.csfloat': { en: 'CSFloat ↗', 'pt-BR': 'CSFloat ↗' },
+  'pattern.inspect': { en: '🔎 Inspect in-game', 'pt-BR': '🔎 Inspecionar in-game' },
+  'pattern.site': { en: 'Find on site ↗', 'pt-BR': 'Ver no site ↗' },
+  'pattern.querying': {
+    en: 'Searching {i}/{n}: {name}…',
+    'pt-BR': 'Buscando {i}/{n}: {name}…',
+  },
   'pattern.results.header': { en: 'Item · seed · tier', 'pt-BR': 'Item · seed · tier' },
   'pattern.results.right': { en: 'Pattern', 'pt-BR': 'Pattern' },
   'pattern.empty.title': {

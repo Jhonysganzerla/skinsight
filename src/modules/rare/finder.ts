@@ -47,14 +47,37 @@ function getSmCsrf(): string | null {
   );
 }
 
-async function fetchSm(offset: number, limit = 120): Promise<SmInventoryResp> {
+async function fetchSm(offset: number, limit = 120, q?: string): Promise<SmInventoryResp> {
   const headers: Record<string, string> = { Accept: 'application/json, text/plain, */*' };
   const csrf = getSmCsrf();
   if (csrf) headers['x-csrf-token'] = csrf;
-  const url = `/api/inventory?limit=${limit}&offset=${offset}&appId=730&sort=price-desc&withStickers=true`;
+  const search = q ? `&q=${encodeURIComponent(q)}` : '';
+  const url = `/api/inventory?limit=${limit}&offset=${offset}&appId=730&sort=price-desc&withStickers=true${search}`;
   const res = await fetch(url, { credentials: 'include', headers });
   if (!res.ok) throw new Error('SkinsMonkey HTTP ' + res.status);
   return res.json();
+}
+
+/**
+ * Targeted name query (v0.9.1 Rare Pattern): every SkinsMonkey listing of ONE
+ * skin, via the same `q` search the arbitrage scanner uses. Small by
+ * construction; capped at 3 pages as a runaway guard.
+ */
+export async function collectSmByName(
+  name: string,
+  opts: { signal?: { aborted: boolean } } = {},
+): Promise<RareItem[]> {
+  const limit = 120;
+  const out: RareItem[] = [];
+  for (let i = 0; i < 3; i++) {
+    if (opts.signal?.aborted) break;
+    const json = await fetchSm(i * limit, limit, name);
+    const page = normalizeSm(json);
+    out.push(...page);
+    if (page.length < limit) break;
+    await sleep(400);
+  }
+  return out;
 }
 
 export function normalizeSm(json: SmInventoryResp): RareItem[] {

@@ -33,6 +33,9 @@ interface RawCsmItem {
   overpay?: { stickers?: number } | null;
   /** Paint seed (v0.9 Rare Pattern). */
   pattern?: number;
+  /** steam:// in-game inspect link (defensive — field name unverified; the
+   *  mapper only keeps it when it actually starts with steam://). */
+  inspect?: string;
   stickers?: (RawCsmSticker | null)[];
   /** Image fields, in fallback order. v0.4 HAR confirmed `img` is the
    *  primary; the others exist as defense against API changes. */
@@ -84,6 +87,72 @@ export interface CsmCollectOpts {
   signal?: { aborted: boolean };
 }
 
+/** Map one raw API item to CsMoneyItem (null when it has no usable name). */
+function mapCsmItem(item: RawCsmItem): CsMoneyItem | null {
+  const itemName = getItemName(item);
+  if (!itemName) return null;
+  const rawStickers = (item.stickers ?? []).filter(Boolean) as RawCsmSticker[];
+  const weaponPriceUsd = getWeaponPrice(item);
+  const stickers = rawStickers.map((s) => ({
+    name: s.name || 'Sticker',
+    priceUsd: toNumber(s.price),
+    wear: toNumber(s.wear),
+    imageUrl: typeof s.img === 'string' && s.img.length > 0 ? s.img : null,
+    overprice: toNumber(s.overprice),
+  }));
+  const stickersTotalUsd = stickers.reduce((a, s) => a + s.priceUsd, 0);
+  return {
+    id: item.id ?? '',
+    name: itemName,
+    imageUrl: extractCsMoneyImageUrl(item),
+    weaponPriceUsd,
+    stickersTotalUsd,
+    netUsd: stickersTotalUsd - weaponPriceUsd,
+    overpayStickers: toNumber(item.overpay?.stickers),
+    paintSeed: typeof item.pattern === 'number' ? item.pattern : null,
+    inspectUrl:
+      typeof item.inspect === 'string' && /^steam:\/\//i.test(item.inspect) ? item.inspect : null,
+    stickers,
+  };
+}
+
+/**
+ * Targeted name query (v0.9.1 Rare Pattern): fetch every listing of ONE skin
+ * (e.g. "AK-47 | Case Hardened") so the caller can filter by paint seed.
+ * Unlike collectCsMoney this does NOT pass hasRareStickers and does NOT skip
+ * sticker-less items — pattern rarity is independent of stickers. Small by
+ * construction (a skin rarely has more than a few pages of listings).
+ */
+export async function collectCsMoneyByName(
+  name: string,
+  opts: { maxPages?: number; delayMs?: number; signal?: { aborted: boolean } } = {},
+): Promise<CsMoneyItem[]> {
+  const out: CsMoneyItem[] = [];
+  const maxPages = Math.max(1, Math.min(10, opts.maxPages ?? 5));
+  const delay = Math.max(100, Math.min(5000, opts.delayMs ?? 600));
+  for (let page = 0; page < maxPages; page++) {
+    if (opts.signal?.aborted) break;
+    const url = `${ENDPOINT}?${qs({
+      name,
+      order: 'asc',
+      sort: 'price',
+      limit: String(LIMIT),
+      offset: String(page * LIMIT),
+    })}`;
+    const res = await fetch(url, { credentials: 'include' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = (await res.json()) as CsmResp;
+    const items = data.items ?? [];
+    for (const item of items) {
+      const mapped = mapCsmItem(item);
+      if (mapped) out.push(mapped);
+    }
+    if (items.length < LIMIT) break;
+    await sleep(delay);
+  }
+  return out;
+}
+
 export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[]> {
   const out: CsMoneyItem[] = [];
   const delay = Math.max(100, Math.min(5000, opts.delayMs ?? 900));
@@ -120,31 +189,9 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       }
       fetched += items.length;
       for (const item of items) {
-        const rawStickers = (item.stickers ?? []).filter(Boolean) as RawCsmSticker[];
-        if (!rawStickers.length) continue;
-        const weaponPriceUsd = getWeaponPrice(item);
-        const itemName = getItemName(item);
-        if (!itemName) continue;
-        const stickers = rawStickers.map((s) => ({
-          name: s.name || 'Sticker',
-          priceUsd: toNumber(s.price),
-          wear: toNumber(s.wear),
-          imageUrl: typeof s.img === 'string' && s.img.length > 0 ? s.img : null,
-          overprice: toNumber(s.overprice),
-        }));
-        const stickersTotalUsd = stickers.reduce((a, s) => a + s.priceUsd, 0);
-        const netUsd = stickersTotalUsd - weaponPriceUsd;
-        out.push({
-          id: item.id ?? '',
-          name: itemName,
-          imageUrl: extractCsMoneyImageUrl(item),
-          weaponPriceUsd,
-          stickersTotalUsd,
-          netUsd,
-          overpayStickers: toNumber(item.overpay?.stickers),
-          paintSeed: typeof item.pattern === 'number' ? item.pattern : null,
-          stickers,
-        });
+        const mapped = mapCsmItem(item);
+        // Sticker flow: items without stickers carry nothing to price — skip.
+        if (mapped && mapped.stickers.length > 0) out.push(mapped);
       }
       if (items.length < LIMIT) break;
       if (totalExpected !== null && fetched >= totalExpected) break;

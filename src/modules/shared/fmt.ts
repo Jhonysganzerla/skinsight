@@ -40,6 +40,15 @@ export function safeUrl(u: unknown): string {
   return 'about:blank';
 }
 
+/**
+ * Validate a steam:// in-game inspect link. Only the steam scheme passes —
+ * anything else becomes about:blank (same anti-javascript: stance as safeUrl).
+ */
+export function safeSteamUrl(u: unknown): string {
+  const s = String(u ?? '');
+  return /^steam:\/\//i.test(s) ? s : 'about:blank';
+}
+
 /** Sleep helper. */
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));

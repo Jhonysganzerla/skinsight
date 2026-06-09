@@ -29,7 +29,7 @@ import {
 } from '../modules/shared/settings';
 import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
-import { findPatternResults, rareItemToPatternInput } from '../modules/rare/pattern-finder';
+import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
 import { renderPatternCard } from '../modules/rare/render-pattern';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -301,6 +301,37 @@ function rareBodyHtml(): string {
   ].join('');
 }
 
+/** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
+async function runPatternQuery(): Promise<void> {
+  if (!overlay) return;
+  updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
+  const res = await queryPatternResults('skinsmonkey', {
+    signal: rareState.aborted,
+    onProgress: (i, n, name) => {
+      if (!overlay) return;
+      updateScanBar(overlay.body, {
+        info: t('pattern.querying', { i, n, name }),
+        progressPct: Math.round((i / n) * 95),
+      });
+    },
+  });
+  if (rareState.aborted.aborted) {
+    setStatus(t('scan.stopped'), 'info');
+    return;
+  }
+  rareState.patternResults = res.map((r) => ({
+    ...r,
+    siteLink: siteSearchUrl('skinsmonkey', r.marketHashName),
+  }));
+  if (!overlay) return;
+  renderRareResults();
+  updateScanBar(overlay.body, {
+    info: t('pattern.found', { n: rareState.patternResults.length }),
+    progressPct: 100,
+  });
+  setStatus(t('pattern.found', { n: rareState.patternResults.length }), 'ok');
+}
+
 async function runRareScan(): Promise<void> {
   if (!overlay || rareState.running) return;
   rareState.running = true;
@@ -309,6 +340,11 @@ async function runRareScan(): Promise<void> {
   try {
     rareState.submode = await getRareSubmode();
     setModeTagFor(rareState.submode);
+    if (rareState.submode === 'pattern') {
+      // Targeted query-by-name path (v0.9.1) — no full-inventory walk.
+      await runPatternQuery();
+      return;
+    }
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -341,18 +377,6 @@ async function runRareScan(): Promise<void> {
       info: t('scan.matching', { n: items.length }),
       progressPct: 80,
     });
-
-    if (rareState.submode === 'pattern') {
-      rareState.patternResults = await findPatternResults(items.map(rareItemToPatternInput));
-      if (!overlay) return;
-      renderRareResults();
-      updateScanBar(overlay.body, {
-        info: t('pattern.found', { n: rareState.patternResults.length }),
-        progressPct: 100,
-      });
-      setStatus(t('pattern.found', { n: rareState.patternResults.length }), 'ok');
-      return;
-    }
 
     rareState.results = await findRareResults(items);
 

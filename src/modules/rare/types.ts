@@ -55,6 +55,8 @@ export interface CsMoneyItem {
   netUsd: number;
   /** Paint seed from CS.Money's `item.pattern`. null when absent. (v0.9 Rare Pattern) */
   paintSeed: number | null;
+  /** steam:// in-game inspect link when the API carries one. (v0.9.1) */
+  inspectUrl?: string | null;
   /**
    * CS.Money's own per-item sticker-overpay figure (USD), from the raw
    * `item.overpay.stickers` field. Captured for the v0.7 overpay-formula
@@ -109,4 +111,6 @@ export interface PatternResult extends PatternInput {
   fadePct: number | null;
   /** External verification link (CSFloat search by name + seed). */
   link: string;
+  /** Search link back into the marketplace the item was found on (v0.9.1). */
+  siteLink?: string;
 }

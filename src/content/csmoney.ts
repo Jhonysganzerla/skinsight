@@ -21,7 +21,7 @@ import {
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { renderPatternCard } from '../modules/rare/render-pattern';
-import { findPatternResults } from '../modules/rare/pattern-finder';
+import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import {
@@ -34,7 +34,7 @@ import { esc } from '../modules/shared/fmt';
 import { debugLog, isDebug } from '../modules/shared/debug';
 import { t } from '../modules/shared/i18n';
 import type { RareSubmode } from '../modules/shared/storage';
-import type { CsMoneyItem, PatternInput, PatternResult } from '../modules/rare/types';
+import type { CsMoneyItem, PatternResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
@@ -102,19 +102,35 @@ const state: State = {
   regenAborted: { aborted: false },
 };
 
-/** Adapt a CS.Money item to the pattern finder's input (name carries the
- *  market hash name; wearCode derives the wear from it). */
-function csmToPatternInput(it: CsMoneyItem): PatternInput {
-  return {
-    id: String(it.id),
-    name: it.name,
-    marketHashName: it.name,
-    image: it.imageUrl,
-    price: it.weaponPriceUsd,
-    exterior: '',
-    inspectUrl: '',
-    paintSeed: it.paintSeed,
-  };
+/** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
+async function runPatternQuery(): Promise<void> {
+  if (!overlay) return;
+  updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
+  const res = await queryPatternResults('csmoney', {
+    signal: state.aborted,
+    onProgress: (i, n, name) => {
+      if (!overlay) return;
+      updateScanBar(overlay.body, {
+        info: t('pattern.querying', { i, n, name }),
+        progressPct: Math.round((i / n) * 95),
+      });
+    },
+  });
+  if (state.aborted.aborted) {
+    setStatus(t('scan.stopped'), 'info');
+    return;
+  }
+  state.patternResults = res.map((r) => ({
+    ...r,
+    siteLink: siteSearchUrl('csmoney', r.marketHashName),
+  }));
+  if (!overlay) return;
+  renderResults();
+  updateScanBar(overlay.body, {
+    info: t('pattern.found', { n: state.patternResults.length }),
+    progressPct: 100,
+  });
+  setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
 }
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
@@ -230,6 +246,11 @@ async function runScan(): Promise<void> {
   try {
     state.submode = await getRareSubmode();
     setModeTagFor(state.submode);
+    if (state.submode === 'pattern') {
+      // Targeted query-by-name path (v0.9.1) — no full-inventory walk.
+      await runPatternQuery();
+      return;
+    }
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -275,20 +296,6 @@ async function runScan(): Promise<void> {
     if (isDebug()) dumpOverpaySample(collected);
 
     if (!overlay) return;
-
-    if (state.submode === 'pattern') {
-      // Rare Pattern: detect rare paint seeds in the SAME collected inventory.
-      state.patternResults = await findPatternResults(collected.map(csmToPatternInput));
-      if (!overlay) return;
-      renderResults();
-      updateScanBar(overlay.body, {
-        info: t('pattern.found', { n: state.patternResults.length }),
-        progressPct: 100,
-      });
-      setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
-      return;
-    }
-
     renderResults();
 
     // Enable the Regenerate button.

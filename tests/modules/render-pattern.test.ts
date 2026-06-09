@@ -53,4 +53,26 @@ describe('renderPatternCard', () => {
     expect(html).not.toContain('<img src=x');
     expect(html).toContain('&lt;img');
   });
+
+  it('renders inspect (steam:// only) and site links when present (v0.9.1)', () => {
+    const html = renderPatternCard(
+      base({
+        inspectUrl: 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20S1A2D3',
+        siteLink: 'https://skinsmonkey.com/trade?q=ak',
+      }),
+    );
+    expect(html).toContain('data-role="inspect"');
+    expect(html).toContain('href="steam://rungame/730');
+    expect(html).toContain('data-role="open-site"');
+    expect(html).toContain('skinsmonkey.com/trade');
+    // javascript: in the inspect slot must be neutralized.
+    const evil = renderPatternCard(base({ inspectUrl: 'javascript:alert(1)' }));
+    expect(evil).toContain('href="about:blank"');
+  });
+
+  it('omits inspect/site links when absent', () => {
+    const html = renderPatternCard(base({}));
+    expect(html).not.toContain('data-role="inspect"');
+    expect(html).not.toContain('data-role="open-site"');
+  });
 });

@@ -18,7 +18,21 @@ import {
   type PatternSkin,
   type PatternFamily,
 } from './pattern-data';
-import type { PatternInput, PatternResult, RareItem } from './types';
+import type { CsMoneyItem, PatternInput, PatternResult, RareItem } from './types';
+
+/** Adapt a CS.Money item to the pattern finder's input. */
+export function csMoneyItemToPatternInput(it: CsMoneyItem): PatternInput {
+  return {
+    id: String(it.id),
+    name: it.name,
+    marketHashName: it.name,
+    image: it.imageUrl,
+    price: it.weaponPriceUsd,
+    exterior: '',
+    inspectUrl: it.inspectUrl ?? '',
+    paintSeed: it.paintSeed,
+  };
+}
 
 /** Adapt a RareItem (SkinsMonkey / PirateSwap) to the pattern finder's input. */
 export function rareItemToPatternInput(it: RareItem): PatternInput {
