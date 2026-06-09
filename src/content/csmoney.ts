@@ -28,6 +28,7 @@ import {
   applyStoredLocale,
   applyStoredProfitParams,
   getRareSubmode,
+  watchSettings,
 } from '../modules/shared/settings';
 import { esc } from '../modules/shared/fmt';
 import { debugLog, isDebug } from '../modules/shared/debug';
@@ -118,6 +119,17 @@ function csmToPatternInput(it: CsMoneyItem): PatternInput {
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
+}
+
+/** Reflect the Rare sub-mode (sticker/pattern) in the overlay header tag. */
+function setModeTagFor(sub: RareSubmode): void {
+  overlay?.setModeTag(
+    sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
+    sub === 'pattern' ? 'pattern' : 'rare',
+  );
+}
+async function refreshModeTag(): Promise<void> {
+  setModeTagFor(await getRareSubmode());
 }
 
 function regenerateBlockHtml(disabled: boolean): string {
@@ -219,6 +231,7 @@ async function runScan(): Promise<void> {
   // the error becomes a localized status and `finally` always resets state.
   try {
     state.submode = await getRareSubmode();
+    setModeTagFor(state.submode);
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -508,6 +521,9 @@ async function bootstrap(): Promise<void> {
   await applyStoredLocale();
   await applyStoredProfitParams();
   mount();
+  void refreshModeTag();
+  // Live-update the header tag when the popup flips the Rare sub-mode.
+  watchSettings(() => void refreshModeTag());
 }
 
 void bootstrap();

@@ -84,6 +84,20 @@ function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
 }
 
+/** Reflect the Rare sub-mode in the header tag (rare overlay only; arbitrage
+ *  keeps its own tag). */
+function setModeTagFor(sub: RareSubmode): void {
+  if (currentMode !== 'rare') return;
+  overlay?.setModeTag(
+    sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
+    sub === 'pattern' ? 'pattern' : 'rare',
+  );
+}
+async function refreshModeTag(): Promise<void> {
+  if (currentMode !== 'rare') return;
+  setModeTagFor(await getRareSubmode());
+}
+
 function arbBodyHtml(): string {
   return [
     renderFilterGrid(arbFilters()),
@@ -294,6 +308,7 @@ async function runRareScan(): Promise<void> {
   // try/catch/finally so a throw never leaves the bar stuck on "Stop".
   try {
     rareState.submode = await getRareSubmode();
+    setModeTagFor(rareState.submode);
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
     const filters = readFilterValues(overlay.body);
@@ -405,6 +420,7 @@ function mount(mode: 'arbitrage' | 'rare'): void {
   overlay.body.innerHTML = mode === 'arbitrage' ? arbBodyHtml() : rareBodyHtml();
   wireSteamButtons(overlay.body);
   setStatus(t('scan.ready'), 'info');
+  void refreshModeTag();
 
   overlay.body.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -458,6 +474,8 @@ async function bootstrap(): Promise<void> {
   watchSettings((s) => {
     // Only SkinsMonkey reacts to the per-site mode toggle.
     mount(s.skinsmonkeyMode);
+    // And reflect a Rare sub-mode flip in the header tag (rare overlay only).
+    void refreshModeTag();
   });
 }
 

@@ -25,6 +25,8 @@ export interface OverlayHandle {
   body: HTMLElement;
   /** Update header text. */
   setTitle(text: string): void;
+  /** Update the mode tag label + colour (rare amber / pattern cyan / arbitrage). */
+  setModeTag(label: string, kind: 'arbitrage' | 'rare' | 'pattern'): void;
   /** Update the single-line status (info/ok/err). */
   setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void;
   /** Minimize the shell. */
@@ -115,6 +117,12 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
     body,
     setTitle(text) {
       root.querySelector<HTMLElement>('.sh-title-text')!.textContent = text;
+    },
+    setModeTag(label, kind) {
+      const el = root.querySelector<HTMLElement>('.sh-mode-tag');
+      if (!el) return;
+      el.textContent = label;
+      el.className = 'sh-mode-tag' + (kind === 'arbitrage' ? '' : ' ' + kind);
     },
     setStatus(text, kind) {
       statusEl.textContent = text;

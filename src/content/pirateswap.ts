@@ -26,6 +26,7 @@ import {
   applyStoredLocale,
   applyStoredProfitParams,
   getRareSubmode,
+  watchSettings,
 } from '../modules/shared/settings';
 import { t } from '../modules/shared/i18n';
 import type { PatternResult, RareResult } from '../modules/rare/types';
@@ -108,6 +109,17 @@ const state: State = {
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
+}
+
+/** Reflect the Rare sub-mode (sticker/pattern) in the overlay header tag. */
+function setModeTagFor(sub: RareSubmode): void {
+  overlay?.setModeTag(
+    sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
+    sub === 'pattern' ? 'pattern' : 'rare',
+  );
+}
+async function refreshModeTag(): Promise<void> {
+  setModeTagFor(await getRareSubmode());
 }
 
 function bodyHtml(): string {
@@ -312,6 +324,7 @@ async function runScan(): Promise<void> {
 
   try {
     state.submode = await getRareSubmode();
+    setModeTagFor(state.submode);
     // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
     // only hits the network if the cache is older than 24h, and the freshly
     // cached list applies on the next page load (this scan uses the loaded map).
@@ -492,6 +505,9 @@ async function bootstrap(): Promise<void> {
   await applyStoredLocale();
   await applyStoredProfitParams();
   mount();
+  void refreshModeTag();
+  // Live-update the header tag when the popup flips the Rare sub-mode.
+  watchSettings(() => void refreshModeTag());
 }
 
 void bootstrap();
