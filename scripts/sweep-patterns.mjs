@@ -171,6 +171,9 @@ const CURATED_KEEP = new Set([
   'MAC-10 | Case Hardened',
   'Desert Eagle | Heat Treated',
   'Galil AR | Phoenix Blacklight',
+  // Guide pack #2 (import-guides-2026-06b): richer than cs2pattern's entries.
+  'AWP | PAW',
+  'Five-SeveN | Kami',
 ]);
 
 function classifyFamily(finish, groups) {

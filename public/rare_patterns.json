@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-10T03:49:14.095Z",
+  "generated_at": "2026-06-10T13:10:30.887Z",
   "source_notes": "CS2 weapon-only rare paint-seed patterns for query-by-seed marketplace lookup. Knives and gloves excluded. Families: case-hardened (blue-gem seed tiers; AK-47/Five-SeveN/MAC-10 Case Hardened + Desert Eagle Heat Treated, the Armory-2024 case-hardened variant, incl. gold/purple variant seeds), fade (% computed from seed via Valve algorithm; high_fade_seeds = all seeds >=90%, method fade-calc), art-position (Galil Phoenix Blacklight). Sources: cs-tierlist (GODrums) generated JSON, csgobluegem.com / csgoskins.gg / sellyourskins / isitabluegem seed tables, npm csgo-fade-percentage-calculator v2.0.0. Re-swept for other weapon seed-overpay finishes: csgobluegem master blue-gem list confirms no weapon Case-Hardened/Heat-Treated beyond the four here; Hyper Beast/Asiimov-type skins excluded (seed irrelevant).",
   "families": ["case-hardened", "fade", "art-position"],
   "skins": [
@@ -493,9 +493,13 @@
         "pussy": {
           "label": "Pussy",
           "seeds": [590, 909]
+        },
+        "top": {
+          "label": "Top Pattern",
+          "seeds": [662]
         }
       },
-      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+      "source": "github.com/Helyux/cs2pattern + skin.land/blog/best-five-seven-kami-patterns (2026-06-10)"
     },
     {
       "weapon": "Glock-18",
@@ -520,14 +524,33 @@
       "variants": {
         "golden_cat": {
           "label": "Golden Cat",
-          "seeds": [41, 350]
+          "seeds": [17, 19, 35, 41, 350, 531, 581, 644, 675, 744]
         },
-        "stoner_cat": {
-          "label": "Stoner Cat",
-          "seeds": [420]
+        "double_cat": {
+          "label": "Double Cat",
+          "seeds": [107, 480, 899, 970]
+        },
+        "cat_back": {
+          "label": "Cat In The Back",
+          "seeds": [58, 109, 444, 783, 799, 813, 851, 860]
+        },
+        "stoner_420": {
+          "label": "Stoner Cat 420",
+          "seeds": [187, 306, 420, 788]
+        },
+        "gas_mask": {
+          "label": "Gas Mask",
+          "seeds": [29, 32, 62, 75, 80, 97, 120, 176, 185, 294, 458, 916, 992]
+        },
+        "golden_grenade": {
+          "label": "Golden Grenade",
+          "seeds": [
+            3, 4, 26, 38, 53, 63, 73, 78, 103, 122, 156, 158, 163, 182, 186, 216, 232, 234, 429,
+            926, 954
+          ]
         }
       },
-      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+      "source": "skin.land/blog/best-rare-awp-paw-patterns-in-cs2 (2026-06-10)"
     },
     {
       "weapon": "Glock-18",
@@ -638,13 +661,6 @@
             759, 833, 839
           ]
         },
-        "orange_t3": {
-          "label": "Orange Sun T3",
-          "seeds": [
-            39, 42, 82, 166, 181, 213, 235, 237, 343, 369, 463, 486, 493, 496, 502, 509, 625, 638,
-            737, 742, 810, 853, 872
-          ]
-        },
         "golden": {
           "label": "Golden Mountains",
           "seeds": [95, 154, 220, 304, 533]
@@ -663,20 +679,6 @@
             578, 623, 645, 702, 716, 749, 763, 798, 809, 832, 883, 917, 956, 993
           ]
         },
-        "red_t3": {
-          "label": "Red Sun T3",
-          "seeds": [
-            4, 59, 94, 149, 162, 177, 264, 326, 352, 358, 372, 388, 454, 475, 527, 580, 755, 852,
-            988
-          ]
-        },
-        "red_t4": {
-          "label": "Red Sun T4",
-          "seeds": [
-            14, 38, 41, 103, 122, 184, 186, 256, 274, 350, 392, 431, 452, 473, 501, 544, 564, 618,
-            628, 644, 670, 691, 709, 757, 886, 947, 963
-          ]
-        },
         "yellow_t1": {
           "label": "Yellow Sun T1",
           "seeds": [158, 284, 321, 525, 797, 895, 951]
@@ -686,16 +688,6 @@
           "seeds": [
             0, 1, 67, 96, 114, 201, 260, 407, 433, 441, 489, 490, 562, 591, 643, 648, 668, 673, 725,
             876, 878, 888, 964, 999
-          ]
-        },
-        "yellow_t3": {
-          "label": "Yellow Sun T3",
-          "seeds": [19, 53, 111, 168, 259, 308, 332, 375, 430, 482, 503, 674, 680, 820]
-        },
-        "yellow_t4": {
-          "label": "Yellow Sun T4",
-          "seeds": [
-            16, 44, 48, 66, 69, 134, 273, 316, 347, 356, 365, 406, 465, 557, 701, 792, 808, 967, 970
           ]
         },
         "white_clouds": {
@@ -857,22 +849,6 @@
             7, 16, 48, 53, 54, 60, 69, 96, 108, 109, 111, 114, 117, 119, 125, 134, 145, 159, 169,
             215, 222, 228, 233, 234, 237, 250, 259, 260, 263, 266, 267, 273, 275, 280, 288
           ]
-        },
-        {
-          "tier": 3,
-          "label": "Fade Gem T2",
-          "seeds": [
-            2, 5, 13, 19, 30, 33, 36, 51, 61, 62, 66, 67, 91, 107, 115, 120, 123, 127, 138, 147,
-            158, 163, 165, 170, 174, 176, 190, 206, 213, 219, 224, 232, 239, 262, 272, 283, 294, 300
-          ]
-        },
-        {
-          "tier": 4,
-          "label": "Fade Gem T3",
-          "seeds": [
-            9, 18, 21, 23, 31, 34, 35, 64, 71, 72, 86, 92, 99, 104, 105, 136, 137, 151, 160, 161,
-            189, 216, 217, 221, 235, 236, 242, 244, 249, 254, 255, 287, 290, 291, 295
-          ]
         }
       ],
       "variants": {
@@ -927,6 +903,190 @@
         }
       },
       "source": "skin.land/blog/all-best-glock-18-coral-bloom-patterns (2026-06-10)"
+    },
+    {
+      "weapon": "Negev",
+      "finish": "Terrain",
+      "name": "Negev | Terrain",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Horizontal T1",
+          "seeds": [763]
+        },
+        "t2": {
+          "label": "Horizontal T2",
+          "seeds": [326]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598531656 (2026-06-10)"
+    },
+    {
+      "weapon": "M4A4",
+      "finish": "Converter",
+      "name": "M4A4 | Converter",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Top Pattern T1",
+          "seeds": [597]
+        },
+        "t2": {
+          "label": "Top Pattern T2",
+          "seeds": [108, 704, 944]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598725256 (2026-06-10)"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Cold Fusion",
+      "name": "Galil AR | Cold Fusion",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [711, 766, 777]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [25, 608, 769]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599427126 (2026-06-10)"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Forest Night",
+      "name": "Five-SeveN | Forest Night",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Look T1",
+          "seeds": [435, 542, 559, 939, 965]
+        },
+        "t2": {
+          "label": "Look T2",
+          "seeds": [250, 320, 572, 799, 903]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599435872 (2026-06-10)"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Oceanic",
+      "name": "MAC-10 | Oceanic",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [279]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [715]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601296847 (2026-06-10)"
+    },
+    {
+      "weapon": "P250",
+      "finish": "Ripple",
+      "name": "P250 | Ripple",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [541]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [275]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601603834 (2026-06-10)"
+    },
+    {
+      "weapon": "Sawed-Off",
+      "finish": "Runoff",
+      "name": "Sawed-Off | Runoff",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Blue Gem T1",
+          "seeds": [297]
+        },
+        "t2": {
+          "label": "Blue Gem T2",
+          "seeds": [651]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602144976 (2026-06-10)"
+    },
+    {
+      "weapon": "P2000",
+      "finish": "Oceanic",
+      "name": "P2000 | Oceanic",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [343, 857, 864]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [834]
+        },
+        "heart": {
+          "label": "Heart",
+          "seeds": [2, 875]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602198533 (2026-06-10)"
+    },
+    {
+      "weapon": "Nova",
+      "finish": "Rain Station",
+      "name": "Nova | Rain Station",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Look T1",
+          "seeds": [194, 201, 273, 487, 558, 588, 911, 931, 970]
+        },
+        "t2": {
+          "label": "Look T2",
+          "seeds": [280, 320, 417, 488, 560, 703, 716, 973]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602220976 (2026-06-10)"
+    },
+    {
+      "weapon": "PP-Bizon",
+      "finish": "Cobalt Halftone",
+      "name": "PP-Bizon | Cobalt Halftone",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Cyan Gem T1",
+          "seeds": [470]
+        },
+        "t2": {
+          "label": "Cyan Gem T2",
+          "seeds": [62, 582]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602304841 (2026-06-10)"
     }
   ],
   "generated_note": "Fade seed lists are NOT bundled (computed from the fade lib). Explicit seed lists only for case-hardened (AK/Five-SeveN/MAC-10/Deagle Heat Treated) + Galil Phoenix Blacklight."
