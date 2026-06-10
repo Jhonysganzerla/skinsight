@@ -17,7 +17,7 @@ import {
 } from '../modules/shared/ui';
 import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
-import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
+import { patternStatus, queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
 import { mountPatternView } from '../modules/rare/pattern-view';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -111,12 +111,15 @@ function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
 }
 
-/** Reflect the Rare sub-mode (sticker/pattern) in the overlay header tag. */
+/** Reflect the Rare sub-mode (sticker/pattern) in the overlay header tag, and
+ *  hide the sticker filter grid in Pattern submode — the pattern view brings
+ *  its own controls, so leaving dead filters visible reads as a bug. */
 function setModeTagFor(sub: RareSubmode): void {
   overlay?.setModeTag(
     sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
     sub === 'pattern' ? 'pattern' : 'rare',
   );
+  overlay?.body.querySelector('.sh-filter-grid')?.classList.toggle('sh-hidden', sub === 'pattern');
 }
 async function refreshModeTag(): Promise<void> {
   setModeTagFor(await getRareSubmode());
@@ -299,9 +302,11 @@ function scheduleFilterApply(instant: boolean): void {
 /** Run the targeted per-skin pattern hunt (v0.9.2 query-by-name). */
 async function runPatternQuery(): Promise<void> {
   if (!overlay) return;
+  // Opportunistic TTL-gated refresh of the remote pattern bank (no-op < 24h).
+  void send({ type: 'rares:refresh', force: false });
   updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
   flog('pattern query: begin');
-  const res = await queryPatternResults('pirateswap', {
+  const rep = await queryPatternResults('pirateswap', {
     signal: state.aborted,
     onProgress: (i, n, name, p) => {
       if (!overlay) return;
@@ -311,22 +316,21 @@ async function runPatternQuery(): Promise<void> {
       });
     },
   });
-  if (state.aborted.aborted) {
-    setStatus(t('scan.stopped'), 'info');
-    return;
-  }
-  state.patternResults = res.map((r) => ({
+  // A user Stop keeps the partial hit set — 40 of 50 queried skins are still
+  // 40 queried skins. patternStatus() words the outcome (partial/failures).
+  state.patternResults = rep.results.map((r) => ({
     ...r,
     siteLink: siteSearchUrl('pirateswap', r.marketHashName),
   }));
-  flog(`pattern query: done — ${state.patternResults.length} hits`);
+  flog(
+    `pattern query: done — ${rep.results.length} hits, failed=${rep.failedSkins}, ` +
+      `noHash=${rep.noHashcodeSkins}, throttled=${rep.throttled}, aborted=${rep.aborted}`,
+  );
   if (!overlay) return;
   applyAndRender();
-  updateScanBar(overlay.body, {
-    info: t('pattern.found', { n: state.patternResults.length }),
-    progressPct: 100,
-  });
-  setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
+  const st = patternStatus(rep);
+  updateScanBar(overlay.body, { info: st.text, ...(rep.aborted ? {} : { progressPct: 100 }) });
+  setStatus(st.text, st.kind);
 }
 
 async function runScan(): Promise<void> {
@@ -362,6 +366,7 @@ async function runScan(): Promise<void> {
     const maxPagesNum = parseInt(maxPagesRaw, 10);
     const maxPages = maxPagesRaw && maxPagesNum > 0 ? maxPagesNum : undefined;
 
+    let schemaWarn: string | null = null;
     const items = await collectAll({
       site: 'pirateswap',
       ...(maxPages !== undefined ? { maxPages } : {}),
@@ -370,6 +375,10 @@ async function runScan(): Promise<void> {
         if (!overlay) return;
         updateScanBar(overlay.body, { info: msg });
         flog(`scan: ${msg} (collected=${collected})`);
+      },
+      onWarn: (msg) => {
+        schemaWarn = msg;
+        flog(`scan: WARN ${msg}`);
       },
     });
     // Diagnostic for the "0 rare hits" report: how many scanned items actually
@@ -408,7 +417,10 @@ async function runScan(): Promise<void> {
     updateScanBar(overlay.body, {
       info: t('scan.complete.hits', { n: state.results.length }),
     });
-    setStatus(t('rare.found', { n: state.results.length }), 'ok');
+    // A schema warning + an empty scan is almost certainly an API change, not
+    // a genuinely empty inventory — surface it instead of a quiet "0 hits".
+    if (schemaWarn && items.length === 0) setStatus(schemaWarn, 'err');
+    else setStatus(t('rare.found', { n: state.results.length }), 'ok');
 
     const top = applyRareFilter(state.results, currentFilterOpts())[0];
     if (top) {
@@ -459,11 +471,9 @@ function mount(): void {
     mode: 'rare',
     modeLabel: 'Rare stickers',
     persistKey: PERSIST_KEY,
-    onClose: () => {
-      abort();
-      overlay?.destroy();
-      overlay = null;
-    },
+    // Close now hides (the shell minimizes itself); we only abort the scan.
+    // Results and listeners survive, the minbar restores everything.
+    onClose: abort,
   });
   overlay.body.innerHTML = bodyHtml();
   wireSteamButtons(overlay.body);

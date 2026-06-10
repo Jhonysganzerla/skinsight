@@ -1,7 +1,7 @@
 /**
  * StickerChip rendering — verifies the v0.4 image-or-gradient contract.
  *
- *   imageUrl present → <img> with onerror=display:none (gradient shows on 404)
+ *   imageUrl present → plain <img> (broken loads are hidden by the overlay shell's delegated error listener — inline onerror was CSP-fragile)
  *   imageUrl absent  → no <img>; gradient + kind class only
  */
 import { describe, it, expect } from 'vitest';
@@ -16,7 +16,7 @@ describe('renderStickerChip', () => {
       imageUrl: 'https://cdn.example/kennys.png',
     });
     expect(html).toContain('<img src="https://cdn.example/kennys.png"');
-    expect(html).toContain(`onerror="this.style.display='none'"`);
+    expect(html).not.toContain('onerror'); // shell hides broken imgs via delegated listener
     expect(html).toContain('sh-sticker-mini foil');
     expect(html).toContain('$58.12');
   });

@@ -26,7 +26,7 @@ function sealText(r: PatternResult): string {
 export function renderPatternCard(r: PatternResult): string {
   const wear = wearCode(r.exterior || r.marketHashName);
   const thumb = r.image
-    ? `<img src="${safeUrl(r.image)}" alt="" loading="lazy" onerror="this.style.display='none'" />`
+    ? `<img src="${safeUrl(r.image)}" alt="" loading="lazy" />`
     : `<span class="sh-item-thumb-fallback">⌖</span>`;
   const chips = [
     r.tierLabel,

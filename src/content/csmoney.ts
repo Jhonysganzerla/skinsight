@@ -21,7 +21,7 @@ import {
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { mountPatternView } from '../modules/rare/pattern-view';
-import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
+import { patternStatus, queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import {
@@ -108,8 +108,10 @@ const state: State = {
 /** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
 async function runPatternQuery(): Promise<void> {
   if (!overlay) return;
+  // Opportunistic TTL-gated refresh of the remote pattern bank (no-op < 24h).
+  void send({ type: 'rares:refresh', force: false });
   updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
-  const res = await queryPatternResults('csmoney', {
+  const rep = await queryPatternResults('csmoney', {
     signal: state.aborted,
     onProgress: (i, n, name, p) => {
       if (!overlay) return;
@@ -119,21 +121,16 @@ async function runPatternQuery(): Promise<void> {
       });
     },
   });
-  if (state.aborted.aborted) {
-    setStatus(t('scan.stopped'), 'info');
-    return;
-  }
-  state.patternResults = res.map((r) => ({
+  // A user Stop keeps the partial hit set; patternStatus words the outcome.
+  state.patternResults = rep.results.map((r) => ({
     ...r,
     siteLink: siteSearchUrl('csmoney', r.marketHashName),
   }));
   if (!overlay) return;
   renderResults();
-  updateScanBar(overlay.body, {
-    info: t('pattern.found', { n: state.patternResults.length }),
-    progressPct: 100,
-  });
-  setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
+  const st = patternStatus(rep);
+  updateScanBar(overlay.body, { info: st.text, ...(rep.aborted ? {} : { progressPct: 100 }) });
+  setStatus(st.text, st.kind);
 }
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
@@ -146,6 +143,9 @@ function setModeTagFor(sub: RareSubmode): void {
     sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
     sub === 'pattern' ? 'pattern' : 'rare',
   );
+  // The sticker filter grid is dead weight in Pattern submode (the pattern
+  // view brings its own controls) — hide it instead of ignoring it.
+  overlay?.body.querySelector('.sh-filter-grid')?.classList.toggle('sh-hidden', sub === 'pattern');
 }
 async function refreshModeTag(): Promise<void> {
   setModeTagFor(await getRareSubmode());
@@ -202,6 +202,10 @@ function renderResults(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
+  // Sticker branch after a pattern run: drop the pattern view's listeners
+  // before overwriting the container.
+  state.patternView?.destroy();
+  state.patternView = null;
   const filters = readFilterValues(overlay.body);
   const sortKey = filters['sort'] ?? 'net_desc';
   const sorted = sortItems(state.items, sortKey);
@@ -269,6 +273,7 @@ async function runScan(): Promise<void> {
     });
     setStatus(t('csm.collectingInv'), 'info');
 
+    let schemaWarn: string | null = null;
     const collected = await collectCsMoney({
       maxPages,
       delayMs,
@@ -276,6 +281,9 @@ async function runScan(): Promise<void> {
       onStatus: (msg) => {
         if (!overlay) return;
         updateScanBar(overlay.body, { info: msg });
+      },
+      onWarn: (msg) => {
+        schemaWarn = msg;
       },
     });
 
@@ -304,7 +312,9 @@ async function runScan(): Promise<void> {
       }),
       progressPct: 100,
     });
-    setStatus(t('csm.collected', { n: collected.length }), 'ok');
+    // Schema warning + empty scan = likely API change, not an empty inventory.
+    if (schemaWarn && collected.length === 0) setStatus(schemaWarn, 'err');
+    else setStatus(t('csm.collected', { n: collected.length }), 'ok');
 
     const top = sortItems(collected, sortKey)[0];
     if (top && top.netUsd > 0) {
@@ -477,11 +487,8 @@ function mount(): void {
     mode: 'rare',
     modeLabel: 'Rare stickers',
     persistKey: PERSIST_KEY,
-    onClose: () => {
-      abort();
-      overlay?.destroy();
-      overlay = null;
-    },
+    // Close now hides (the shell minimizes itself); we only abort the scan.
+    onClose: abort,
   });
   overlay.body.innerHTML = bodyHtml();
   wireSteamButtons(overlay.body);

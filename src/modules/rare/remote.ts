@@ -16,9 +16,17 @@
  * is scoped to `raw.githubusercontent.com/Jhonysganzerla/*`, never `<all_urls>`.
  */
 import { fetchWithTimeout } from '../shared/net';
+import { sanitizePatternBank } from './pattern-data';
 
 export const REMOTE_RARE_URL =
   'https://raw.githubusercontent.com/Jhonysganzerla/skinsight/main/public/rare_stickers.json';
+
+/** Remote rare-pattern bank — same-file design as the sticker list: the URL is
+ *  the very file the build bundles, so a seed fix is commit+push, no release. */
+export const REMOTE_PATTERNS_URL =
+  'https://raw.githubusercontent.com/Jhonysganzerla/skinsight/main/public/rare_patterns.json';
+
+const KEY_PATTERNS_REMOTE = 'patterns_remote';
 
 /** Auto-refresh window — the SW won't hit the network more often than this. */
 export const REMOTE_RARE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -89,6 +97,45 @@ export async function refreshRareRemote(force = false): Promise<RefreshResult> {
     const cache: RareRemoteCache = { data: json, fetchedAt: Date.now() };
     await setRareRemoteCache(cache);
     return { ok: true, count: json.length, fetchedAt: cache.fetchedAt };
+  } catch (e) {
+    return { ok: false, error: String((e as Error)?.message ?? e) };
+  }
+}
+
+/**
+ * Refresh the remote rare-pattern bank (mirrors refreshRareRemote: TTL-gated,
+ * validated, cached in chrome.storage.local under `patterns_remote`; the
+ * loader in pattern-data.ts prefers the cache and falls back to the bundled
+ * file). Piggybacked on the same triggers as the sticker list — SW boot,
+ * scan-start and the popup's refresh button — so no new message type exists.
+ */
+export async function refreshPatternsRemote(force = false): Promise<RefreshResult> {
+  try {
+    if (!force) {
+      const r = (await chrome.storage.local.get(KEY_PATTERNS_REMOTE)) as Record<string, unknown>;
+      const c = r[KEY_PATTERNS_REMOTE] as { fetchedAt?: number; data?: unknown } | undefined;
+      if (
+        c &&
+        typeof c.fetchedAt === 'number' &&
+        Date.now() - c.fetchedAt < REMOTE_RARE_TTL_MS &&
+        sanitizePatternBank(c.data).length > 0
+      ) {
+        return {
+          ok: true,
+          count: sanitizePatternBank(c.data).length,
+          fetchedAt: c.fetchedAt,
+          cached: true,
+        };
+      }
+    }
+    const res = await fetchWithTimeout(REMOTE_PATTERNS_URL, { cache: 'no-store' });
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const json: unknown = await res.json();
+    const skins = sanitizePatternBank(json);
+    if (!skins.length) return { ok: false, error: 'malformed bank' };
+    const cache = { data: { skins }, fetchedAt: Date.now() };
+    await chrome.storage.local.set({ [KEY_PATTERNS_REMOTE]: cache });
+    return { ok: true, count: skins.length, fetchedAt: cache.fetchedAt };
   } catch (e) {
     return { ok: false, error: String((e as Error)?.message ?? e) };
   }

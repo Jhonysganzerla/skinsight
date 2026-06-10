@@ -35,7 +35,10 @@ export default defineManifest({
     page: 'src/options/options.html',
     open_in_tab: true,
   },
-  permissions: ['storage', 'tabs'],
+  // No "tabs": every chrome.tabs.query/create/update the SW does targets
+  // csfloat.com URLs, which the host_permissions below already authorize —
+  // the broad permission only added an install warning.
+  permissions: ['storage'],
   host_permissions: [
     'https://skinsmonkey.com/*',
     'https://*.skinsmonkey.com/*',
@@ -75,6 +78,10 @@ export default defineManifest({
   web_accessible_resources: [
     {
       resources: ['rare_stickers.json', 'rare_patterns.json'],
+      // Dynamic URLs stop host pages from fingerprinting the extension by
+      // probing chrome-extension://<id>/… paths; extension contexts (content
+      // scripts included) keep loading these normally. ⚠ smoke-validate.
+      use_dynamic_url: true,
       matches: [
         'https://skinsmonkey.com/*',
         'https://*.skinsmonkey.com/*',
@@ -95,6 +102,7 @@ export default defineManifest({
       // override for rare_stickers.json above replaced its auto-entry — we have
       // to declare the chunks ourselves.
       resources: ['assets/*.js', 'assets/*.css'],
+      use_dynamic_url: true,
       matches: [
         'https://skinsmonkey.com/*',
         'https://*.skinsmonkey.com/*',

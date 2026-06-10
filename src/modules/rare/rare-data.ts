@@ -67,7 +67,15 @@ async function loadOnce(): Promise<Map<string, number>> {
 
 export async function getRareMap(): Promise<Map<string, number>> {
   if (_map) return _map;
-  if (!_loadPromise) _loadPromise = loadOnce();
+  if (!_loadPromise) {
+    // On rejection, clear the cached promise so the next scan can retry
+    // (mirrors pattern-data.ts — one transient failure must not poison
+    // every scan until a page reload).
+    _loadPromise = loadOnce().catch((e: unknown) => {
+      _loadPromise = null;
+      throw e;
+    });
+  }
   return _loadPromise;
 }
 

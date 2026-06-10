@@ -207,12 +207,12 @@ export function renderItemCard(p: ItemCardProps): string {
   const link = p.openUrl
     ? `<a class="sh-open-link" href="${safeUrl(p.openUrl)}" target="_blank" rel="noopener" data-role="open">${esc(p.openLabel ?? 'Open ↗')}</a>`
     : '';
-  // When `imageUrl` is missing OR the <img> emits onerror, we hide the img
+  // When `imageUrl` is missing OR the <img> errors (overlay shell hides it via a delegated error listener), we show the fallback
   // and the .sh-item-thumb's CSS pseudo-element (::after, set in tokens.ts)
   // renders the ⌖ placeholder against the existing gradient background.
   const fallbackEmoji = esc(p.thumbEmoji ?? '⌖');
   const thumb = p.imageUrl
-    ? `<img src="${safeUrl(p.imageUrl)}" alt="" loading="lazy" onerror="this.style.display='none'" />`
+    ? `<img src="${safeUrl(p.imageUrl)}" alt="" loading="lazy" />`
     : `<span class="sh-item-thumb-fallback">${fallbackEmoji}</span>`;
   return `
     <div class="sh-item-card${variantCls}" data-item-id="${esc(p.id)}">
@@ -272,11 +272,9 @@ export interface StickerChipProps {
 export function renderStickerChip(p: StickerChipProps): string {
   // 'paper' is an alias for 'matte' (default gradient, no extra class).
   const kindCls = p.kind && p.kind !== 'matte' && p.kind !== 'paper' ? ' ' + p.kind : '';
-  // When the image URL is present, render <img> with onerror=hide so the
+  // When the image URL is present, render <img> (broken loads are hidden by the shell) so the
   // gradient classified by tier (matte/foil/holo) shows underneath on 404.
-  const inner = p.imageUrl
-    ? `<img src="${safeUrl(p.imageUrl)}" alt="" loading="lazy" onerror="this.style.display='none'" />`
-    : '';
+  const inner = p.imageUrl ? `<img src="${safeUrl(p.imageUrl)}" alt="" loading="lazy" />` : '';
   const price =
     p.priceUsd != null ? `<span class="sh-sticker-price">${fmtUsd(p.priceUsd)}</span>` : '';
   return `

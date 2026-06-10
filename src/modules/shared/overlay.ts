@@ -49,7 +49,9 @@ interface ShellOptions {
   modeLabel: string;
   /** Persist position/minimized state under this storage key. */
   persistKey?: string;
-  /** Fires when the user closes the shell — destroys by default. */
+  /** Fires when the user closes (now: hides) the shell — callers abort any
+   *  running scan here. The shell itself only minimizes to the minbar, so a
+   *  misclick on × no longer costs the results until an F5. */
   onClose?: () => void;
 }
 
@@ -155,12 +157,27 @@ export function createOverlay(opts: ShellOptions): OverlayHandle {
   root.querySelector<HTMLElement>('[data-act=close]')!.addEventListener(
     'click',
     () => {
-      if (opts.onClose) opts.onClose();
-      else handle.destroy();
+      // Close = hide: abort via onClose, collapse to the minbar. Results and
+      // overlay state survive; the minbar restores. (Hard teardown is still
+      // available to callers through handle.destroy(), e.g. SM's mode flip.)
+      opts.onClose?.();
+      handle.minimize();
     },
     { signal },
   );
   minbar.addEventListener('click', () => handle.restore(), { signal });
+
+  // Hide broken result thumbnails. Delegated in the CAPTURE phase ('error'
+  // doesn't bubble) instead of inline onerror= attributes, which strict host
+  // page CSPs block inside injected HTML.
+  body.addEventListener(
+    'error',
+    (e) => {
+      const el = e.target;
+      if (el instanceof HTMLImageElement) el.style.display = 'none';
+    },
+    { capture: true, signal },
+  );
 
   // Drag.
   enableDrag(root, opts.persistKey, signal);

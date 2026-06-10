@@ -105,6 +105,9 @@ export interface CsmCollectOpts {
   /** Structured per-page callback (1-based). The regenerate flow counts pages
    *  through this instead of regex-matching the (localized) status text. */
   onPage?: (page: number) => void;
+  /** Fires when an HTTP-200 response is missing the `items` key entirely —
+   *  the API likely changed shape (an empty inventory is `items: []`). */
+  onWarn?: (msg: string) => void;
   signal?: { aborted: boolean };
 }
 
@@ -197,6 +200,7 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       if (typeof data.message === 'string' && data.message.toLowerCase().includes('limite')) {
         throw new Error(data.message);
       }
+      if (data.items === undefined) opts.onWarn?.(t('scan.schemaWarn'));
       const items = data.items ?? [];
       if (typeof data.total === 'number' && data.total > 0) totalExpected = data.total;
       if (!items.length) break;

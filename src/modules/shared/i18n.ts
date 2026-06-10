@@ -276,12 +276,38 @@ const STRINGS: Record<string, Entry> = {
     en: 'Searching skin {i}/{n}: {name} (page {p})…',
     'pt-BR': 'Buscando skin {i}/{n}: {name} (pág. {p})…',
   },
+  'scan.schemaWarn': {
+    en: 'Unexpected site response format — results may be empty (the site may have changed its API).',
+    'pt-BR':
+      'Resposta do site em formato inesperado — resultados podem vir vazios (o site pode ter mudado a API).',
+  },
   'pattern.results.header': { en: 'Item · seed · tier', 'pt-BR': 'Item · seed · tier' },
   'pattern.results.right': { en: 'Pattern', 'pt-BR': 'Pattern' },
   'pattern.tabs.all': { en: 'All', 'pt-BR': 'Todas' },
   'pattern.st': { en: 'StatTrak™ only', 'pt-BR': 'Só StatTrak™' },
   'pattern.sort.default': { en: 'Default order', 'pt-BR': 'Ordem padrão' },
   'pattern.count': { en: '{n} items', 'pt-BR': '{n} itens' },
+  'pattern.partial': {
+    en: 'Stopped — {n} partial hits.',
+    'pt-BR': 'Interrompido — {n} hits parciais.',
+  },
+  'pattern.failedSkins': {
+    en: '{m} skin queries failed',
+    'pt-BR': '{m} buscas de skin falharam',
+  },
+  'pattern.throttled': {
+    en: 'possibly partial (site rate limit)',
+    'pt-BR': 'possivelmente parcial (limite do site)',
+  },
+  'pattern.tier': { en: 'Tier', 'pt-BR': 'Tier' },
+  'pattern.tier.all': { en: 'All tiers', 'pt-BR': 'Todos os tiers' },
+  'pattern.tier.t1': { en: 'T1 + specials', 'pt-BR': 'T1 + especiais' },
+  'pattern.tier.t2': { en: 'T1–T2 + specials', 'pt-BR': 'T1–T2 + especiais' },
+  'ps.apiChanged': {
+    en: 'PirateSwap search may have changed — no skin resolved. Try updating the extension.',
+    'pt-BR':
+      'A busca do PirateSwap pode ter mudado — nenhuma skin resolveu. Tente atualizar a extensão.',
+  },
   'pattern.empty.title': {
     en: 'No rare patterns found',
     'pt-BR': 'Nenhum pattern raro encontrado',

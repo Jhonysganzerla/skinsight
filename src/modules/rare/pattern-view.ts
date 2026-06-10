@@ -29,7 +29,16 @@ interface ViewState {
   weapon: string; // 'all' or weapon display name
   finish: string; // 'all' or finish display name
   stOnly: boolean;
+  /** 0 = all tiers; 1/2 = only tier ≤ N. Rows WITHOUT a numeric tier (named
+   *  variants like Gold/Pussy and high-% fades) always pass — they are the
+   *  bank's specials, never tier-3 filler. */
+  tierMax: 0 | 1 | 2;
   sort: SortKey;
+}
+
+function passesTier(r: PatternResult, tierMax: 0 | 1 | 2): boolean {
+  if (tierMax === 0 || r.tier == null) return true;
+  return r.tier <= tierMax;
 }
 
 /** "StatTrak™ AK-47 | Case Hardened (Field-Tested)" → "AK-47 | Case Hardened". */
@@ -67,11 +76,24 @@ function tabHtml(
 }
 
 export function mountPatternView(container: HTMLElement, rows: PatternResult[]): PatternViewHandle {
-  const state: ViewState = { weapon: 'all', finish: 'all', stOnly: false, sort: 'default' };
+  const state: ViewState = {
+    weapon: 'all',
+    finish: 'all',
+    stOnly: false,
+    tierMax: 0,
+    sort: 'default',
+  };
   let chunkHandle: { abort(): void } | null = null;
 
+  /** Rows after the global toggles (ST + tier) — tabs count over these. */
+  function baseRows(): PatternResult[] {
+    return (state.stOnly ? rows.filter(isStatTrak) : rows).filter((r) =>
+      passesTier(r, state.tierMax),
+    );
+  }
+
   function visibleRows(): PatternResult[] {
-    let arr = state.stOnly ? rows.filter(isStatTrak) : rows;
+    let arr = baseRows();
     if (state.weapon !== 'all') arr = arr.filter((r) => weaponOf(r) === state.weapon);
     if (state.finish !== 'all') arr = arr.filter((r) => finishOf(r) === state.finish);
     if (state.sort !== 'default') {
@@ -86,7 +108,7 @@ export function mountPatternView(container: HTMLElement, rows: PatternResult[]):
     chunkHandle?.abort();
     chunkHandle = null;
 
-    const stRows = state.stOnly ? rows.filter(isStatTrak) : rows;
+    const stRows = baseRows();
     const byWeapon = new Map<string, number>();
     for (const r of stRows) byWeapon.set(weaponOf(r), (byWeapon.get(weaponOf(r)) ?? 0) + 1);
     if (state.weapon !== 'all' && !byWeapon.has(state.weapon)) state.weapon = 'all';
@@ -126,12 +148,24 @@ export function mountPatternView(container: HTMLElement, rows: PatternResult[]):
     const sumUsd = visible.reduce((a, r) => a + (r.price > 0 ? r.price : 0), 0);
     const sortOpt = (v: SortKey, label: string): string =>
       `<option value="${v}"${state.sort === v ? ' selected' : ''}>${esc(label)}</option>`;
+    const tierOpt = (v: 0 | 1 | 2, label: string): string =>
+      `<option value="${v}"${state.tierMax === v ? ' selected' : ''}>${esc(label)}</option>`;
+
+    // Keep the user's scroll position across control-driven re-renders (the
+    // overlay body is the scroll root) — toggling ST used to jump to the top.
+    const scrollRoot = container.closest<HTMLElement>('.sh-body');
+    const scrollTop = scrollRoot?.scrollTop ?? 0;
 
     container.innerHTML = `
       <div class="sh-pattern-tabs" data-role="pt-tabs">${tabs}</div>
       ${subTabs}
       <div class="sh-pattern-toolbar">
         <label class="sh-checkbox"><input type="checkbox" data-pt-st${state.stOnly ? ' checked' : ''}> ${esc(t('pattern.st'))}</label>
+        <select class="sh-select" data-pt-tier title="${esc(t('pattern.tier'))}">
+          ${tierOpt(0, t('pattern.tier.all'))}
+          ${tierOpt(1, t('pattern.tier.t1'))}
+          ${tierOpt(2, t('pattern.tier.t2'))}
+        </select>
         <select class="sh-select" data-pt-sort>
           ${sortOpt('default', t('pattern.sort.default'))}
           ${sortOpt('priceAsc', t('sort.priceAsc'))}
@@ -141,6 +175,7 @@ export function mountPatternView(container: HTMLElement, rows: PatternResult[]):
       </div>
       <div data-role="pt-list"></div>
     `;
+    if (scrollRoot) scrollRoot.scrollTop = scrollTop;
 
     const list = container.querySelector<HTMLElement>('[data-role=pt-list]')!;
     const header = renderResultsHeader(t('pattern.results.header'), t('pattern.results.right'));
@@ -185,6 +220,10 @@ export function mountPatternView(container: HTMLElement, rows: PatternResult[]):
     if (!el || !container.contains(el)) return;
     if (el.matches('[data-pt-st]')) {
       state.stOnly = (el as HTMLInputElement).checked;
+      render();
+    } else if (el.matches('[data-pt-tier]')) {
+      const v = parseInt((el as HTMLSelectElement).value, 10);
+      state.tierMax = v === 1 || v === 2 ? v : 0;
       render();
     } else if (el.matches('[data-pt-sort]')) {
       state.sort = (el as HTMLSelectElement).value as SortKey;

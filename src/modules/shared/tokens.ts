@@ -265,6 +265,10 @@ export const OVERLAY_CSS = `
 }
 .sh-pattern-seed { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
 
+/* Generic hide (e.g. the sticker filter grid in Pattern submode, whose
+   fields the pattern view replaces with its own controls) */
+.sh-hidden { display: none !important; }
+
 /* Pattern weapon tabs + toolbar (v0.9.2) */
 .sh-pattern-tabs {
   display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0;

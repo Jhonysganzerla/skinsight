@@ -26,7 +26,11 @@ import {
   runHitsGc,
 } from '../modules/shared/storage';
 import { csfloatBucket } from '../modules/shared/throttle';
-import { getRareRemoteCache, refreshRareRemote } from '../modules/rare/remote';
+import {
+  getRareRemoteCache,
+  refreshPatternsRemote,
+  refreshRareRemote,
+} from '../modules/rare/remote';
 import { getSteamPrice, steamQuota } from '../modules/oracles/steam';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
@@ -112,6 +116,9 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
     case 'rares:refresh': {
       // force=true (popup button) bypasses the TTL; false (scan-start) only
       // hits the network if the cache is older than REMOTE_RARE_TTL_MS.
+      // The pattern bank refreshes on the same triggers (fire-and-forget —
+      // its result never gates the sticker-list response).
+      void refreshPatternsRemote(msg.force ?? true);
       const r = await refreshRareRemote(msg.force ?? true);
       return r.error !== undefined ? { ok: r.ok, error: r.error, data: r } : { ok: r.ok, data: r };
     }
@@ -157,12 +164,14 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
 chrome.runtime.onStartup.addListener(() => {
   void runHitsGc();
   void refreshRareRemote(false);
+  void refreshPatternsRemote(false);
 });
 chrome.runtime.onInstalled.addListener((details) => {
   void runHitsGc();
   // Pull the live rare list once on install/update (force, since a fresh
   // install has no cache and an update may ship behind the published list).
   void refreshRareRemote(true);
+  void refreshPatternsRemote(true);
   // First-install onboarding (v0.7 T5): open the welcome tab exactly once.
   // Scoped to reason === 'install' so it never fires on update/chrome_update —
   // i.e. not a recurring flow, so opening a tab outside a user gesture is fine.

@@ -12,6 +12,7 @@
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
   readFilterValues,
+  renderChunked,
   renderFilterGrid,
   renderResultsHeader,
   renderScanBar,
@@ -29,7 +30,7 @@ import {
 } from '../modules/shared/settings';
 import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
-import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
+import { patternStatus, queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
 import { mountPatternView } from '../modules/rare/pattern-view';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -92,6 +93,9 @@ function setModeTagFor(sub: RareSubmode): void {
     sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
     sub === 'pattern' ? 'pattern' : 'rare',
   );
+  // The sticker filter grid is dead weight in Pattern submode (the pattern
+  // view brings its own controls) — hide it instead of ignoring it.
+  overlay?.body.querySelector('.sh-filter-grid')?.classList.toggle('sh-hidden', sub === 'pattern');
 }
 async function refreshModeTag(): Promise<void> {
   if (currentMode !== 'rare') return;
@@ -223,6 +227,8 @@ interface RareState {
   patternResults: PatternResult[];
   /** Live pattern tab view (weapon tabs / ST toggle), torn down on re-render. */
   patternView: { destroy(): void } | null;
+  /** In-flight chunked render of sticker results, aborted on re-render. */
+  renderHandle: { abort(): void } | null;
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
 }
@@ -235,6 +241,7 @@ const rareState: RareState = {
   submode: 'sticker',
   patternResults: [],
   patternView: null,
+  renderHandle: null,
   debounce: null,
 };
 
@@ -255,21 +262,37 @@ function renderRareResults(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
+  // Tear down whatever the previous render mounted (pattern view listeners /
+  // in-flight chunked render) before writing the container again.
+  rareState.patternView?.destroy();
+  rareState.patternView = null;
+  rareState.renderHandle?.abort();
+  rareState.renderHandle = null;
   if (rareState.submode === 'pattern') {
-    rareState.patternView?.destroy();
     rareState.patternView = mountPatternView(list, rareState.patternResults);
     return;
   }
   const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
-  list.innerHTML =
-    renderResultsHeader(t('results.header.detected'), t('results.worth')) +
-    (filtered.length
-      ? filtered.map(renderRareCard).join('')
-      : `<div class="sh-empty">
+  const header = renderResultsHeader(t('results.header.detected'), t('results.worth'));
+  if (!filtered.length) {
+    list.innerHTML =
+      header +
+      `<div class="sh-empty">
           <div class="sh-empty-icon">⌖</div>
           <div class="sh-empty-title">${t('rare.empty.title')}</div>
           <div class="sh-empty-sub">${t('rare.empty.sub')}</div>
-        </div>`);
+        </div>`;
+    return;
+  }
+  // Chunked render (same path PirateSwap uses) — a deep scan can match
+  // thousands of items, and a synchronous .map().join() froze the tab.
+  const handle = renderChunked({
+    container: list,
+    items: filtered,
+    render: renderRareCard,
+    prefixHtml: header,
+  });
+  rareState.renderHandle = { abort: handle.abort };
 }
 
 /** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
@@ -299,8 +322,10 @@ function rareBodyHtml(): string {
 /** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
 async function runPatternQuery(): Promise<void> {
   if (!overlay) return;
+  // Opportunistic TTL-gated refresh of the remote pattern bank (no-op < 24h).
+  void send({ type: 'rares:refresh', force: false });
   updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
-  const res = await queryPatternResults('skinsmonkey', {
+  const rep = await queryPatternResults('skinsmonkey', {
     signal: rareState.aborted,
     onProgress: (i, n, name, p) => {
       if (!overlay) return;
@@ -310,21 +335,16 @@ async function runPatternQuery(): Promise<void> {
       });
     },
   });
-  if (rareState.aborted.aborted) {
-    setStatus(t('scan.stopped'), 'info');
-    return;
-  }
-  rareState.patternResults = res.map((r) => ({
+  // A user Stop keeps the partial hit set; patternStatus words the outcome.
+  rareState.patternResults = rep.results.map((r) => ({
     ...r,
     siteLink: siteSearchUrl('skinsmonkey', r.marketHashName),
   }));
   if (!overlay) return;
   renderRareResults();
-  updateScanBar(overlay.body, {
-    info: t('pattern.found', { n: rareState.patternResults.length }),
-    progressPct: 100,
-  });
-  setStatus(t('pattern.found', { n: rareState.patternResults.length }), 'ok');
+  const st = patternStatus(rep);
+  updateScanBar(overlay.body, { info: st.text, ...(rep.aborted ? {} : { progressPct: 100 }) });
+  setStatus(st.text, st.kind);
 }
 
 async function runRareScan(): Promise<void> {
@@ -352,6 +372,7 @@ async function runRareScan(): Promise<void> {
     });
     setStatus(t('sm.collectingInv'), 'info');
 
+    let schemaWarn: string | null = null;
     const items = await collectAll({
       site: 'skinsmonkey',
       maxPages: pages,
@@ -360,6 +381,9 @@ async function runRareScan(): Promise<void> {
         if (!overlay) return;
         const pct = Math.min(70, Math.round((collected / (pages * 120)) * 70));
         updateScanBar(overlay.body, { info: msg, progressPct: pct });
+      },
+      onWarn: (msg) => {
+        schemaWarn = msg;
       },
     });
 
@@ -382,7 +406,9 @@ async function runRareScan(): Promise<void> {
       info: t('scan.complete.hits', { n: filtered.length }),
       progressPct: 100,
     });
-    setStatus(t('rare.found', { n: filtered.length }), 'ok');
+    // Schema warning + empty scan = likely API change, not an empty inventory.
+    if (schemaWarn && items.length === 0) setStatus(schemaWarn, 'err');
+    else setStatus(t('rare.found', { n: filtered.length }), 'ok');
 
     const top = filtered[0];
     if (top) {
@@ -428,12 +454,11 @@ function mount(mode: 'arbitrage' | 'rare'): void {
     mode,
     modeLabel: mode === 'arbitrage' ? t('popup.modes.arb.title') : t('popup.modes.rare.title'),
     persistKey: mode === 'arbitrage' ? PERSIST_KEY_ARB : PERSIST_KEY_RARE,
+    // Close now hides (the shell minimizes itself); we only abort the scan.
+    // The hard teardown lives in unmount() for the popup's mode flip.
     onClose: () => {
       if (mode === 'arbitrage') abortArbScan();
       else abortRareScan();
-      overlay?.destroy();
-      overlay = null;
-      currentMode = null;
     },
   });
   overlay.body.innerHTML = mode === 'arbitrage' ? arbBodyHtml() : rareBodyHtml();
@@ -461,6 +486,8 @@ function unmount(): void {
   abortRareScan();
   rareState.patternView?.destroy();
   rareState.patternView = null;
+  rareState.renderHandle?.abort();
+  rareState.renderHandle = null;
   overlay?.destroy();
   overlay = null;
   currentMode = null;

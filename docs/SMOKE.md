@@ -70,3 +70,27 @@ browser-only UI surfaces.
 
 - [ ] With English selected: overlay (filters, scan bar, headers, empty states)
       and popup all in English; switch back to PT-BR and re-check.
+
+## 9. v0.9.0 hardening (analyst pass)
+
+- [ ] **⚠ use_dynamic_url**: load the unpacked build and confirm the overlay
+      mounts on all 4 sites AND Patterns mode finds the bank (rare_patterns.json
+      loads). If anything fails to load, revert the two `use_dynamic_url` lines
+      in manifest.config.ts — cheap rollback.
+- [ ] **Close = hide**: × collapses the overlay to the minbar (scan aborts);
+      minbar click restores it WITH the previous results. No F5 needed.
+- [ ] **CSFloat Stop**: stop mid-analysis → partial results render with a Rescan
+      button that works (previously: dead bar until next payload).
+- [ ] **Pattern Stop parcial**: stop the hunt at skin ~20/50 → partial hits
+      render + status "Interrompido — N hits parciais".
+- [ ] **Filter grid hidden in Patterns**: switching the popup submode to
+      Patterns hides the sticker filters (Max pages/price/sort) on all 3 sites;
+      switching back restores them.
+- [ ] **Tier filter**: pattern toolbar shows the tier select (Todos / T1 /
+      T1–T2); counts on the weapon tabs follow it.
+- [ ] **Handoff without "tabs" permission**: SkinsMonkey Arbitrage scan →
+      CSFloat tab opens/focuses and receives the payload (the permission was
+      removed; host permissions should cover it).
+- [ ] **Remote pattern bank**: popup's refresh button (or first scan) populates
+      `chrome.storage.local.patterns_remote` (DevTools → Application). Patterns
+      still work offline (bundled fallback).

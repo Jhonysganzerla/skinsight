@@ -37,6 +37,10 @@ const PERSIST_KEY = 'csfloat';
 
 let overlay: OverlayHandle | null = null;
 let aborted = false;
+/** Analysis in flight — the scan-bar button means Stop while true, otherwise
+ *  Refresh/Rescan. State flag instead of comparing the button LABEL, which
+ *  broke whenever the locale changed mid-session. */
+let running = false;
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
@@ -117,14 +121,13 @@ function itemCardForRow(row: AnalysisRow): string {
 async function analyzePayload(payload: ExportPayload): Promise<void> {
   if (!overlay) return;
   aborted = false;
+  running = true;
   const total = payload.items.length;
   overlay.body.innerHTML = bodyHtmlRunning(0, total);
   setStatus(t('csf.analyzingN', { n: total }), 'info');
-  wireScanBar();
 
-  // try/catch so a throw in the analyzer/render never leaves the overlay stuck
-  // on "Analyzing…": surface a localized error and re-wire the action button so
-  // the user can rescan.
+  // try/catch/finally so a throw in the analyzer/render never leaves the
+  // overlay stuck on "Analyzing…" and `running` always resets.
   try {
     const rows: AnalysisRow[] = [];
     await runAnalysis(payload.items, {
@@ -141,13 +144,18 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
     });
 
     if (aborted) {
-      setStatus(t('csf.stopped'), 'info');
+      // Render the partial result set (everything analyzed before Stop) with
+      // the Rescan action — the old path returned without re-rendering and
+      // left a dead "Analyzing…" bar until the next payload.
+      if (overlay) {
+        overlay.body.innerHTML = bodyHtmlDone(rows);
+        setStatus(t('csf.stopped'), 'info');
+      }
       return;
     }
     if (!overlay) return;
 
     overlay.body.innerHTML = bodyHtmlDone(rows);
-    wireScanBar();
     setStatus(
       t('csf.found', {
         n: rows.length,
@@ -168,30 +176,29 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
     if (overlay) {
       // Reset to the idle body (with a Refresh action) so the user can retry.
       overlay.body.innerHTML = bodyHtmlIdle();
-      wireScanBar();
       setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
     }
+  } finally {
+    running = false;
   }
 }
 
+/** One persistent delegated listener on the overlay body — survives every
+ *  innerHTML rewrite (the old per-render `{ once: true }` wiring died after
+ *  the first click and left a dead Stop button). */
 function wireScanBar(): void {
   if (!overlay) return;
-  const btn = overlay.body.querySelector<HTMLElement>('[data-role=scan-action]');
-  if (!btn) return;
-  btn.addEventListener(
-    'click',
-    (e) => {
-      e.preventDefault();
-      const label = btn.textContent?.trim();
-      if (label === t('scan.stop')) {
-        aborted = true;
-      } else {
-        // Refresh / Rescan — ask the SW to forward the pending payload again.
-        void send({ type: 'arbitrage:ready' });
-      }
-    },
-    { once: true },
-  );
+  overlay.body.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-role=scan-action]');
+    if (!btn) return;
+    e.preventDefault();
+    if (running) {
+      aborted = true;
+    } else {
+      // Refresh / Rescan — ask the SW to forward the pending payload again.
+      void send({ type: 'arbitrage:ready' });
+    }
+  });
 }
 
 function mount(): void {
@@ -201,10 +208,9 @@ function mount(): void {
     mode: 'arbitrage',
     modeLabel: t('popup.modes.arb.title'),
     persistKey: PERSIST_KEY,
+    // Close now hides (the shell minimizes itself); we only abort the run.
     onClose: () => {
       aborted = true;
-      overlay?.destroy();
-      overlay = null;
     },
   });
   overlay.body.innerHTML = bodyHtmlIdle();

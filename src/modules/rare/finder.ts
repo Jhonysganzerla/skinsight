@@ -253,10 +253,20 @@ const PS_QUERY_BASE_DELAY_MS = 600;
 export async function collectPsByName(
   name: string,
   filter: PsQueryFilter,
-  opts: { signal?: { aborted: boolean }; onPage?: (page: number) => void } = {},
+  opts: {
+    signal?: { aborted: boolean };
+    onPage?: (page: number) => void;
+    /** Post-query telemetry: how many hashcodes resolved + whether any chunk
+     *  gave up on a persistent throttle (coverage possibly partial). */
+    onMeta?: (meta: { hashcodes: number; throttled: boolean }) => void;
+  } = {},
 ): Promise<RareItem[]> {
   const codes = await psResolveHashCodes(name);
-  if (!codes.length) return [];
+  if (!codes.length) {
+    opts.onMeta?.({ hashcodes: 0, throttled: false });
+    return [];
+  }
+  let throttled = false;
 
   const chunks: PsQueryFilter[] = [];
   if (filter.seeds?.length) {
@@ -297,10 +307,16 @@ export async function collectPsByName(
       }
       const page = normalizePs(json ?? {});
       out.push(...page);
-      if (json?.empty === true || page.length < results) break;
+      if (json?.empty === true || page.length < results) {
+        // Retries exhausted on a flagless-empty page = stuck throttle, not a
+        // confirmed end — flag it so the UI can say "possibly partial".
+        if (json?.empty !== true && page.length === 0) throttled = true;
+        break;
+      }
       await sleep(PS_QUERY_BASE_DELAY_MS);
     }
   }
+  opts.onMeta?.({ hashcodes: codes.length, throttled });
   return out;
 }
 
@@ -310,6 +326,10 @@ export interface CollectOpts {
   /** SkinsMonkey only — ignored for PirateSwap (full-inventory scan). */
   maxPages?: number;
   onProgress?: (msg: string, collected: number) => void;
+  /** Fires when an HTTP-200 response is missing the expected item key — the
+   *  site likely changed its API; without this the scan degrades to a silent
+   *  "0 items". Callers surface it as a persistent warning. */
+  onWarn?: (msg: string) => void;
   signal?: { aborted: boolean };
 }
 
@@ -332,6 +352,10 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
       opts.onProgress?.(t('scan.page', { i: i + 1, n: maxPages, off: i * limit }), items.length);
       try {
         const json = await fetchSm(i * limit, limit);
+        // HTTP 200 with the item key missing entirely (an empty inventory is
+        // `assets: []`) — the API likely changed shape; warn instead of
+        // silently reporting "0 items".
+        if (json.assets === undefined) opts.onWarn?.(t('scan.schemaWarn'));
         const page = normalizeSm(json);
         items.push(...page);
         if (page.length < limit) break;
@@ -384,6 +408,7 @@ export async function collectAll(opts: CollectOpts): Promise<RareItem[]> {
           );
           loggedHeader = true;
         }
+        if (json.items === undefined && json.empty !== true) opts.onWarn?.(t('scan.schemaWarn'));
         page = normalizePs(json);
         if (json.empty === true) {
           ended = true; // authoritative last batch (may still carry items)
