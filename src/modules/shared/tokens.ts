@@ -227,7 +227,14 @@ export const OVERLAY_CSS = `
   display: flex; gap: 10px; flex-wrap: wrap;
 }
 .sh-meta-chip { display: inline-flex; align-items: center; gap: 4px; }
-.sh-item-action { text-align: right; }
+/* Action column stacks vertically (seal/profit on top, one link per line) so
+   multiple links can never widen the column and crush the name/meta area. */
+.sh-item-action {
+  text-align: right;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  flex-shrink: 0; max-width: 170px;
+}
+.sh-item-action .sh-open-link { margin-top: 0; white-space: nowrap; }
 .sh-profit-big {
   font-size: 16px; font-weight: 800; line-height: 1;
   background: linear-gradient(90deg,#34d399,#22d3ee);
