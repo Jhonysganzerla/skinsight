@@ -1,35 +1,53 @@
 /**
- * Query-by-name Rare Pattern engine (v0.9.1).
+ * Query-by-name Rare Pattern engine (v0.9.1, PS added in v0.9.2).
  *
  * The v0.9 detect path piggybacked the full-inventory rare-sticker scan —
  * which misses any bank skin that doesn't surface inside the page cap. This
  * flips the strategy (per the maintainer's call): for EACH skin in the bank,
- * query the marketplace by name and seed-filter just those listings. ~19
+ * query the marketplace by name and seed-filter just those listings. ~50
  * targeted queries find every listing of the relevant skins.
  *
  * Per site:
  *   - SkinsMonkey: /api/inventory `q=` search (same one the arbitrage scanner
- *     uses) — collectSmByName.
+ *     uses) — collectSmByName; seeds filtered locally.
  *   - CS.Money:    load_bots_inventory `name=` — collectCsMoneyByName (no
- *     hasRareStickers, keeps sticker-less items).
- *   - PirateSwap:  NOT here — its search endpoint requires non-derivable
- *     marketHashNameHashCodes (Fase A), so PS stays on scan-and-detect.
+ *     hasRareStickers, keeps sticker-less items); seeds filtered locally.
+ *   - PirateSwap:  two-step autocomplete → search with hashcodes; seeds
+ *     (`pattern=`) and fade (`fadeFrom=`) filtered BY THE SERVER —
+ *     collectPsByName. (Fase A thought the hashcodes were non-derivable;
+ *     they are — but the site's own autocomplete endpoint hands them out.)
  */
 import { sleep } from '../shared/fmt';
-import { getPatternMap } from './pattern-data';
+import { getPatternMap, type PatternSkin } from './pattern-data';
 import {
   csMoneyItemToPatternInput,
   findPatternResults,
   rareItemToPatternInput,
 } from './pattern-finder';
-import { collectSmByName } from './finder';
+import { collectPsByName, collectSmByName, type PsQueryFilter } from './finder';
 import { collectCsMoneyByName } from './csmoney';
 import type { PatternInput, PatternResult } from './types';
 
-export type PatternQuerySite = 'skinsmonkey' | 'csmoney';
+export type PatternQuerySite = 'skinsmonkey' | 'csmoney' | 'pirateswap';
 
 /** Pause between per-skin queries — politeness, not throttle-driven. */
 const BETWEEN_SKINS_MS = 350;
+
+/** All bank seeds of a seed-list skin (tiers + variants), deduped. */
+export function skinSeeds(skin: PatternSkin): number[] {
+  const seeds = new Set<number>();
+  for (const t of skin.tiers ?? []) for (const s of t.seeds) seeds.add(s);
+  for (const key of Object.keys(skin.variants ?? {})) {
+    for (const s of skin.variants?.[key]?.seeds ?? []) seeds.add(s);
+  }
+  return [...seeds];
+}
+
+/** Server-side filter for the PS search: exact seeds, or a fade floor. */
+export function psFilterFor(skin: PatternSkin): PsQueryFilter {
+  if (skin.method === 'seed-list') return { seeds: skinSeeds(skin) };
+  return { fadeFrom: skin.thresholds?.flag_min_pct ?? 95 };
+}
 
 export interface PatternQueryOpts {
   signal?: { aborted: boolean };
@@ -64,6 +82,9 @@ export async function queryPatternResults(
     try {
       if (site === 'skinsmonkey') {
         const items = await collectSmByName(skin.name, collectorOpts);
+        inputs.push(...items.map(rareItemToPatternInput));
+      } else if (site === 'pirateswap') {
+        const items = await collectPsByName(skin.name, psFilterFor(skin), collectorOpts);
         inputs.push(...items.map(rareItemToPatternInput));
       } else {
         const items = await collectCsMoneyByName(skin.name, collectorOpts);

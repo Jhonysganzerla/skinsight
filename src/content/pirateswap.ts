@@ -17,8 +17,7 @@ import {
 } from '../modules/shared/ui';
 import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
-import { findPatternResults, rareItemToPatternInput } from '../modules/rare/pattern-finder';
-import { siteSearchUrl } from '../modules/rare/pattern-query';
+import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
 import { renderPatternCard } from '../modules/rare/render-pattern';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
@@ -318,6 +317,39 @@ function scheduleFilterApply(instant: boolean): void {
   }, FILTER_DEBOUNCE_MS);
 }
 
+/** Run the targeted per-skin pattern hunt (v0.9.2 query-by-name). */
+async function runPatternQuery(): Promise<void> {
+  if (!overlay) return;
+  updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
+  flog('pattern query: begin');
+  const res = await queryPatternResults('pirateswap', {
+    signal: state.aborted,
+    onProgress: (i, n, name, p) => {
+      if (!overlay) return;
+      updateScanBar(overlay.body, {
+        info: t('pattern.querying', { i, n, name, p }),
+        progressPct: Math.round((i / n) * 95),
+      });
+    },
+  });
+  if (state.aborted.aborted) {
+    setStatus(t('scan.stopped'), 'info');
+    return;
+  }
+  state.patternResults = res.map((r) => ({
+    ...r,
+    siteLink: siteSearchUrl('pirateswap', r.marketHashName),
+  }));
+  flog(`pattern query: done — ${state.patternResults.length} hits`);
+  if (!overlay) return;
+  applyAndRender();
+  updateScanBar(overlay.body, {
+    info: t('pattern.found', { n: state.patternResults.length }),
+    progressPct: 100,
+  });
+  setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
+}
+
 async function runScan(): Promise<void> {
   if (!overlay || state.running) return;
   state.running = true;
@@ -326,6 +358,13 @@ async function runScan(): Promise<void> {
   try {
     state.submode = await getRareSubmode();
     setModeTagFor(state.submode);
+    if (state.submode === 'pattern') {
+      // Targeted query-by-name path (v0.9.2) — autocomplete resolves the PS
+      // hashcodes, the server filters by seed/fade. No full-inventory walk,
+      // so the ~60-page throttle window stops being a coverage limit.
+      await runPatternQuery();
+      return;
+    }
     // Opportunistic, TTL-gated remote rare-list refresh. Fire-and-forget: the SW
     // only hits the network if the cache is older than 24h, and the freshly
     // cached list applies on the next page load (this scan uses the loaded map).
@@ -378,22 +417,6 @@ async function runScan(): Promise<void> {
     updateScanBar(overlay.body, {
       info: t('scan.matching', { n: items.length }),
     });
-
-    if (state.submode === 'pattern') {
-      const hits = await findPatternResults(items.map(rareItemToPatternInput));
-      state.patternResults = hits.map((r) => ({
-        ...r,
-        siteLink: siteSearchUrl('pirateswap', r.marketHashName),
-      }));
-      flog(`match: done — ${state.patternResults.length} pattern hits`);
-      if (!overlay) return;
-      applyAndRender();
-      updateScanBar(overlay.body, {
-        info: t('pattern.found', { n: state.patternResults.length }),
-      });
-      setStatus(t('pattern.found', { n: state.patternResults.length }), 'ok');
-      return;
-    }
 
     flog(`match: begin findRareResults over ${items.length} items`);
     state.results = await findRareResults(items);

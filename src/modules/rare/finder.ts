@@ -5,6 +5,7 @@
 import { sleep } from '../shared/fmt';
 import { t } from '../shared/i18n';
 import { estimateCsMoneyOverpay } from '../shared/overpay';
+import { patternKey } from './pattern-data';
 import { getRareMap, lookup } from './rare-data';
 import type { RareItem, RareResult, RareStickerMatch } from './types';
 
@@ -177,6 +178,128 @@ export function normalizePs(json: PsResp): RareItem[] {
       fadePercentage: typeof it.fadePercentage === 'number' ? it.fadePercentage : null,
       category: typeof it.category === 'string' ? it.category : null,
     });
+  }
+  return out;
+}
+
+/* ── PirateSwap query-by-name (v0.9.2) ──────────────────────────────── */
+
+/**
+ * PS's search endpoint ignores `searchPhrase` unless `marketHashNameHashCodes`
+ * is also present — and those codes are NOT a derivable hash of the name
+ * (tested: not Java/DJB2/FNV/CRC32/.NET). The site's own frontend resolves
+ * them via `inventory/search/v2/autocomplete`, which returns
+ * `marketNameHashCodes` per market hash name (one code per wear variant).
+ * Two-step query: autocomplete → search. Verified live 2026-06-10.
+ */
+interface PsAutocompleteEntry {
+  marketHashName?: string;
+  marketNameHashCodes?: number[];
+}
+
+const PS_API = 'https://web.pirateswap.com';
+
+async function fetchPsJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, {
+    credentials: 'omit',
+    headers: { Accept: 'application/json, text/plain, */*' },
+  });
+  if (!res.ok) throw new Error('PirateSwap HTTP ' + res.status);
+  return res.json() as Promise<T>;
+}
+
+/**
+ * Resolve a bank skin name to PS hashcodes. The autocomplete returns separate
+ * entries per prefix variant (plain / StatTrak™ / Souvenir); we keep every
+ * entry whose normalized name matches ours — patterns apply to all variants.
+ */
+export async function psResolveHashCodes(name: string): Promise<number[]> {
+  const url = `${PS_API}/inventory/search/v2/autocomplete?searchPhrase=${encodeURIComponent(name)}`;
+  const entries = await fetchPsJson<PsAutocompleteEntry[]>(url);
+  const key = patternKey(name);
+  const codes: number[] = [];
+  for (const e of entries ?? []) {
+    if (patternKey(e.marketHashName ?? '') !== key) continue;
+    for (const c of e.marketNameHashCodes ?? []) {
+      if (typeof c === 'number' && Number.isFinite(c)) codes.push(c);
+    }
+  }
+  return [...new Set(codes)];
+}
+
+/** Server-side listing filters PS supports on the search endpoint. */
+export interface PsQueryFilter {
+  /** Exact paint seeds — sent as repeated `pattern=` params (seed-list skins). */
+  seeds?: number[];
+  /** Minimum fade % — sent as `fadeFrom=` (fade-calc skins). */
+  fadeFrom?: number;
+}
+
+/** Max seeds per request — keeps the URL well under server limits (Deagle
+ *  Heat Treated has 276 bank seeds ≈ 3.3 KB of `pattern=` params unchunked). */
+const PS_SEEDS_PER_CHUNK = 100;
+/** Per-chunk page cap. Results are seed/fade-filtered server-side, so even one
+ *  page is usually plenty; the cap is a runaway guard like collectSmByName's. */
+const PS_QUERY_MAX_PAGES = 5;
+const PS_QUERY_RETRIES = 2;
+const PS_QUERY_BASE_DELAY_MS = 600;
+
+/**
+ * Targeted name query (v0.9.2 Rare Pattern): every PirateSwap listing of ONE
+ * skin, seed/fade-filtered BY THE SERVER. Two-step: autocomplete resolves the
+ * name to hashcodes, then the search endpoint pages each seed chunk. A skin
+ * with no autocomplete entry (not stocked) returns [] without searching.
+ */
+export async function collectPsByName(
+  name: string,
+  filter: PsQueryFilter,
+  opts: { signal?: { aborted: boolean }; onPage?: (page: number) => void } = {},
+): Promise<RareItem[]> {
+  const codes = await psResolveHashCodes(name);
+  if (!codes.length) return [];
+
+  const chunks: PsQueryFilter[] = [];
+  if (filter.seeds?.length) {
+    for (let i = 0; i < filter.seeds.length; i += PS_SEEDS_PER_CHUNK) {
+      chunks.push({ seeds: filter.seeds.slice(i, i + PS_SEEDS_PER_CHUNK) });
+    }
+  } else {
+    chunks.push(filter.fadeFrom != null ? { fadeFrom: filter.fadeFrom } : {});
+  }
+
+  const results = 40;
+  const out: RareItem[] = [];
+  let globalPage = 0;
+  for (const chunk of chunks) {
+    for (let p = 1; p <= PS_QUERY_MAX_PAGES; p++) {
+      if (opts.signal?.aborted) return out;
+      opts.onPage?.(++globalPage);
+      const params = new URLSearchParams({
+        orderBy: 'price',
+        sortOrder: 'DESC',
+        page: String(p),
+        results: String(results),
+        searchPhrase: name,
+        marketHashNameHashCodes: codes.join(','),
+      });
+      for (const s of chunk.seeds ?? []) params.append('pattern', String(s));
+      if (chunk.fadeFrom != null) params.set('fadeFrom', String(chunk.fadeFrom));
+
+      // Flagless-empty = PS throttle (same behavior as the full scan); back
+      // off and retry the same page a couple of times before giving up.
+      let json: PsResp | null = null;
+      for (let attempt = 0; attempt <= PS_QUERY_RETRIES; attempt++) {
+        json = await fetchPsJson<PsResp>(`${PS_API}/inventory/v2/ExchangerInventory?${params}`);
+        if (json.empty === true || (json.items ?? []).length > 0) break;
+        if (attempt < PS_QUERY_RETRIES) {
+          await sleep(PS_QUERY_BASE_DELAY_MS * 2 ** (attempt + 1));
+        }
+      }
+      const page = normalizePs(json ?? {});
+      out.push(...page);
+      if (json?.empty === true || page.length < results) break;
+      await sleep(PS_QUERY_BASE_DELAY_MS);
+    }
   }
   return out;
 }
