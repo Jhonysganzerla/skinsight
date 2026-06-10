@@ -6,7 +6,7 @@
  * <details> drawer at the bottom of the overlay exposes the legacy
  * "Regenerate rare_stickers.json" workflow — it downloads a fresh JSON
  * report to the user's Downloads folder. The bundled rare DB is NOT
- * replaced in runtime; Jhony reviews and ships a new version in a
+ * replaced in runtime; the maintainer reviews and ships a new version in a
  * subsequent release.
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';

@@ -68,6 +68,18 @@ describe('detectPatternForSkin — case-hardened / art-position (seed-list)', ()
     expect(m?.tier).toBeNull();
   });
 
+  it('guide import (skin.land): M4A1-S Solitude seed 60 → White Clouds', () => {
+    const m = detectPatternForSkin(skin('M4A1-S | Solitude'), 60);
+    expect(m?.tierLabel).toBe('White Clouds');
+    // Cross-bucket dup 340 stayed in the FIRST bucket (Orange Sun T1).
+    expect(detectPatternForSkin(skin('M4A1-S | Solitude'), 340)?.tierLabel).toBe('Orange Sun T1');
+  });
+
+  it('guide import: Rainbow Spoon tiered + Last Dive art seeds', () => {
+    expect(detectPatternForSkin(skin('Galil AR | Rainbow Spoon'), 44)?.tier).toBe(1);
+    expect(detectPatternForSkin(skin('MAC-10 | Last Dive'), 274)?.tierLabel).toBe('Seahorse');
+  });
+
   it('merged gold variant on the curated AK Case Hardened', () => {
     const ak = skin('AK-47 | Case Hardened');
     const gold = ak.variants?.['gold'];

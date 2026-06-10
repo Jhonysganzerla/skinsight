@@ -262,7 +262,7 @@ Cobre os mesmos cases de `busca_pattern_cs2/tests/score.test.html`: T1 lucro bá
 
 ## v0.2 — Modo Arbitrage ✅ aprovado (tag local `v0.2.0`)
 
-**Resumo:** SkinsMonkey scanner → service worker → CSFloat analyzer wired end-to-end. Clipboard hand-off do legacy substituído por `chrome.runtime.sendMessage` com payload persistido no `chrome.storage.local` (TTL 30 min). Score migrado verbatim, 7 cases de parity passando. Smoke manual (Jhony) confirmou lista de oportunidades aparecendo no overlay do CSFloat. Post-smoke: `fix(manifest)` expôs chunks do crxjs no WAR (commit `f50534c`); `perf(arbitrage)` adicionou throttle 350 ms entre requests pra evitar 429 (`cba4d8d`).
+**Resumo:** SkinsMonkey scanner → service worker → CSFloat analyzer wired end-to-end. Clipboard hand-off do legacy substituído por `chrome.runtime.sendMessage` com payload persistido no `chrome.storage.local` (TTL 30 min). Score migrado verbatim, 7 cases de parity passando. Smoke manual (o mantenedor) confirmou lista de oportunidades aparecendo no overlay do CSFloat. Post-smoke: `fix(manifest)` expôs chunks do crxjs no WAR (commit `f50534c`); `perf(arbitrage)` adicionou throttle 350 ms entre requests pra evitar 429 (`cba4d8d`).
 
 Detalhe histórico desta fase preservado abaixo para auditoria.
 
@@ -386,15 +386,15 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 - Substituir `[YOUR_HANDLE]` em `PRIVACY.md`
 - Pseudônimo Chrome Web Store (v0.7/v1.0)
 - Ícones PNG 16/32/48/128 (v0.6)
-- Smoke manual Jhony nos 3 sites para fechar v0.3
+- Smoke manual o mantenedor nos 3 sites para fechar v0.3
 
-### v0.3 aprovada pelo reviewer · tag local `v0.3.0` criada · smoke do Jhony confirmou os 3 sites + não-regressão Arbitrage.
+### v0.3 aprovada pelo reviewer · tag local `v0.3.0` criada · smoke do mantenedor confirmou os 3 sites + não-regressão Arbitrage.
 
 ---
 
 ## v0.4 — Bug fixes + Rare-first repositioning (em curso, aguardando smoke)
 
-**Status:** wiring completo. Gates locais verdes. Aguardando smoke do Jhony.
+**Status:** wiring completo. Gates locais verdes. Aguardando smoke do mantenedor.
 
 > O Steam Market foi adiado para v0.5 e o Skinport para v0.6. Renumeração refletida em `plano-monetizar-jhony.md`. Razão: o smoke da v0.3 revelou bugs e questões de posicionamento que não dava pra adiar até v0.7.
 
@@ -461,7 +461,7 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 
 ### TODOs persistentes
 
-- Smoke manual do Jhony (cenários abaixo)
+- Smoke manual do mantenedor (cenários abaixo)
 - Conta GitHub remota / push / tags
 - `[YOUR_HANDLE]` em PRIVACY.md
 - Pseudônimo Chrome Web Store (v0.8/v1.0)
@@ -483,7 +483,7 @@ Vide `docs/ARCHITECTURE.md` §"Edge cases" atualizado:
 
 ## v0.4.1 — Bug fixes pós-smoke + perf + repo público + remote-rares (✅ SMOKE OK · tag `v0.4.1`)
 
-**Status:** ✅ **Smoke do Jhony passou nos 3 sites (PS + CS.Money + SkinsMonkey) + Arbitrage (CSFloat). Tag `v0.4.1` criada.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓; Issue 3 (GitHub remote) ✓. Pós-smoke veio uma rodada grande (ver "checkpoint final" no fim deste arquivo): pipeline remote-rares + gerador Python + piso $1.00 + filtros reativos em todos os sites + correções de scan do PirateSwap (throttle/DESC/hang). Gates verdes (typecheck/lint/85 tests/build/pack).
+**Status:** ✅ **Smoke do mantenedor passou nos 3 sites (PS + CS.Money + SkinsMonkey) + Arbitrage (CSFloat). Tag `v0.4.1` criada.** B1–B4 entregues; Issue 1 (filter freeze) **resolvido** via virtualização real (F4 / T1 — IntersectionObserver windowing, `97bb7ae`); Issue 2 (PS scan-to-empty) ✓; Issue 3 (GitHub remote) ✓. Pós-smoke veio uma rodada grande (ver "checkpoint final" no fim deste arquivo): pipeline remote-rares + gerador Python + piso $1.00 + filtros reativos em todos os sites + correções de scan do PirateSwap (throttle/DESC/hang). Gates verdes (typecheck/lint/85 tests/build/pack).
 
 > ⚠️ Notas abaixo (B1–T4) preservam o estado _pré_-smoke para histórico. Alguns números ficaram desatualizados (ex.: piso $0.50 → **$1.00**; `itemWithSticker` foi **restaurado** depois; yields de match agora são **por tempo**, não por contagem). O estado autoritativo é o **checkpoint final** no fim do arquivo.
 
@@ -596,7 +596,7 @@ Investigação read-only + instrumentation em `e57690c` (DEV-only `performance.m
 
 ---
 
-## NEXT UP — v0.4.1 fechado em código; smoke do Jhony pendente
+## NEXT UP — v0.4.1 fechado em código; smoke do mantenedor pendente
 
 Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 
@@ -609,7 +609,7 @@ Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 3. ✅ **T2 — regenerador `rare_stickers.json` via deep scan CS.Money** (`6856aa6`)
    - Threshold fixo `RARE_THRESHOLD_USD = 0.50` (decisão #16): sticker entra no DB sse `min_price >= 0.50`. Cada sticker carrega `img`; report ganha `generated_at`. Botão Regenerate faz walk completo (não reusa o Scan raso) com progresso (páginas + elapsed) + Stop. Bundled DB nunca é trocado em runtime.
 
-4. ⏳ **Fechar v0.4.1 — smoke do Jhony + tag `v0.4.1`** (PENDENTE — só o Jhony)
+4. ⏳ **Fechar v0.4.1 — smoke do mantenedor + tag `v0.4.1`** (PENDENTE — só o mantenedor)
    - Smoke cenários:
      - PS scan completo (100-200 pages, ~60s, sem freeze visível no overlay durante render)
      - Filtros reativos em ≤250ms sem freeze mesmo com 5k+ items virtualizados (DOM deve ter ~17–30 cards)
@@ -619,7 +619,7 @@ Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 
 ---
 
-## Pendências para Jhony (não bloqueia)
+## Pendências para o mantenedor (não bloqueia)
 
 - **Smoke v0.4.1** — código pronto, gates verdes. Aguardando smoke manual + tag.
 - **Pseudônimo Chrome Web Store**: `sganzerla` (display name `Sganzerla`). Não bloqueia até v0.8/v1.0.
@@ -636,7 +636,7 @@ Os 3 itens de trabalho (T1/T2/T3) foram entregues nesta sessão:
 
 ## v0.4.1 — checkpoint final (pós-smoke · estado autoritativo)
 
-Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbitrage (CSFloat). Depois do smoke veio uma rodada de trabalho que não estava no plano original:
+Smoke do mantenedor **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbitrage (CSFloat). Depois do smoke veio uma rodada de trabalho que não estava no plano original:
 
 ### Pipeline remote-rares (lista pública + atualizador privado)
 
@@ -673,7 +673,7 @@ Smoke do Jhony **passou** nos 3 sites (PirateSwap, CS.Money, SkinsMonkey) + Arbi
 
 ## v0.5 — Steam Market per-item oracle (PLANEJADO · aguardando aprovação)
 
-> **Status: T2 + T3 ENTREGUES (gates verdes, 95 tests). Aguardando smoke do Jhony no navegador.** T2 = `d73bc2b` (oracle no SW + migração do scanner). T3 = `3f27083` (botão por card + cota). Os 3 ajustes obrigatórios estão dentro.\*\*
+> **Status: T2 + T3 ENTREGUES (gates verdes, 95 tests). Aguardando smoke do mantenedor no navegador.** T2 = `d73bc2b` (oracle no SW + migração do scanner). T3 = `3f27083` (botão por card + cota). Os 3 ajustes obrigatórios estão dentro.\*\*
 >
 > **Ajustes obrigatórios da aprovação:**
 >
@@ -793,13 +793,13 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 
 **Custo: M** (interceptor ~80 linhas, listener ~120, allowlist+wiring por site, manifest, testes de plumbing — filtro de URL, idempotência, dispatch/parse do evento). Risco concentrado em **`world:MAIN` + CSP + cross-browser (Firefox)** → exige smoke por site.
 
-**Recomendação:** viável e de alto valor como **complemento** ao scan ativo, especialmente dado o throttle de CS.Money/PirateSwap. Antes de comprometer os 4 sites, fazer um **proof-of-concept fino em UM site (CS.Money — o mais castigado por throttle)** pra validar `world:MAIN`+CSP na prática; se passar, estender. Decisão de prosseguir é do Jhony (aprovação separada).
+**Recomendação:** viável e de alto valor como **complemento** ao scan ativo, especialmente dado o throttle de CS.Money/PirateSwap. Antes de comprometer os 4 sites, fazer um **proof-of-concept fino em UM site (CS.Money — o mais castigado por throttle)** pra validar `world:MAIN`+CSP na prática; se passar, estender. Decisão de prosseguir é do mantenedor (aprovação separada).
 
 ---
 
 ## v0.6 — Skinport oracle (❌ DROPPED em v0.6.1 — endpoint atrás de Cloudflare CAPTCHA)
 
-> **Status: DROPADO.** Implementado e tagueado `v0.6.0`, mas o smoke do Jhony pegou **403 Forbidden** no `api.skinport.com/v1/items`: a Skinport pôs o endpoint atrás de **CAPTCHA da Cloudflare** (até navegador normal é desafiado; service worker não resolve challenge JS/cookie). A premissa "API pública sem auth" (pesquisa mai/2025) **não vale mais** — não é Origin/header (stripping não resolve challenge), não é rate-limit. A coluna Skinport **nunca populou**; a v0.6.0 foi tagueada "Smoke OK" com o caminho de dados quebrado.
+> **Status: DROPADO.** Implementado e tagueado `v0.6.0`, mas o smoke do mantenedor pegou **403 Forbidden** no `api.skinport.com/v1/items`: a Skinport pôs o endpoint atrás de **CAPTCHA da Cloudflare** (até navegador normal é desafiado; service worker não resolve challenge JS/cookie). A premissa "API pública sem auth" (pesquisa mai/2025) **não vale mais** — não é Origin/header (stripping não resolve challenge), não é rate-limit. A coluna Skinport **nunca populou**; a v0.6.0 foi tagueada "Smoke OK" com o caminho de dados quebrado.
 >
 > **Removido por completo de `main` em `v0.6.1`** (T1–T3): módulo + testes deletados, `renderSkinportCell`/`skinportHtml`/mensageria/case do SW/wiring nos 4 content scripts removidos, `api.skinport.com` fora do manifest (menos permissão = review Web Store mais limpo). `grep -ri skinport src/` → zero. O código vive no histórico/tag `v0.6.0` se a Skinport um dia reabrir o endpoint.
 >
@@ -809,7 +809,7 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 
 <details><summary>Detalhamento original do v0.6 (histórico — não implementar)</summary>
 
-> Implementar T1–T4 só após o "ok" do Jhony. Prep de publicação fica para v1.0 (fora do escopo do v0.6).
+> Implementar T1–T4 só após o "ok" do mantenedor. Prep de publicação fica para v1.0 (fora do escopo do v0.6).
 
 **Objetivo:** oráculo local de preço de mercado da Skinport. Um fetch em massa de `api.skinport.com/v1/items` (cacheado 5min), indexado por `market_hash_name`, exibido como **coluna Skinport (USD)** no card — referência cruzada de valor de mercado para os 4 sites. Espelha o padrão remote-rares (`remote.ts`) + Steam oracle (`oracles/steam.ts`): fetch no SW, cache no storage, content script lê o cache.
 
@@ -860,7 +860,7 @@ Os 4 são exatamente os endpoints que o nosso scanner ativo já consome — ou s
 
 `src/modules/oracles/skinport.ts` (novo), `shared/messaging.ts` (+1-2 tipos), `background/service-worker.ts` (+1 case), `shared/ui.ts` (+`renderSkinportCell` + `skinportHtml`), `modules/rare/render.ts` (wire), `content/{csfloat,pirateswap,skinsmonkey,csmoney}.ts` (refresh+load no scan-start + célula), `tests/modules/oracles.skinport.test.ts` (novo). **Custo: M.**
 
-> **PARA AQUI** — aguardando aprovação do Jhony antes de implementar T1–T4.
+> **PARA AQUI** — aguardando aprovação do mantenedor antes de implementar T1–T4.
 
 </details>
 
@@ -912,7 +912,7 @@ Auditoria estática (leitura de `overlay.ts`, `virtual-list.ts`, `oracles/steam.
 - **ALTO ✅** — `overlay.ts`: `enableDrag` + todos os listeners do shell registrados com um `AbortController`; `destroy()` faz `ac.abort()` antes de `root.remove()`. Corrige os 4 sites de uma vez. Teste de regressão `tests/modules/overlay.drag-cleanup.test.ts` (signal abortado após destroy; 2 ciclos create→destroy sem acúmulo).
 - **MÉDIO ✅** — re-trace: já coberto por `abort()` no `onClose` do PS; CS.Money/SM não usam vlist. Sem código.
 - **BAIXO ✅** — `oracles/steam.ts`: `_mirror` capado (`STEAM_MIRROR_MAX=1000`, evict-oldest via `mirrorSet`).
-- **PARA AQUI** — aguardando ok do Jhony antes de T2–T6.
+- **PARA AQUI** — aguardando ok do mantenedor antes de T2–T6.
 
 ### T2 — Ícones SVG profissionais
 
@@ -965,12 +965,12 @@ T2: `scripts/build-icons.mjs` + SVG source + `manifest.config.ts`. T3: novo `mod
 
 > Entregue como **settings configuráveis** (options): sellFee tiered (5% < $1000, 3% ≥ $1000, limite configurável), withdrawFee (0), tradeLockDiscount (0). `shared/profit.ts`: `proceeds = valor_CSM × (1−tradeLock) × (1−sellFee) × (1−withdraw)`, `net = proceeds − custo_SM`, `valor_CSM = base (proxy: listagem) + overpay_est`. Chip `lucro líq. (est.) ±$X` nos cards SM/PS. USD interno; "(est.)" sempre. (Plano original abaixo, para histórico.)
 
-Transformar o bônus bruto de overpay (já calibrado em `shared/overpay.ts`) em **lucro líquido SM→CS.Money** no headline dos cards SM/PS, **sempre rotulado "(est.)"**. Falta o input econômico que o Jhony pediu pra fornecer:
+Transformar o bônus bruto de overpay (já calibrado em `shared/overpay.ts`) em **lucro líquido SM→CS.Money** no headline dos cards SM/PS, **sempre rotulado "(est.)"**. Falta o input econômico que o mantenedor pediu pra fornecer:
 
 - **Fee de saque/venda** na CS.Money (fração, ex.: 0.10 = 10%).
 - **Desconto de trade-lock** (fator aplicado quando o item está em lock, ex.: ×0.85), e quando se aplica.
 
-Fórmula-alvo (a confirmar com os números): `lucro_liq_est ≈ (skin_price + overpay_est) × (1 − fee) − preço_SM − ajuste_lock`. **Não implementar com números inventados** — aguardar o Jhony.
+Fórmula-alvo (a confirmar com os números): `lucro_liq_est ≈ (skin_price + overpay_est) × (1 − fee) − preço_SM − ajuste_lock`. **Não implementar com números inventados** — aguardar o mantenedor.
 
 ### T2 — Hardening de robustez (CÓDIGO · ✅ ENTREGUE)
 
@@ -980,7 +980,7 @@ Fórmula-alvo (a confirmar com os números): `lucro_liq_est ≈ (skin_price + ov
 
 ### T3 — QA/smoke do beta (✅ ENTREGUE)
 
-Checklist organizado em `docs/SMOKE.md` (setup + onboarding + popup + options + scans por site×modo + possível lucro + robustez + i18n). Smoke executado pelo Jhony — aprovado.
+Checklist organizado em `docs/SMOKE.md` (setup + onboarding + popup + options + scans por site×modo + possível lucro + robustez + i18n). Smoke executado pelo mantenedor — aprovado.
 
 ### T4 — (opcional · DIFERIDO) Options: parâmetros de scan + reset de cache
 
@@ -993,7 +993,7 @@ T2 ✅ → T1 ✅ → T3 ✅ → T4 (diferido). **v0.8 pronto para tag `v0.8.0`.
 ### Exit criteria
 
 - Caminhos de erro robustos (nenhum scan preso; toda falha vira status claro e localizado).
-- Lucro líquido (T1) com os parâmetros reais do Jhony, sempre "(est.)".
+- Lucro líquido (T1) com os parâmetros reais do mantenedor, sempre "(est.)".
 - Gates verdes: typecheck + lint + format:check + testes + build. Conventional Commits.
 - Sem `<all_urls>`, sem alargar permissões.
 
@@ -1001,7 +1001,7 @@ T2 ✅ → T1 ✅ → T3 ✅ → T4 (diferido). **v0.8 pronto para tag `v0.8.0`.
 
 ## v0.9 — Rare Pattern (PLANEJADO · aguardando aprovação · NÃO IMPLEMENTAR ainda)
 
-> **Status: detalhamento para aprovação (briefing §12).** Modo paralelo ao Rare Sticker: detecta **paint seeds raros** em skins de **arma** (exclui faca ★/luva). Sites: **SkinsMonkey + PirateSwap + CS.Money** (CSFloat fora — decisão do Jhony). Banco pronto: `C:\Users\Windows 11\Desktop\rare_patterns.json` (19 skins). Implementar T2–T5 só após o "ok"; **T1 (Fase A) é read-only**.
+> **Status: detalhamento para aprovação (briefing §12).** Modo paralelo ao Rare Sticker: detecta **paint seeds raros** em skins de **arma** (exclui faca ★/luva). Sites: **SkinsMonkey + PirateSwap + CS.Money** (CSFloat fora — decisão do mantenedor). Banco pronto: `C:\Users\Windows 11\Desktop\rare_patterns.json` (19 skins). Implementar T2–T5 só após o "ok"; **T1 (Fase A) é read-only**.
 
 **Objetivo:** sinalizar itens com seed raro (selo/tier + seed + %, p/ fade), com link externo de verificação. **Sem inventar valor de overpay em $** (overpay de pattern é fuzzy).
 
@@ -1022,7 +1022,7 @@ T2 ✅ → T1 ✅ → T3 ✅ → T4 (diferido). **v0.8 pronto para tag `v0.8.0`.
 - **Excluir faca (★)/luva** por `category`/nome, sempre (banco é weapon-only).
 - USD interno, conversão só no display.
 
-### T1 — Fase A (✅ FECHADA pelo Jhony)
+### T1 — Fase A (✅ FECHADA pelo mantenedor)
 
 Os 3 sites trazem o **paint seed na resposta do inventário** → **caminho uniforme = SCAN-AND-DETECT** nos 3 (lê o pattern do item, casa no `rare_patterns.json`). Pega **carona no scan que o modo rare-sticker já roda** em cada site — uma passada coleta sticker E pattern.
 
@@ -1062,9 +1062,9 @@ AK seed 151 → Blue Gem T1; Deagle 490 → Blue Gem T1 (e gold/purple por seed)
 
 > **PARA AQUI** — aguardando aprovação do PLAN antes de T2–T5 (e o "ok"/captura p/ rodar a Fase A read-only).
 
-### v0.9.1 — Query-by-name + ações do card (decisão do Jhony, 2026-06-09)
+### v0.9.1 — Query-by-name + ações do card (decisão do mantenedor, 2026-06-09)
 
 - **Estratégia invertida (SM/CSM):** em vez de varrer a DB inteira e filtrar, o modo Pattern agora consulta **cada skin do banco por nome** e filtra por seed localmente (`pattern-query.ts`): SM via `q=` do /api/inventory; CS.Money via `name=` do load_bots_inventory (sem `hasRareStickers`, mantém itens sem sticker). ~19 queries direcionadas acham TODAS as listagens relevantes — a varredura completa perdia o que ficasse além do cap de páginas. **PirateSwap continua scan-and-detect** (a busca dele exige `marketHashNameHashCodes` não-deriváveis — Fase A).
 - **Card:** ações agora são `Ver no site ↗` (link de busca de volta ao marketplace onde o item foi achado — ⚠ params de URL best-effort, validar no smoke), `🔎 Inspecionar in-game` (steam:// quando a API entrega; `safeSteamUrl` só aceita o esquema steam) e `CSFloat ↗` (renomeado de "Conferir" — é a consulta à base do CSFloat, pode não ter listagem).
-- **Pesquisa de fontes ESGOTADA (2026-06-10):** varredura por Reddit/Steam guides/datasets além do cs2pattern. Veredito por fonte: **(1) csgobluegem/csbluegem** — TEM API (`api.csgobluegem.com`, descoberta via wrapper `fretgfr/csbluegem.py` + bundle do app), mas os dados por-seed (`/blue/*`) são **autenticados/pagos**; o endpoint público `/v1/available-items` revela o universo que o mercado blue-gem realmente precifica: **só AK-47 CH, Deagle HT e MAC-10 CH em armas** (resto = faca) — as 3 já estão no banco, curadas e mais ricas. Pelo critério "validar só o que tem overpay", o banco já COBRE o mercado de overpay. **(2) pattern.wiki/dispattern/csdb** — web-apps sem dado público (pattern.wiki bloqueia fetch 403). **(3) Steam guides/Reddit** (MAC-10 Last Dive etc.) — listas HTML de "seeds bonitos" por família, extraíveis 1-a-1 por curadoria, mas são coleção de nicho sem mercado formal de overpay; adicionar sob demanda se o Jhony apontar família específica. **(4) cs-tierlist** — só facas/luvas além do Galil (importado).
-- **Expansão do banco — ✅ FONTE ENCONTRADA E IMPORTADA (github.com/Helyux/cs2pattern):** dataset JSON mantido pela comunidade com 23 famílias `{família: {arma: [{name, ordered, pattern:[seeds]}]}}`. O `sweep-patterns.mjs` agora importa as famílias de ARMA (faca/luva skip): **banco 19 → 34 skins** (+15: SSG Abyss, MP7 Amberline, Five-SeveN Berries And Cherries/Heat Treated/**Kami "Pussy"** [seeds 590/909 ✓], AWP Electric Hive/PAW, Glock Grinder/Moonrise/Pink DDPAT/Trace Lock, Galil+Tec-9 Sandstorm, Deagle Serpent Strike, MAC-10 Snow Splash) + variants `gem_gold` mesclados no AK/Five-SeveN CH curados. Regra: **entradas curadas mais ricas nunca são substituídas** (AK/FS/MAC CH, Deagle HT, Galil Blacklight); fade-calc skins não recebem seed-list (evita flag duplo). Tipo novo `color-gem` em PatternFamily. CS.Money **não** serve de fonte (overpay de seed lá é só pra FACA — confirmado pelo Jhony). "solitude" não existe em nenhuma fonte consultada (possível nome de memória — Jhony confirma qual skin seria).
+- **Pesquisa de fontes ESGOTADA (2026-06-10):** varredura por Reddit/Steam guides/datasets além do cs2pattern. Veredito por fonte: **(1) csgobluegem/csbluegem** — TEM API (`api.csgobluegem.com`, descoberta via wrapper `fretgfr/csbluegem.py` + bundle do app), mas os dados por-seed (`/blue/*`) são **autenticados/pagos**; o endpoint público `/v1/available-items` revela o universo que o mercado blue-gem realmente precifica: **só AK-47 CH, Deagle HT e MAC-10 CH em armas** (resto = faca) — as 3 já estão no banco, curadas e mais ricas. Pelo critério "validar só o que tem overpay", o banco já COBRE o mercado de overpay. **(2) pattern.wiki/dispattern/csdb** — web-apps sem dado público (pattern.wiki bloqueia fetch 403). **(3) Steam guides/Reddit** (MAC-10 Last Dive etc.) — listas HTML de "seeds bonitos" por família, extraíveis 1-a-1 por curadoria, mas são coleção de nicho sem mercado formal de overpay; adicionar sob demanda se o mantenedor apontar família específica. **(4) cs-tierlist** — só facas/luvas além do Galil (importado).
+- **Expansão do banco — ✅ FONTE ENCONTRADA E IMPORTADA (github.com/Helyux/cs2pattern):** dataset JSON mantido pela comunidade com 23 famílias `{família: {arma: [{name, ordered, pattern:[seeds]}]}}`. O `sweep-patterns.mjs` agora importa as famílias de ARMA (faca/luva skip): **banco 19 → 34 skins** (+15: SSG Abyss, MP7 Amberline, Five-SeveN Berries And Cherries/Heat Treated/**Kami "Pussy"** [seeds 590/909 ✓], AWP Electric Hive/PAW, Glock Grinder/Moonrise/Pink DDPAT/Trace Lock, Galil+Tec-9 Sandstorm, Deagle Serpent Strike, MAC-10 Snow Splash) + variants `gem_gold` mesclados no AK/Five-SeveN CH curados. Regra: **entradas curadas mais ricas nunca são substituídas** (AK/FS/MAC CH, Deagle HT, Galil Blacklight); fade-calc skins não recebem seed-list (evita flag duplo). Tipo novo `color-gem` em PatternFamily. CS.Money **não** serve de fonte (overpay de seed lá é só pra FACA — confirmado pelo mantenedor). "solitude" não existe em nenhuma fonte consultada (possível nome de memória — o mantenedor confirma qual skin seria).
