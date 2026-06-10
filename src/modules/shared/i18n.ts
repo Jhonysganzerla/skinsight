@@ -273,8 +273,8 @@ const STRINGS: Record<string, Entry> = {
   'pattern.inspect': { en: '🔎 Inspect in-game', 'pt-BR': '🔎 Inspecionar in-game' },
   'pattern.site': { en: 'Find on site ↗', 'pt-BR': 'Ver no site ↗' },
   'pattern.querying': {
-    en: 'Searching {i}/{n}: {name}…',
-    'pt-BR': 'Buscando {i}/{n}: {name}…',
+    en: 'Searching skin {i}/{n}: {name} (page {p})…',
+    'pt-BR': 'Buscando skin {i}/{n}: {name} (pág. {p})…',
   },
   'pattern.results.header': { en: 'Item · seed · tier', 'pt-BR': 'Item · seed · tier' },
   'pattern.results.right': { en: 'Pattern', 'pt-BR': 'Pattern' },

@@ -125,13 +125,19 @@ function mapCsmItem(item: RawCsmItem): CsMoneyItem | null {
  */
 export async function collectCsMoneyByName(
   name: string,
-  opts: { maxPages?: number; delayMs?: number; signal?: { aborted: boolean } } = {},
+  opts: {
+    maxPages?: number;
+    delayMs?: number;
+    signal?: { aborted: boolean };
+    onPage?: (page: number) => void;
+  } = {},
 ): Promise<CsMoneyItem[]> {
   const out: CsMoneyItem[] = [];
   const maxPages = Math.max(1, Math.min(10, opts.maxPages ?? 5));
   const delay = Math.max(100, Math.min(5000, opts.delayMs ?? 600));
   for (let page = 0; page < maxPages; page++) {
     if (opts.signal?.aborted) break;
+    opts.onPage?.(page + 1);
     const url = `${ENDPOINT}?${qs({
       name,
       order: 'asc',

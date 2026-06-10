@@ -65,12 +65,13 @@ async function fetchSm(offset: number, limit = 120, q?: string): Promise<SmInven
  */
 export async function collectSmByName(
   name: string,
-  opts: { signal?: { aborted: boolean } } = {},
+  opts: { signal?: { aborted: boolean }; onPage?: (page: number) => void } = {},
 ): Promise<RareItem[]> {
   const limit = 120;
   const out: RareItem[] = [];
   for (let i = 0; i < 3; i++) {
     if (opts.signal?.aborted) break;
+    opts.onPage?.(i + 1);
     const json = await fetchSm(i * limit, limit, name);
     const page = normalizeSm(json);
     out.push(...page);

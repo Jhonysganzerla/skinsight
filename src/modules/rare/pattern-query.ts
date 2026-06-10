@@ -33,8 +33,13 @@ const BETWEEN_SKINS_MS = 350;
 
 export interface PatternQueryOpts {
   signal?: { aborted: boolean };
-  /** Progress per bank skin: (1-based index, total, skin display name). */
-  onProgress?: (i: number, total: number, skinName: string) => void;
+  /**
+   * Progress callback: (1-based skin index, total skins, skin display name,
+   * 1-based PAGE within that skin's query). The counter i/total advances per
+   * SKIN; `page` ticks while a single skin spans multiple result pages — so
+   * the UI never looks frozen on a multi-page skin.
+   */
+  onProgress?: (i: number, total: number, skinName: string, page: number) => void;
 }
 
 /**
@@ -51,14 +56,17 @@ export async function queryPatternResults(
   for (let i = 0; i < skins.length; i++) {
     if (opts.signal?.aborted) break;
     const skin = skins[i]!;
-    opts.onProgress?.(i + 1, skins.length, skin.name);
-    const sig = opts.signal ? { signal: opts.signal } : {};
+    opts.onProgress?.(i + 1, skins.length, skin.name, 1);
+    const collectorOpts = {
+      ...(opts.signal ? { signal: opts.signal } : {}),
+      onPage: (page: number) => opts.onProgress?.(i + 1, skins.length, skin.name, page),
+    };
     try {
       if (site === 'skinsmonkey') {
-        const items = await collectSmByName(skin.name, sig);
+        const items = await collectSmByName(skin.name, collectorOpts);
         inputs.push(...items.map(rareItemToPatternInput));
       } else {
-        const items = await collectCsMoneyByName(skin.name, sig);
+        const items = await collectCsMoneyByName(skin.name, collectorOpts);
         inputs.push(...items.map(csMoneyItemToPatternInput));
       }
     } catch {

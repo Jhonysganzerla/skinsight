@@ -108,10 +108,10 @@ async function runPatternQuery(): Promise<void> {
   updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
   const res = await queryPatternResults('csmoney', {
     signal: state.aborted,
-    onProgress: (i, n, name) => {
+    onProgress: (i, n, name, p) => {
       if (!overlay) return;
       updateScanBar(overlay.body, {
-        info: t('pattern.querying', { i, n, name }),
+        info: t('pattern.querying', { i, n, name, p }),
         progressPct: Math.round((i / n) * 95),
       });
     },
