@@ -265,6 +265,36 @@ export const OVERLAY_CSS = `
 }
 .sh-pattern-seed { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
 
+/* Pattern weapon tabs + toolbar (v0.9.2) */
+.sh-pattern-tabs {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0;
+}
+.sh-pattern-tabs.sub { margin-top: 6px; padding-left: 10px; }
+.sh-tab {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-input); border: 1px solid var(--border);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.sh-tab:hover { color: var(--text); border-color: var(--border-strong); }
+.sh-tab.active {
+  color: var(--text); border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(99,102,241,.18), rgba(34,211,238,.08));
+}
+.sh-pattern-tabs.sub .sh-tab { padding: 4px 9px; font-size: 10.5px; }
+.sh-tab-n {
+  font-size: 9.5px; font-weight: 700; color: var(--text-dim);
+  background: rgba(255,255,255,.07); border-radius: 999px; padding: 2px 6px;
+}
+.sh-tab.active .sh-tab-n { color: var(--cyan); background: rgba(34,211,238,.12); }
+.sh-pattern-toolbar {
+  display: flex; align-items: center; gap: 14px; margin: 10px 0 0;
+}
+.sh-pattern-toolbar .sh-select { width: auto; padding: 5px 9px; font-size: 11px; }
+.sh-pt-count { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
 /* Sticker breakdown */
 .sh-sticker-breakdown {
   grid-column: 1 / -1; margin-top: 10px; padding-top: 10px;

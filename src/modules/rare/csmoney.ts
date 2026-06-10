@@ -52,6 +52,27 @@ interface CsmResp {
 
 const toNumber = (v: unknown): number => Number(v ?? 0) || 0;
 const qs = (obj: Record<string, string>): string => new URLSearchParams(obj).toString();
+
+/**
+ * Find the in-game inspect link anywhere on the raw item. CS.Money's field
+ * name is unverified (the API rejects out-of-page probes), so instead of
+ * betting on one key we scan string values up to 2 levels deep for the
+ * `steam://` scheme — the render layer re-validates via safeSteamUrl anyway.
+ */
+export function extractCsMoneyInspectUrl(item: RawCsmItem): string | null {
+  const scan = (obj: unknown, depth: number): string | null => {
+    if (!obj || typeof obj !== 'object') return null;
+    for (const v of Object.values(obj)) {
+      if (typeof v === 'string' && /^steam:\/\//i.test(v)) return v;
+      if (depth > 0 && v && typeof v === 'object' && !Array.isArray(v)) {
+        const hit = scan(v, depth - 1);
+        if (hit) return hit;
+      }
+    }
+    return null;
+  };
+  return scan(item, 2);
+}
 const getItemName = (item: RawCsmItem): string =>
   item?.fullName || item?.name || item?.asset?.names?.full || item?.asset?.names?.short || '';
 const getWeaponPrice = (item: RawCsmItem): number =>
@@ -110,8 +131,7 @@ function mapCsmItem(item: RawCsmItem): CsMoneyItem | null {
     netUsd: stickersTotalUsd - weaponPriceUsd,
     overpayStickers: toNumber(item.overpay?.stickers),
     paintSeed: typeof item.pattern === 'number' ? item.pattern : null,
-    inspectUrl:
-      typeof item.inspect === 'string' && /^steam:\/\//i.test(item.inspect) ? item.inspect : null,
+    inspectUrl: extractCsMoneyInspectUrl(item),
     stickers,
   };
 }

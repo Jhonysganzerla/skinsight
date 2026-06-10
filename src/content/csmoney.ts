@@ -20,7 +20,7 @@ import {
 } from '../modules/shared/ui';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
-import { renderPatternCard } from '../modules/rare/render-pattern';
+import { mountPatternView } from '../modules/rare/pattern-view';
 import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
@@ -74,6 +74,8 @@ interface State {
   submode: RareSubmode;
   /** Last pattern hits (when submode === 'pattern'). */
   patternResults: PatternResult[];
+  /** Live pattern tab view (weapon tabs / ST toggle), torn down on re-render. */
+  patternView: { destroy(): void } | null;
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
   /** Regenerate (deep DB scan) in flight + its own abort signal. */
@@ -97,6 +99,7 @@ const state: State = {
   items: [],
   submode: 'sticker',
   patternResults: [],
+  patternView: null,
   debounce: null,
   regenerating: false,
   regenAborted: { aborted: false },
@@ -187,16 +190,8 @@ function renderPatternResults(): void {
   if (!overlay) return;
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
-  const rows = state.patternResults;
-  list.innerHTML =
-    renderResultsHeader(t('pattern.results.header'), t('pattern.results.right')) +
-    (rows.length
-      ? rows.map(renderPatternCard).join('')
-      : `<div class="sh-empty">
-          <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">${t('pattern.empty.title')}</div>
-          <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
-        </div>`);
+  state.patternView?.destroy();
+  state.patternView = mountPatternView(list, state.patternResults);
 }
 
 function renderResults(): void {

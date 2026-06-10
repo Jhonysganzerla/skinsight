@@ -7,7 +7,7 @@
  * page, and respect the safety cap when the API never empties.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { collectCsMoney } from '../../src/modules/rare/csmoney';
+import { collectCsMoney, extractCsMoneyInspectUrl } from '../../src/modules/rare/csmoney';
 
 const LIMIT = 60;
 
@@ -83,5 +83,23 @@ describe('collectCsMoney — full-inventory termination', () => {
     const out = await collectCsMoney({ maxPages: 250, delayMs: 100 });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(out).toHaveLength(2 * LIMIT);
+  });
+});
+
+describe('extractCsMoneyInspectUrl', () => {
+  it('finds a steam:// link regardless of the field name, up to 2 levels deep', () => {
+    expect(extractCsMoneyInspectUrl({ inspect: 'steam://run/730//+csgo_econ' })).toBe(
+      'steam://run/730//+csgo_econ',
+    );
+    expect(
+      extractCsMoneyInspectUrl({
+        asset: { names: { full: 'steam://nested/deep' } },
+      } as never),
+    ).toBe('steam://nested/deep');
+  });
+
+  it('ignores non-steam strings and missing links', () => {
+    expect(extractCsMoneyInspectUrl({ img: 'https://cdn.example/x.png' })).toBeNull();
+    expect(extractCsMoneyInspectUrl({})).toBeNull();
   });
 });

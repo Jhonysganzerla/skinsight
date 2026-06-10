@@ -278,6 +278,10 @@ const STRINGS: Record<string, Entry> = {
   },
   'pattern.results.header': { en: 'Item · seed · tier', 'pt-BR': 'Item · seed · tier' },
   'pattern.results.right': { en: 'Pattern', 'pt-BR': 'Pattern' },
+  'pattern.tabs.all': { en: 'All', 'pt-BR': 'Todas' },
+  'pattern.st': { en: 'StatTrak™ only', 'pt-BR': 'Só StatTrak™' },
+  'pattern.sort.default': { en: 'Default order', 'pt-BR': 'Ordem padrão' },
+  'pattern.count': { en: '{n} items', 'pt-BR': '{n} itens' },
   'pattern.empty.title': {
     en: 'No rare patterns found',
     'pt-BR': 'Nenhum pattern raro encontrado',

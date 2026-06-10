@@ -19,7 +19,7 @@ import { renderVirtualList } from '../modules/shared/virtual-list';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
-import { renderPatternCard } from '../modules/rare/render-pattern';
+import { mountPatternView } from '../modules/rare/pattern-view';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import {
@@ -227,32 +227,11 @@ function applyAndRenderUnsafe(): void {
   state.renderHandle?.destroy();
   state.renderHandle = null;
 
-  // Rare Pattern submode: render the (small) pattern hit set. No virtual list
-  // — rare seeds are uncommon, so the result count is tiny.
+  // Rare Pattern submode: tabbed view (weapon tabs / finish sub-tabs /
+  // StatTrak™ toggle / price sort) — a 50-skin query can return hundreds.
   if (state.submode === 'pattern') {
-    const rows = state.patternResults;
-    const header = renderResultsHeader(t('pattern.results.header'), t('pattern.results.right'));
-    if (!rows.length) {
-      list.innerHTML =
-        header +
-        `<div class="sh-empty">
-          <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">${t('pattern.empty.title')}</div>
-          <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
-        </div>`;
-      return;
-    }
-    const ph = renderChunked({
-      container: list,
-      items: rows,
-      render: renderPatternCard,
-      prefixHtml: header,
-    });
-    const patHandle = { destroy: ph.abort };
-    state.renderHandle = patHandle;
-    void ph.done.then(() => {
-      if (state.renderHandle === patHandle) state.renderHandle = null;
-    });
+    const view = mountPatternView(list, state.patternResults);
+    state.renderHandle = { destroy: view.destroy };
     return;
   }
 

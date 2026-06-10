@@ -31,7 +31,7 @@ import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/ar
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
 import { queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
 import { renderRareCard } from '../modules/rare/render';
-import { renderPatternCard } from '../modules/rare/render-pattern';
+import { mountPatternView } from '../modules/rare/pattern-view';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import type { PatternResult, RareResult } from '../modules/rare/types';
 import type { RareSubmode } from '../modules/shared/storage';
@@ -221,6 +221,8 @@ interface RareState {
   submode: RareSubmode;
   /** Last pattern hits (when submode === 'pattern'). */
   patternResults: PatternResult[];
+  /** Live pattern tab view (weapon tabs / ST toggle), torn down on re-render. */
+  patternView: { destroy(): void } | null;
   /** Pending debounce timer for filter inputs. */
   debounce: ReturnType<typeof setTimeout> | null;
 }
@@ -232,6 +234,7 @@ const rareState: RareState = {
   results: [],
   submode: 'sticker',
   patternResults: [],
+  patternView: null,
   debounce: null,
 };
 
@@ -253,16 +256,8 @@ function renderRareResults(): void {
   const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
   if (!list) return;
   if (rareState.submode === 'pattern') {
-    const rows = rareState.patternResults;
-    list.innerHTML =
-      renderResultsHeader(t('pattern.results.header'), t('pattern.results.right')) +
-      (rows.length
-        ? rows.map(renderPatternCard).join('')
-        : `<div class="sh-empty">
-            <div class="sh-empty-icon">⌖</div>
-            <div class="sh-empty-title">${t('pattern.empty.title')}</div>
-            <div class="sh-empty-sub">${t('pattern.empty.sub')}</div>
-          </div>`);
+    rareState.patternView?.destroy();
+    rareState.patternView = mountPatternView(list, rareState.patternResults);
     return;
   }
   const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
@@ -464,6 +459,8 @@ function mount(mode: 'arbitrage' | 'rare'): void {
 function unmount(): void {
   abortArbScan();
   abortRareScan();
+  rareState.patternView?.destroy();
+  rareState.patternView = null;
   overlay?.destroy();
   overlay = null;
   currentMode = null;
