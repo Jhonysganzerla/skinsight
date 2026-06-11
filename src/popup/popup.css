@@ -53,7 +53,14 @@ button {
   content: '';
   display: block;
   height: 2px;
-  background: var(--aurora);
+  background: linear-gradient(90deg, #6366f1, #22d3ee, #8b5cf6, #6366f1);
+  background-size: 300% 100%;
+  animation: aurora-drift 7s linear infinite;
+}
+@keyframes aurora-drift {
+  to {
+    background-position: -300% 0;
+  }
 }
 .popup-header {
   padding: 14px 16px;
@@ -77,10 +84,21 @@ button {
   background: linear-gradient(135deg, var(--primary) 0%, #312e81 100%);
 }
 .logo-mark-img {
-  /* Real raster: drop the gradient, sit on the dark panel with a soft glow. */
+  /* Real raster: drop the gradient, sit on the dark panel with a soft glow
+     that breathes between indigo and cyan. */
   background: transparent;
   object-fit: contain;
   filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.45));
+  animation: logo-breathe 4s ease-in-out infinite;
+}
+@keyframes logo-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.45));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.55));
+  }
 }
 .logo-text {
   font-weight: 800;
@@ -131,6 +149,13 @@ button {
   align-items: center;
   gap: 6px;
 }
+/* Hairline rule that fades out after the label text. */
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
 
 /* Mode cards */
 .mode-row {
@@ -148,10 +173,13 @@ button {
   transition:
     border-color 0.15s,
     background 0.15s,
-    transform 0.1s;
+    transform 0.12s,
+    box-shadow 0.2s;
 }
 .mode-card:hover {
   border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 .mode-card:active {
   transform: scale(0.985);
@@ -249,7 +277,7 @@ button {
   border: 1px solid rgba(139, 155, 255, 0.3);
 }
 
-/* Hits */
+/* Hits — staggered entrance so the feed reads as "arriving", not dumped. */
 .hit-row {
   display: flex;
   align-items: center;
@@ -259,6 +287,36 @@ button {
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 6px;
+  animation: hit-rise 0.25s ease-out both;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.hit-row:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.hit-row:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.hit-row:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.hit-row:nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+@keyframes hit-rise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hit-row:hover {
+  border-color: var(--border-strong);
+  background: rgba(125, 135, 255, 0.06);
 }
 .hit-row:last-child {
   margin-bottom: 0;
@@ -385,6 +443,17 @@ button {
   background-clip: text;
   color: transparent;
   opacity: 0.65;
+  display: inline-block;
+  animation: icon-float 3.5s ease-in-out infinite;
+}
+@keyframes icon-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 .empty-title {
   font-size: 14px;
@@ -425,4 +494,26 @@ button {
 .pill-success {
   background: rgba(52, 211, 153, 0.13);
   color: var(--success-bright);
+}
+
+/* Keyboard a11y: visible focus ring on interactive elements. */
+.mode-card:focus-visible,
+.donate-btn:focus-visible,
+.site-status:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Respect the OS "reduce motion" preference. */
+@media (prefers-reduced-motion: reduce) {
+  .popup::before,
+  .logo-mark-img,
+  .empty-icon,
+  .hit-row {
+    animation: none;
+  }
+  .mode-card:hover {
+    transform: none;
+  }
 }

@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/app.template.js.
  */
 import { sleep } from '../shared/fmt';
+import { fetchWithTimeout } from '../shared/net';
 import { t } from '../shared/i18n';
 import { estimateCsMoneyOverpay } from '../shared/overpay';
 import { patternKey } from './pattern-data';
@@ -54,7 +55,10 @@ async function fetchSm(offset: number, limit = 120, q?: string): Promise<SmInven
   if (csrf) headers['x-csrf-token'] = csrf;
   const search = q ? `&q=${encodeURIComponent(q)}` : '';
   const url = `/api/inventory?limit=${limit}&offset=${offset}&appId=730&sort=price-desc&withStickers=true${search}`;
-  const res = await fetch(url, { credentials: 'include', headers });
+  // fetchWithTimeout (v0.9.x): a hung socket used to freeze the scan with no
+  // error and no effective Stop — the abort signal is only checked between
+  // pages, so a request that never resolves pinned the loop forever.
+  const res = await fetchWithTimeout(url, { credentials: 'include', headers });
   if (!res.ok) throw new Error('SkinsMonkey HTTP ' + res.status);
   return res.json();
 }
@@ -147,7 +151,8 @@ async function fetchPs(page: number, results = 40): Promise<PsResp> {
   // down from the most expensive. Walking up (ASC) burned the whole budget on
   // sub-$0.30 items and never reached anything valuable.
   const url = `https://web.pirateswap.com/inventory/v2/ExchangerInventory?orderBy=price&sortOrder=DESC&page=${page}&results=${results}&isSouvenir=false&itemWithSticker=true`;
-  const res = await fetch(url, {
+  // fetchWithTimeout (v0.9.x): same hung-socket guard as fetchSm above.
+  const res = await fetchWithTimeout(url, {
     credentials: 'omit',
     headers: { Accept: 'application/json, text/plain, */*' },
   });

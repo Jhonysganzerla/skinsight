@@ -5,7 +5,7 @@
  *   - `chrome.storage.local` for settings (mode toggles) and today's hits.
  *
  * No scan UI here — scan lives in the overlay injected on each site.
- * Mockup reference: C:\Users\Windows 11\Desktop\mockup-ui-skinsight.html
+ * Mockup reference: mockup-ui-skinsight.html (maintainer's design notes).
  *
  * v0.4: per-site mutex. The mode toggle controls SkinsMonkey only;
  * PirateSwap and CS.Money are always-on Rare, CSFloat is always-on Arbitrage

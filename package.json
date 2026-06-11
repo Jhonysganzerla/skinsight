@@ -21,7 +21,7 @@
     "build:icons": "node scripts/build-icons.mjs",
     "build:pixqr": "node scripts/build-pix-qr.mjs",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/fix-manifest.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

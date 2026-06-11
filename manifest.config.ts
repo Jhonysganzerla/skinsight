@@ -78,10 +78,14 @@ export default defineManifest({
   web_accessible_resources: [
     {
       resources: ['rare_stickers.json', 'rare_patterns.json'],
-      // Dynamic URLs stop host pages from fingerprinting the extension by
-      // probing chrome-extension://<id>/… paths; extension contexts (content
-      // scripts included) keep loading these normally. ⚠ smoke-validate.
-      use_dynamic_url: true,
+      // use_dynamic_url REMOVED (v0.9.x): smoke-validation failed for real.
+      // With the flag on, Chrome served these under a transient GUID origin
+      // (chrome-extension://<guid>/…) that invalidated mid-session — every
+      // content-script loader died with "Failed to fetch dynamically imported
+      // module" + "GET chrome-extension://invalid/". Known flaky Chrome
+      // behavior; the anti-fingerprinting benefit isn't worth a dead
+      // extension. Static extension-ID URLs are the boring, working default.
+      use_dynamic_url: false,
       matches: [
         'https://skinsmonkey.com/*',
         'https://*.skinsmonkey.com/*',
@@ -102,7 +106,10 @@ export default defineManifest({
       // override for rare_stickers.json above replaced its auto-entry — we have
       // to declare the chunks ourselves.
       resources: ['assets/*.js', 'assets/*.css'],
-      use_dynamic_url: true,
+      // use_dynamic_url removed here too — see the note above. This block is
+      // the one the content-script loaders depend on (`import(getURL(...))`),
+      // so it MUST stay on plain static URLs.
+      use_dynamic_url: false,
       matches: [
         'https://skinsmonkey.com/*',
         'https://*.skinsmonkey.com/*',

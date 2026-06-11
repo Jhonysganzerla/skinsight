@@ -94,6 +94,46 @@ interface StoreShape {
 const KEY_SETTINGS = 'settings';
 const KEY_HITS = 'hits';
 const KEY_PENDING = 'pending_arbitrage';
+const KEY_OVERLAY = 'overlay_state';
+
+/* ── Overlay position/minimized state (v0.9.x) ─────────────────────────
+ * Lives in its OWN key, outside the `settings` blob. The old path went
+ * through patchSettings (get → merge → set): a drag-end write racing a
+ * popup toggle could silently drop one of the two. With a dedicated key the
+ * two writers never touch the same record. Reads fall back to the legacy
+ * `settings.overlay` map so existing users keep their saved positions. */
+
+export interface OverlayPos {
+  minimized?: boolean;
+  left?: number;
+  top?: number;
+}
+
+type OverlayStateMap = Record<string, OverlayPos | undefined>;
+
+export async function getOverlayPos(key: string): Promise<OverlayPos | null> {
+  try {
+    const r = (await chrome.storage.local.get(KEY_OVERLAY)) as {
+      [KEY_OVERLAY]?: OverlayStateMap;
+    };
+    const hit = r[KEY_OVERLAY]?.[key];
+    if (hit) return hit;
+    // Legacy fallback — positions saved before the dedicated key existed.
+    const s = await getSettings();
+    return s.overlay[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function patchOverlayPos(key: string, patch: OverlayPos): Promise<void> {
+  const r = (await chrome.storage.local.get(KEY_OVERLAY)) as {
+    [KEY_OVERLAY]?: OverlayStateMap;
+  };
+  const map: OverlayStateMap = r[KEY_OVERLAY] ?? {};
+  map[key] = { ...map[key], ...patch };
+  await chrome.storage.local.set({ [KEY_OVERLAY]: map });
+}
 
 /**
  * Read settings, applying defaults + migrations:

@@ -2,6 +2,11 @@ import { defineConfig } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import manifest from './manifest.config';
 
+// NOTE: `npm run build` post-processes dist/manifest.json via
+// scripts/fix-manifest.mjs (strips `use_dynamic_url` — crxjs beta hardcodes
+// it on auto-generated WAR entries and Chrome's dynamic GUID origin broke
+// every content-script loader). Don't ship a dist/ built by `vite build`
+// alone without running that script.
 export default defineConfig({
   plugins: [crx({ manifest })],
   build: {

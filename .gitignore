@@ -10,3 +10,6 @@ coverage/
 tools/
 
 .vitest/
+
+# Vitest/Vite temp config artifacts (left behind by an interrupted run)
+*.timestamp-*.mjs

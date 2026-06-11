@@ -38,11 +38,16 @@ export const OVERLAY_CSS = `
 .sh-root.sh-minimized .sh-header, .sh-root.sh-minimized .sh-body { display: none; }
 .sh-root:not(.sh-minimized) .sh-minbar { display: none; }
 
-/* Aurora hairline across the very top of the panel. */
+/* Aurora hairline across the very top of the panel — now alive: the gradient
+   drifts slowly, reading as a faint "scanning" pulse even at idle. */
 .sh-root::before {
   content: ''; display: block; height: 2px; flex-shrink: 0;
-  background: var(--aurora); opacity: .85;
+  background: linear-gradient(90deg,#6366f1,#22d3ee,#8b5cf6,#6366f1);
+  background-size: 300% 100%;
+  animation: sh-aurora-drift 7s linear infinite;
+  opacity: .9;
 }
+@keyframes sh-aurora-drift { to { background-position: -300% 0; } }
 
 .sh-header {
   padding: 12px 14px;
@@ -59,6 +64,11 @@ export const OVERLAY_CSS = `
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 7px; background: var(--aurora); color: #07090f;
   box-shadow: 0 2px 10px rgba(99,102,241,.45);
+  animation: sh-icon-breathe 4s ease-in-out infinite;
+}
+@keyframes sh-icon-breathe {
+  0%, 100% { box-shadow: 0 2px 10px rgba(99,102,241,.45); }
+  50% { box-shadow: 0 2px 16px rgba(34,211,238,.55); }
 }
 .sh-mode-tag {
   font-size: 10px; padding: 3px 9px; border-radius: 999px;
@@ -142,18 +152,26 @@ export const OVERLAY_CSS = `
 }
 @keyframes sh-shimmer { to { background-position: -200% 0; } }
 
-/* Buttons */
+/* Buttons — primary gets a light-sweep on hover (the ::after sheen slides
+   across once). position+overflow are safe additions on top of all:unset. */
 .sh-btn {
   all: unset; cursor: pointer;
+  position: relative; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 16px; color: #fff;
   background: linear-gradient(135deg,#6366f1 0%,#4f46e5 60%,#0ea5e9 160%);
   border-radius: 9px; font-weight: 600; font-size: 13px;
   font-family: inherit; text-align: center;
   box-shadow: 0 4px 16px rgba(99,102,241,.35), inset 0 1px 0 rgba(255,255,255,.12);
-  transition: filter .15s, transform .1s;
+  transition: filter .15s, transform .1s, box-shadow .2s;
 }
-.sh-btn:hover { filter: brightness(1.12); }
+.sh-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+  transform: translateX(-120%);
+}
+.sh-btn:hover::after { transform: translateX(120%); transition: transform .6s ease; }
+.sh-btn:hover { filter: brightness(1.12); box-shadow: 0 6px 22px rgba(99,102,241,.5), inset 0 1px 0 rgba(255,255,255,.12); }
 .sh-btn:active { transform: translateY(1px); }
 .sh-btn:disabled { opacity: .4; cursor: not-allowed; }
 .sh-btn-sm { padding: 7px 14px; font-size: 12px; }
@@ -186,9 +204,13 @@ export const OVERLAY_CSS = `
   border-radius: 12px; margin-bottom: 8px;
   display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center;
   animation: sh-rise .18s ease-out both;
-  transition: border-color .15s, background .15s;
+  transition: border-color .15s, background .15s, transform .15s, box-shadow .2s;
 }
-.sh-item-card:hover { border-color: var(--border-strong); background: rgba(125,135,255,.07); }
+.sh-item-card:hover {
+  border-color: var(--border-strong); background: rgba(125,135,255,.07);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
 @keyframes sh-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .sh-item-card.hot {
   border-color: rgba(52,211,153,.45);
@@ -335,13 +357,19 @@ export const OVERLAY_CSS = `
 .sh-pill-info { background: var(--primary-dim); color: var(--accent); }
 .sh-pill-danger { background: rgba(251,113,133,.13); color: var(--danger); }
 
-/* Empty state */
+/* Empty state — the crosshair drifts gently, like idle radar. */
 .sh-empty { text-align: center; padding: 40px 20px; }
 .sh-empty-icon {
   font-size: 38px; margin-bottom: 12px;
   background: var(--aurora);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   opacity: .65;
+  display: inline-block;
+  animation: sh-float 3.5s ease-in-out infinite;
+}
+@keyframes sh-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 .sh-empty-title { font-size: 14px; font-weight: 600; margin: 0 0 6px; }
 .sh-empty-sub { color: var(--text-muted); font-size: 12px; margin: 0 auto 20px; max-width: 280px; }
@@ -394,4 +422,19 @@ export const OVERLAY_CSS = `
 /* Small text */
 .sh-hint { font-size: 11px; color: var(--text-dim); margin-top: 6px; line-height: 1.45; }
 .sh-footnote { color: var(--text-dim); font-size: 11.5px; margin-top: 16px; font-style: italic; }
+
+/* Keyboard a11y: visible focus ring on every interactive element. */
+.sh-btn:focus-visible, .sh-icon-btn:focus-visible, .sh-tab:focus-visible,
+.sh-input:focus-visible, .sh-select:focus-visible, .sh-open-link:focus-visible {
+  outline: 2px solid var(--cyan); outline-offset: 2px;
+}
+
+/* Respect the OS "reduce motion" preference: kill decorative animation but
+   keep state transitions (they communicate, not decorate). */
+@media (prefers-reduced-motion: reduce) {
+  .sh-root::before, .sh-title-icon, .sh-empty-icon,
+  .sh-progress-fill, .sh-item-card { animation: none; }
+  .sh-btn::after { display: none; }
+  .sh-item-card:hover { transform: none; }
+}
 `;

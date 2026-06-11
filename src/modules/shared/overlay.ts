@@ -13,7 +13,7 @@
  * collapses to a thin tab.
  */
 import { OVERLAY_CSS } from './tokens';
-import { patchSettings, getSettings } from './storage';
+import { getOverlayPos, patchOverlayPos } from './storage';
 import { t } from './i18n';
 
 export type Mode = 'arbitrage' | 'rare';
@@ -249,8 +249,7 @@ function enableDrag(root: HTMLElement, persistKey: string | undefined, signal: A
 
 async function hydratePosition(root: HTMLElement, minbar: HTMLElement, key: string) {
   try {
-    const s = await getSettings();
-    const o = s.overlay[key];
+    const o = await getOverlayPos(key);
     if (!o) {
       minbar.style.display = 'none';
       return;
@@ -277,9 +276,9 @@ async function persistPosition(
 ): Promise<void> {
   if (!key) return;
   try {
-    const s = await getSettings();
-    const prev = s.overlay[key] ?? {};
-    await patchSettings({ overlay: { ...s.overlay, [key]: { ...prev, ...patch } } });
+    // Dedicated `overlay_state` key (v0.9.x) — writing through patchSettings
+    // raced the popup's get→merge→set on the shared settings blob.
+    await patchOverlayPos(key, patch);
   } catch {
     /* swallow */
   }

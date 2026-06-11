@@ -302,9 +302,10 @@ export function renderResultsHeader(left: string, right: string): string {
   `;
 }
 
-/* ───────────────────────────────────────────────── Chunked render ── */
+/* ───────────────────────────────────────────────── Chunked render ──
+ * Handle type is exported so content scripts can hold/abort a live render. */
 
-interface ChunkedRenderHandle {
+export interface ChunkedRenderHandle {
   /** Resolves when every chunk has been appended or the controller aborts. */
   done: Promise<void>;
   /** Aborts the render at the next chunk boundary. */

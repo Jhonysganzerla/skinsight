@@ -4,15 +4,18 @@
  * Listens for `arbitrage:payload` from the service worker, runs the
  * `analyzer.runAnalysis` loop (same-origin CSFloat API), and renders the
  * scored list in the overlay. Reports completion via `arbitrage:result`.
+ * Results render through renderChunked — see renderDone below.
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
+  renderChunked,
   renderItemCard,
   renderResultsHeader,
   renderScanBar,
   renderSteamCell,
   updateScanBar,
   variantByProfitPct,
+  type ChunkedRenderHandle,
   type ItemCardProps,
   type MetaChip,
 } from '../modules/shared/ui';
@@ -65,17 +68,43 @@ function bodyHtmlRunning(progress: number, total: number): string {
   ].join('');
 }
 
-function bodyHtmlDone(rows: AnalysisRow[]): string {
-  return [
+/** Live chunked render — aborted before any overlay re-render so a stale
+ *  pass can't keep appending cards into a body that was just rewritten. */
+let chunked: ChunkedRenderHandle | null = null;
+
+function abortChunked(): void {
+  chunked?.abort();
+  chunked = null;
+}
+
+/**
+ * Render the "done" state. Cards go through `renderChunked` — a large
+ * arbitrage payload (thousands of rows) rendered with a synchronous
+ * `.map().join('')` froze the PirateSwap tab once already; same hazard here.
+ */
+function renderDone(rows: AnalysisRow[]): void {
+  if (!overlay) return;
+  abortChunked();
+  const prefixHtml = [
     renderScanBar({ info: t('csf.complete', { n: rows.length }), actionLabel: t('csf.rescan') }),
     renderResultsHeader(t('csf.header.left'), t('csf.profit')),
-    rows.map(itemCardForRow).join('') ||
+  ].join('');
+  if (rows.length === 0) {
+    overlay.body.innerHTML =
+      prefixHtml +
       `<div class="sh-empty">
       <div class="sh-empty-icon">⌖</div>
       <div class="sh-empty-title">${t('csf.empty.title')}</div>
       <div class="sh-empty-sub">${t('csf.empty.sub')}</div>
-    </div>`,
-  ].join('');
+    </div>`;
+    return;
+  }
+  chunked = renderChunked({
+    container: overlay.body,
+    items: rows,
+    render: itemCardForRow,
+    prefixHtml,
+  });
 }
 
 function metaForItem(item: ArbitrageItem, row: AnalysisRow['result']): MetaChip[] {
@@ -122,6 +151,7 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   if (!overlay) return;
   aborted = false;
   running = true;
+  abortChunked(); // a previous done-state render may still be appending
   const total = payload.items.length;
   overlay.body.innerHTML = bodyHtmlRunning(0, total);
   setStatus(t('csf.analyzingN', { n: total }), 'info');
@@ -148,14 +178,14 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
       // the Rescan action — the old path returned without re-rendering and
       // left a dead "Analyzing…" bar until the next payload.
       if (overlay) {
-        overlay.body.innerHTML = bodyHtmlDone(rows);
+        renderDone(rows);
         setStatus(t('csf.stopped'), 'info');
       }
       return;
     }
     if (!overlay) return;
 
-    overlay.body.innerHTML = bodyHtmlDone(rows);
+    renderDone(rows);
     setStatus(
       t('csf.found', {
         n: rows.length,
@@ -175,6 +205,7 @@ async function analyzePayload(payload: ExportPayload): Promise<void> {
   } catch (e) {
     if (overlay) {
       // Reset to the idle body (with a Refresh action) so the user can retry.
+      abortChunked();
       overlay.body.innerHTML = bodyHtmlIdle();
       setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
     }

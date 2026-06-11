@@ -7,9 +7,11 @@
  * an AbortError on timeout — callers already wrap in try/catch and treat any
  * rejection as a failure. The timer is always cleared.
  *
- * Scope: single-shot fetches that don't carry their own signal (Steam oracle,
- * remote rare list). The long paged scans (scanner/finder/analyzer/csmoney)
- * pass their own abort signal and own their retry semantics — left untouched.
+ * Scope: every fetch that doesn't carry its own AbortSignal — the Steam
+ * oracle, the remote rare list, and (since v0.9.x) the paged Rare collectors
+ * in finder/csmoney, whose `{aborted}` flag is only checked between pages and
+ * so couldn't unstick a hung request. The arbitrage scanner passes a real
+ * AbortSignal per request and is left untouched.
  */
 export const DEFAULT_FETCH_TIMEOUT_MS = 12_000;
 

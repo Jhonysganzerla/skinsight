@@ -3,6 +3,7 @@
  * Public ops:
  *   - fetchCsfPrice(item) → { price, estimated }
  *   - runAnalysis(items, callbacks) → AnalysisRow[]
+ * Throttle gate fails CLOSED on SW messaging errors — see defaultRequestSlot.
  */
 import { sleep } from '../shared/fmt';
 import { send } from '../shared/messaging';
@@ -13,9 +14,18 @@ import type { ArbitrageItem, AnalysisRow } from './types';
  * Ask the service-worker token bucket for permission before each CSFloat
  * fetch. Returns immediately when a token is available; awaits otherwise.
  * Tests pass `gateOverride: () => Promise.resolve()` to bypass the SW.
+ *
+ * Fail-CLOSED on messaging errors (v0.9.x fix): if the SW is paused on a 429
+ * and hits the MV3 idle kill with our response pending, `sendMessage` rejects
+ * and `send()` returns `{ok:false}`. The old code ignored that and proceeded
+ * un-throttled — exactly while CSFloat was 429ing. Now we sleep a local
+ * fallback interval (~the steady-state bucket cadence at 45/min) instead.
  */
+const GATE_FALLBACK_MS = 1500;
+
 async function defaultRequestSlot(): Promise<void> {
-  await send({ type: 'csf:request-slot' });
+  const r = await send({ type: 'csf:request-slot' });
+  if (!r.ok) await sleep(GATE_FALLBACK_MS);
 }
 async function defaultReport429(): Promise<void> {
   await send({ type: 'csf:got-429' });

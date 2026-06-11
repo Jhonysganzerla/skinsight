@@ -8,13 +8,14 @@
  *
  * The popup's mutex ensures only one mode is active at a time. We mount
  * the matching overlay and tear it down if the user flips the mode.
+ *
+ * Shared Rare plumbing (state, pattern query, mode tag, debounce, filter
+ * listeners) lives in modules/rare/scan-controller.ts.
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
   readFilterValues,
-  renderChunked,
   renderFilterGrid,
-  renderResultsHeader,
   renderScanBar,
   updateScanBar,
   type FilterField,
@@ -30,12 +31,13 @@ import {
 } from '../modules/shared/settings';
 import { applyFilter, buildExportPayload, getCsrf, scanAll } from '../modules/arbitrage/scanner';
 import { applyRareFilter, collectAll, findRareResults } from '../modules/rare/finder';
-import { patternStatus, queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
-import { renderRareCard } from '../modules/rare/render';
-import { mountPatternView } from '../modules/rare/pattern-view';
+import {
+  createRareController,
+  readRareFilterOpts,
+  renderRareList,
+} from '../modules/rare/scan-controller';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
-import type { PatternResult, RareResult } from '../modules/rare/types';
-import type { RareSubmode } from '../modules/shared/storage';
+import type { RareResult } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-sm-overlay';
 const PERSIST_KEY_ARB = 'skinsmonkey-arb';
@@ -83,23 +85,6 @@ const arbState: ArbState = { running: false, abort: null };
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
-}
-
-/** Reflect the Rare sub-mode in the header tag (rare overlay only; arbitrage
- *  keeps its own tag). */
-function setModeTagFor(sub: RareSubmode): void {
-  if (currentMode !== 'rare') return;
-  overlay?.setModeTag(
-    sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
-    sub === 'pattern' ? 'pattern' : 'rare',
-  );
-  // The sticker filter grid is dead weight in Pattern submode (the pattern
-  // view brings its own controls) — hide it instead of ignoring it.
-  overlay?.body.querySelector('.sh-filter-grid')?.classList.toggle('sh-hidden', sub === 'pattern');
-}
-async function refreshModeTag(): Promise<void> {
-  if (currentMode !== 'rare') return;
-  setModeTagFor(await getRareSubmode());
 }
 
 function arbBodyHtml(): string {
@@ -215,101 +200,27 @@ function rareFilters(): FilterField[] {
   ];
 }
 
-interface RareState {
-  running: boolean;
-  aborted: { aborted: boolean };
-  /** Last collected match set — kept so reactive filters can re-apply +
-   *  re-render in place without a fresh network scan. */
-  results: RareResult[];
-  /** Rare detector sub-mode for the current scan (v0.9). */
-  submode: RareSubmode;
-  /** Last pattern hits (when submode === 'pattern'). */
-  patternResults: PatternResult[];
-  /** Live pattern tab view (weapon tabs / ST toggle), torn down on re-render. */
-  patternView: { destroy(): void } | null;
-  /** In-flight chunked render of sticker results, aborted on re-render. */
-  renderHandle: { abort(): void } | null;
-  /** Pending debounce timer for filter inputs. */
-  debounce: ReturnType<typeof setTimeout> | null;
-}
+/** Last collected match set — kept so reactive filters can re-apply +
+ *  re-render in place without a fresh network scan. */
+let rareResults: RareResult[] = [];
 
-const RARE_FILTER_DEBOUNCE_MS = 250;
-const rareState: RareState = {
-  running: false,
-  aborted: { aborted: false },
-  results: [],
-  submode: 'sticker',
-  patternResults: [],
-  patternView: null,
-  renderHandle: null,
-  debounce: null,
-};
-
-type RareSortKey = 'roi' | 'stickerSum' | 'profit' | 'priceAsc' | 'priceDesc';
-
-/** Read filter values + build the current rare-filter opts. */
-function currentRareFilterOpts(): { maxPrice?: number; sort: RareSortKey } {
-  if (!overlay) return { sort: 'roi' };
-  const filters = readFilterValues(overlay.body);
-  const maxPriceRaw = filters['maxPrice'] ?? '';
-  const maxPrice = maxPriceRaw.trim() ? parseFloat(maxPriceRaw) : undefined;
-  const sort = (filters['sort'] ?? 'roi') as RareSortKey;
-  return maxPrice !== undefined ? { maxPrice, sort } : { sort };
-}
-
-/** Apply the current filters to `rareState.results` and (re)render in place. */
-function renderRareResults(): void {
-  if (!overlay) return;
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (!list) return;
-  // Tear down whatever the previous render mounted (pattern view listeners /
-  // in-flight chunked render) before writing the container again.
-  rareState.patternView?.destroy();
-  rareState.patternView = null;
-  rareState.renderHandle?.abort();
-  rareState.renderHandle = null;
-  if (rareState.submode === 'pattern') {
-    rareState.patternView = mountPatternView(list, rareState.patternResults);
-    return;
-  }
-  const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
-  const header = renderResultsHeader(t('results.header.detected'), t('results.worth'));
-  if (!filtered.length) {
-    list.innerHTML =
-      header +
-      `<div class="sh-empty">
-          <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">${t('rare.empty.title')}</div>
-          <div class="sh-empty-sub">${t('rare.empty.sub')}</div>
-        </div>`;
-    return;
-  }
-  // Chunked render (same path PirateSwap uses) — a deep scan can match
-  // thousands of items, and a synchronous .map().join() froze the tab.
-  const handle = renderChunked({
-    container: list,
-    items: filtered,
-    render: renderRareCard,
-    prefixHtml: header,
-  });
-  rareState.renderHandle = { abort: handle.abort };
-}
-
-/** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
-function scheduleRareFilterApply(instant: boolean): void {
-  if (rareState.debounce !== null) {
-    clearTimeout(rareState.debounce);
-    rareState.debounce = null;
-  }
-  if (instant) {
-    renderRareResults();
-    return;
-  }
-  rareState.debounce = setTimeout(() => {
-    rareState.debounce = null;
-    renderRareResults();
-  }, RARE_FILTER_DEBOUNCE_MS);
-}
+const ctl = createRareController({
+  site: 'skinsmonkey',
+  getOverlay: () => overlay,
+  isActive: () => currentMode === 'rare',
+  hasResults: () => rareResults.length > 0,
+  renderStickerResults: (list) => {
+    if (!overlay) return;
+    // Shared chunked/virtualized path — a deep scan (80 pages × 120 items)
+    // can match thousands; the virtual list keeps the DOM windowed.
+    ctl.state.renderHandle = renderRareList({
+      overlay,
+      list,
+      results: rareResults,
+      filterOpts: readRareFilterOpts(overlay.body),
+    });
+  },
+});
 
 function rareBodyHtml(): string {
   return [
@@ -319,45 +230,16 @@ function rareBodyHtml(): string {
   ].join('');
 }
 
-/** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
-async function runPatternQuery(): Promise<void> {
-  if (!overlay) return;
-  // Opportunistic TTL-gated refresh of the remote pattern bank (no-op < 24h).
-  void send({ type: 'rares:refresh', force: false });
-  updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
-  const rep = await queryPatternResults('skinsmonkey', {
-    signal: rareState.aborted,
-    onProgress: (i, n, name, p) => {
-      if (!overlay) return;
-      updateScanBar(overlay.body, {
-        info: t('pattern.querying', { i, n, name, p }),
-        progressPct: Math.round((i / n) * 95),
-      });
-    },
-  });
-  // A user Stop keeps the partial hit set; patternStatus words the outcome.
-  rareState.patternResults = rep.results.map((r) => ({
-    ...r,
-    siteLink: siteSearchUrl('skinsmonkey', r.marketHashName),
-  }));
-  if (!overlay) return;
-  renderRareResults();
-  const st = patternStatus(rep);
-  updateScanBar(overlay.body, { info: st.text, ...(rep.aborted ? {} : { progressPct: 100 }) });
-  setStatus(st.text, st.kind);
-}
-
 async function runRareScan(): Promise<void> {
-  if (!overlay || rareState.running) return;
-  rareState.running = true;
-  rareState.aborted = { aborted: false };
+  if (!ctl.beginScan()) return;
+  if (!overlay) return;
   // try/catch/finally so a throw never leaves the bar stuck on "Stop".
   try {
-    rareState.submode = await getRareSubmode();
-    setModeTagFor(rareState.submode);
-    if (rareState.submode === 'pattern') {
+    ctl.state.submode = await getRareSubmode();
+    ctl.setModeTagFor(ctl.state.submode);
+    if (ctl.state.submode === 'pattern') {
       // Targeted query-by-name path (v0.9.1) — no full-inventory walk.
-      await runPatternQuery();
+      await ctl.runPatternQuery();
       return;
     }
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
@@ -376,7 +258,7 @@ async function runRareScan(): Promise<void> {
     const items = await collectAll({
       site: 'skinsmonkey',
       maxPages: pages,
-      signal: rareState.aborted,
+      signal: ctl.state.aborted,
       onProgress: (msg, collected) => {
         if (!overlay) return;
         const pct = Math.min(70, Math.round((collected / (pages * 120)) * 70));
@@ -387,7 +269,7 @@ async function runRareScan(): Promise<void> {
       },
     });
 
-    if (rareState.aborted.aborted) {
+    if (ctl.state.aborted.aborted) {
       setStatus(t('scan.stopped'), 'info');
       return;
     }
@@ -397,11 +279,11 @@ async function runRareScan(): Promise<void> {
       progressPct: 80,
     });
 
-    rareState.results = await findRareResults(items);
+    rareResults = await findRareResults(items);
 
     if (!overlay) return;
-    renderRareResults();
-    const filtered = applyRareFilter(rareState.results, currentRareFilterOpts());
+    ctl.renderResults();
+    const filtered = applyRareFilter(rareResults, readRareFilterOpts(overlay.body));
     updateScanBar(overlay.body, {
       info: t('scan.complete.hits', { n: filtered.length }),
       progressPct: 100,
@@ -426,20 +308,7 @@ async function runRareScan(): Promise<void> {
       setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
     }
   } finally {
-    finishRareScan();
-  }
-}
-
-function finishRareScan(): void {
-  rareState.running = false;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
-}
-
-function abortRareScan(): void {
-  rareState.aborted.aborted = true;
-  if (rareState.debounce !== null) {
-    clearTimeout(rareState.debounce);
-    rareState.debounce = null;
+    ctl.finish();
   }
 }
 
@@ -458,24 +327,24 @@ function mount(mode: 'arbitrage' | 'rare'): void {
     // The hard teardown lives in unmount() for the popup's mode flip.
     onClose: () => {
       if (mode === 'arbitrage') abortArbScan();
-      else abortRareScan();
+      else ctl.abort();
     },
   });
   overlay.body.innerHTML = mode === 'arbitrage' ? arbBodyHtml() : rareBodyHtml();
   wireSteamButtons(overlay.body);
   setStatus(t('scan.ready'), 'info');
-  void refreshModeTag();
+  void ctl.refreshModeTag();
 
   overlay.body.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    const btn = t.closest<HTMLElement>('[data-role=scan-action]');
+    const target = e.target as HTMLElement;
+    const btn = target.closest<HTMLElement>('[data-role=scan-action]');
     if (!btn) return;
     e.preventDefault();
     if (mode === 'arbitrage') {
       if (arbState.running) abortArbScan();
       else void runArbScan();
     } else {
-      if (rareState.running) abortRareScan();
+      if (ctl.state.running) ctl.abort();
       else void runRareScan();
     }
   });
@@ -483,47 +352,26 @@ function mount(mode: 'arbitrage' | 'rare'): void {
 
 function unmount(): void {
   abortArbScan();
-  abortRareScan();
-  rareState.patternView?.destroy();
-  rareState.patternView = null;
-  rareState.renderHandle?.abort();
-  rareState.renderHandle = null;
+  ctl.abort();
   overlay?.destroy();
   overlay = null;
   currentMode = null;
-}
-
-// Reactive filters (Rare mode): re-apply + re-render in place when the user
-// changes a filter after a scan (no rescan). SkinsMonkey is a Nuxt/Vue SPA, so
-// — like PirateSwap — we listen on `document` in the CAPTURE phase scoped to
-// our overlay, since the host framework can swallow bubble-phase events. These
-// are registered once (not in `mount`, which re-runs on mode flips) to avoid
-// leaking duplicate listeners. The `rareState.results.length` guard makes them
-// no-ops in Arbitrage mode (which has no in-overlay filterable results).
-function registerRareFilterListeners(): void {
-  const onFilterEvent = (instant: boolean) => (e: Event) => {
-    const t = e.target as HTMLElement | null;
-    if (!t || !overlay || currentMode !== 'rare') return;
-    if (!overlay.root.contains(t) || !t.matches?.('[data-filter]')) return;
-    if (!rareState.results.length) return;
-    scheduleRareFilterApply(instant);
-  };
-  // `<select>` → instant; text/number inputs → debounced.
-  document.addEventListener('change', onFilterEvent(true), true);
-  document.addEventListener('input', onFilterEvent(false), true);
 }
 
 async function bootstrap(): Promise<void> {
   console.debug('[Skinsight] loaded on skinsmonkey');
   await applyStoredLocale();
   await applyStoredProfitParams();
-  registerRareFilterListeners();
+  // Registered once (not in `mount`, which re-runs on mode flips) to avoid
+  // leaking duplicate listeners. The controller's isActive/hasResults guards
+  // make them no-ops in Arbitrage mode.
+  ctl.registerFilterListeners();
   mount(await getSkinsmonkeyMode());
   watchSettings((s) => {
     // Only SkinsMonkey reacts to the per-site mode toggle.
     mount(s.skinsmonkeyMode);
     // And reflect a Rare sub-mode flip in the header tag (rare overlay only).
-    void refreshModeTag();
+    void ctl.refreshModeTag();
   });
 }
 

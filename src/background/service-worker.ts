@@ -11,6 +11,7 @@
  *      `chrome.tabs.sendMessage({ type: 'arbitrage:payload', payload })`.
  *   5. CSFloat content script runs analyzer → sends `arbitrage:result` with
  *      the scored rows. SW writes each row into the "Today's hits" feed.
+ * Storage GC on startup/install: hits + steam_price cache.
  */
 import {
   onMessage,
@@ -31,7 +32,7 @@ import {
   refreshPatternsRemote,
   refreshRareRemote,
 } from '../modules/rare/remote';
-import { getSteamPrice, steamQuota } from '../modules/oracles/steam';
+import { getSteamPrice, steamQuota, runSteamPriceGc } from '../modules/oracles/steam';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
 
@@ -163,11 +164,13 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
  *  popup can request the feed, so users never see stale entries. */
 chrome.runtime.onStartup.addListener(() => {
   void runHitsGc();
+  void runSteamPriceGc();
   void refreshRareRemote(false);
   void refreshPatternsRemote(false);
 });
 chrome.runtime.onInstalled.addListener((details) => {
   void runHitsGc();
+  void runSteamPriceGc();
   // Pull the live rare list once on install/update (force, since a fresh
   // install has no cache and an update may ship behind the published list).
   void refreshRareRemote(true);

@@ -3,6 +3,7 @@
  * Ported from sticker-raro-pirateswap-skinsmonkey/csmoney.js.
  */
 import { sleep } from '../shared/fmt';
+import { fetchWithTimeout } from '../shared/net';
 import { t } from '../shared/i18n';
 import { debugLog, isDebug } from '../shared/debug';
 import type { CsMoneyItem } from './types';
@@ -168,7 +169,9 @@ export async function collectCsMoneyByName(
       limit: String(LIMIT),
       offset: String(page * LIMIT),
     })}`;
-    const res = await fetch(url, { credentials: 'include' });
+    // fetchWithTimeout (v0.9.x): hung-socket guard — the abort signal is only
+    // checked between pages, so a request that never resolves froze the scan.
+    const res = await fetchWithTimeout(url, { credentials: 'include' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = (await res.json()) as CsmResp;
     const items = data.items ?? [];
@@ -194,7 +197,8 @@ export async function collectCsMoney(opts: CsmCollectOpts): Promise<CsMoneyItem[
       const url = `${ENDPOINT}?${qs({ ...BASE, limit: String(LIMIT), offset: String(offset) })}`;
       opts.onPage?.(page + 1);
       opts.onStatus?.(t('csm.page', { p: page + 1, n: out.length }));
-      const res = await fetch(url, { credentials: 'include' });
+      // fetchWithTimeout (v0.9.x): same hung-socket guard as above.
+      const res = await fetchWithTimeout(url, { credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = (await res.json()) as CsmResp;
       if (typeof data.message === 'string' && data.message.toLowerCase().includes('limite')) {

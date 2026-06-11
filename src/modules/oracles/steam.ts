@@ -15,6 +15,7 @@
  *     so callers pre-warm the mirror (await the message) BEFORE building.
  *
  * Prices are USD (priceoverview currency=1). Never mix with a BRL display.
+ * Cache GC: see runSteamPriceGc below (SW startup/install).
  */
 import { steamBucket } from '../shared/throttle';
 import { fetchWithTimeout } from '../shared/net';
@@ -150,6 +151,30 @@ export async function getSteamPrice(marketHashName: string): Promise<SteamPrice 
     return price;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Drop expired `steam_price:*` keys from chrome.storage.local (v0.9.x fix).
+ * `writeCache` creates one key per market_hash_name and the 1h TTL was only
+ * ever checked on read — months of use would crawl toward the 10 MB quota.
+ * Runs on SW startup/install; never throws. Returns the number of keys removed.
+ */
+export async function runSteamPriceGc(now = Date.now()): Promise<number> {
+  try {
+    const all = (await chrome.storage.local.get(null)) as Record<string, unknown>;
+    const stale: string[] = [];
+    for (const [key, value] of Object.entries(all)) {
+      if (!key.startsWith('steam_price:')) continue;
+      const fetchedAt = (value as { fetchedAt?: unknown } | null)?.fetchedAt;
+      // Malformed entries (no numeric fetchedAt) are unreadable by `fresh()`
+      // anyway — GC them too instead of leaking them forever.
+      if (typeof fetchedAt !== 'number' || now - fetchedAt >= STEAM_TTL_MS) stale.push(key);
+    }
+    if (stale.length > 0) await chrome.storage.local.remove(stale);
+    return stale.length;
+  } catch {
+    return 0;
   }
 }
 

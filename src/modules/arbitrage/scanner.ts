@@ -58,7 +58,28 @@ interface InventoryResponse {
 }
 
 /* ── CSRF detection — multiple fallbacks (cookie, meta, Nuxt globals) ─ */
+
+/** Memoized per page-load (v0.9.x): the Nuxt fallback below stringifies the
+ *  whole `__NUXT__` payload (potentially MBs) and walks every inline script —
+ *  too heavy to repeat on every Scan click. The token doesn't rotate within a
+ *  page session; a 402 mid-scan already surfaces as a clear error and a page
+ *  reload re-resolves it. Only successful lookups are cached, so a token that
+ *  appears late (slow hydration) is still found on the next call. */
+let _csrfCache: string | null = null;
+
 export function getCsrf(): string {
+  if (_csrfCache !== null) return _csrfCache;
+  const found = resolveCsrf();
+  if (found) _csrfCache = found;
+  return found;
+}
+
+/** Test seam — clear the page-load memo. */
+export function __resetCsrfCache(): void {
+  _csrfCache = null;
+}
+
+function resolveCsrf(): string {
   const ck = document.cookie;
   const m1 =
     ck.match(/x-csrf-token=([a-f0-9]{40,})/i) ||

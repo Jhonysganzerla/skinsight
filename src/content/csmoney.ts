@@ -8,6 +8,9 @@
  * report to the user's Downloads folder. The bundled rare DB is NOT
  * replaced in runtime; the maintainer reviews and ships a new version in a
  * subsequent release.
+ *
+ * Shared Rare plumbing (state, pattern query, mode tag, debounce, filter
+ * listeners) lives in modules/rare/scan-controller.ts.
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
@@ -20,8 +23,7 @@ import {
 } from '../modules/shared/ui';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
-import { mountPatternView } from '../modules/rare/pattern-view';
-import { patternStatus, queryPatternResults, siteSearchUrl } from '../modules/rare/pattern-query';
+import { createRareController } from '../modules/rare/scan-controller';
 import { wireSteamButtons } from '../modules/oracles/steam-ui';
 import { send } from '../modules/shared/messaging';
 import {
@@ -33,8 +35,7 @@ import {
 import { esc } from '../modules/shared/fmt';
 import { debugLog, isDebug } from '../modules/shared/debug';
 import { t } from '../modules/shared/i18n';
-import type { RareSubmode } from '../modules/shared/storage';
-import type { CsMoneyItem, PatternResult } from '../modules/rare/types';
+import type { CsMoneyItem } from '../modules/rare/types';
 
 const ROOT_ID = 'skinsight-csm-overlay';
 const PERSIST_KEY = 'csmoney';
@@ -64,27 +65,6 @@ function filters(): FilterField[] {
   ];
 }
 
-interface State {
-  running: boolean;
-  aborted: { aborted: boolean };
-  /** Last collected inventory — kept so reactive filters can re-sort +
-   *  re-render in place without a fresh network scan. */
-  items: CsMoneyItem[];
-  /** Rare detector sub-mode for the current scan (v0.9). */
-  submode: RareSubmode;
-  /** Last pattern hits (when submode === 'pattern'). */
-  patternResults: PatternResult[];
-  /** Live pattern tab view (weapon tabs / ST toggle), torn down on re-render. */
-  patternView: { destroy(): void } | null;
-  /** Pending debounce timer for filter inputs. */
-  debounce: ReturnType<typeof setTimeout> | null;
-  /** Regenerate (deep DB scan) in flight + its own abort signal. */
-  regenerating: boolean;
-  regenAborted: { aborted: boolean };
-}
-
-const FILTER_DEBOUNCE_MS = 250;
-
 /** Safety cap for any deep scan (regenerate + normal scan). The collector stops
  *  earlier on empty/short page; this only guards a runaway response. The old
  *  user-facing "Pages" cap was removed — the scan now walks to inventory end. */
@@ -93,63 +73,47 @@ const REGEN_MAX_PAGES = SCAN_SAFETY_CAP_PAGES;
 const REGEN_DELAY_MS = 900;
 
 let overlay: OverlayHandle | null = null;
-const state: State = {
-  running: false,
-  aborted: { aborted: false },
-  items: [],
-  submode: 'sticker',
-  patternResults: [],
-  patternView: null,
-  debounce: null,
-  regenerating: false,
-  regenAborted: { aborted: false },
-};
-
-/** Run the targeted per-skin pattern hunt (v0.9.1 query-by-name). */
-async function runPatternQuery(): Promise<void> {
-  if (!overlay) return;
-  // Opportunistic TTL-gated refresh of the remote pattern bank (no-op < 24h).
-  void send({ type: 'rares:refresh', force: false });
-  updateScanBar(overlay.body, { actionLabel: t('scan.stop'), info: '', progressPct: 0 });
-  const rep = await queryPatternResults('csmoney', {
-    signal: state.aborted,
-    onProgress: (i, n, name, p) => {
-      if (!overlay) return;
-      updateScanBar(overlay.body, {
-        info: t('pattern.querying', { i, n, name, p }),
-        progressPct: Math.round((i / n) * 95),
-      });
-    },
-  });
-  // A user Stop keeps the partial hit set; patternStatus words the outcome.
-  state.patternResults = rep.results.map((r) => ({
-    ...r,
-    siteLink: siteSearchUrl('csmoney', r.marketHashName),
-  }));
-  if (!overlay) return;
-  renderResults();
-  const st = patternStatus(rep);
-  updateScanBar(overlay.body, { info: st.text, ...(rep.aborted ? {} : { progressPct: 100 }) });
-  setStatus(st.text, st.kind);
-}
+/** Last collected inventory — kept so reactive filters can re-sort +
+ *  re-render in place without a fresh network scan. */
+let items: CsMoneyItem[] = [];
+/** Regenerate (deep DB scan) in flight + its own abort signal. */
+let regenerating = false;
+let regenAborted: { aborted: boolean } = { aborted: false };
 
 function setStatus(text: string, kind?: 'info' | 'ok' | 'err' | ''): void {
   overlay?.setStatus(text, kind);
 }
 
-/** Reflect the Rare sub-mode (sticker/pattern) in the overlay header tag. */
-function setModeTagFor(sub: RareSubmode): void {
-  overlay?.setModeTag(
-    sub === 'pattern' ? t('pattern.title') : t('popup.modes.rare.title'),
-    sub === 'pattern' ? 'pattern' : 'rare',
-  );
-  // The sticker filter grid is dead weight in Pattern submode (the pattern
-  // view brings its own controls) — hide it instead of ignoring it.
-  overlay?.body.querySelector('.sh-filter-grid')?.classList.toggle('sh-hidden', sub === 'pattern');
+function sortItems(arr: CsMoneyItem[], key: string): CsMoneyItem[] {
+  const cmps: Record<string, (a: CsMoneyItem, b: CsMoneyItem) => number> = {
+    net_desc: (a, b) => b.netUsd - a.netUsd,
+    stickers_desc: (a, b) => b.stickersTotalUsd - a.stickersTotalUsd,
+    weapon_asc: (a, b) => a.weaponPriceUsd - b.weaponPriceUsd,
+    count_desc: (a, b) => b.stickers.length - a.stickers.length,
+  };
+  return [...arr].sort(cmps[key] ?? cmps['net_desc']!);
 }
-async function refreshModeTag(): Promise<void> {
-  setModeTagFor(await getRareSubmode());
-}
+
+const ctl = createRareController({
+  site: 'csmoney',
+  getOverlay: () => overlay,
+  hasResults: () => items.length > 0,
+  renderStickerResults: (list) => {
+    if (!overlay) return;
+    const filterVals = readFilterValues(overlay.body);
+    const sortKey = filterVals['sort'] ?? 'net_desc';
+    const sorted = sortItems(items, sortKey);
+    list.innerHTML =
+      renderResultsHeader(t('results.header.stickers'), t('results.net')) +
+      (sorted.length
+        ? sorted.map(renderCsMoneyCard).join('')
+        : `<div class="sh-empty">
+            <div class="sh-empty-icon">⌖</div>
+            <div class="sh-empty-title">${t('csm.empty.title')}</div>
+            <div class="sh-empty-sub">${t('csm.empty.sub')}</div>
+          </div>`);
+  },
+});
 
 function regenerateBlockHtml(disabled: boolean): string {
   return `
@@ -174,92 +138,32 @@ function bodyHtml(): string {
   ].join('');
 }
 
-function sortItems(arr: CsMoneyItem[], key: string): CsMoneyItem[] {
-  const cmps: Record<string, (a: CsMoneyItem, b: CsMoneyItem) => number> = {
-    net_desc: (a, b) => b.netUsd - a.netUsd,
-    stickers_desc: (a, b) => b.stickersTotalUsd - a.stickersTotalUsd,
-    weapon_asc: (a, b) => a.weaponPriceUsd - b.weaponPriceUsd,
-    count_desc: (a, b) => b.stickers.length - a.stickers.length,
-  };
-  return [...arr].sort(cmps[key] ?? cmps['net_desc']!);
-}
-
-/** Re-sort `state.items` by the current Sort filter and (re)render in place.
- *  Called once after a scan and again on every reactive filter change. */
-function renderPatternResults(): void {
-  if (!overlay) return;
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (!list) return;
-  state.patternView?.destroy();
-  state.patternView = mountPatternView(list, state.patternResults);
-}
-
-function renderResults(): void {
-  if (state.submode === 'pattern') {
-    renderPatternResults();
-    return;
-  }
-  if (!overlay) return;
-  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
-  if (!list) return;
-  // Sticker branch after a pattern run: drop the pattern view's listeners
-  // before overwriting the container.
-  state.patternView?.destroy();
-  state.patternView = null;
-  const filters = readFilterValues(overlay.body);
-  const sortKey = filters['sort'] ?? 'net_desc';
-  const sorted = sortItems(state.items, sortKey);
-  list.innerHTML =
-    renderResultsHeader(t('results.header.stickers'), t('results.net')) +
-    (sorted.length
-      ? sorted.map(renderCsMoneyCard).join('')
-      : `<div class="sh-empty">
-          <div class="sh-empty-icon">⌖</div>
-          <div class="sh-empty-title">${t('csm.empty.title')}</div>
-          <div class="sh-empty-sub">${t('csm.empty.sub')}</div>
-        </div>`);
-}
-
-/** Schedule a reactive re-render. `instant` skips the debounce (for selects). */
-function scheduleFilterApply(instant: boolean): void {
-  if (state.debounce !== null) {
-    clearTimeout(state.debounce);
-    state.debounce = null;
-  }
-  if (instant) {
-    renderResults();
-    return;
-  }
-  state.debounce = setTimeout(() => {
-    state.debounce = null;
-    renderResults();
-  }, FILTER_DEBOUNCE_MS);
-}
-
 async function runScan(): Promise<void> {
-  if (!overlay || state.running) return;
-  state.running = true;
-  state.aborted = { aborted: false };
+  if (!ctl.beginScan()) return;
+  if (!overlay) return;
   // try/catch/finally so a throw mid-scan never leaves the bar stuck on "Stop":
   // the error becomes a localized status and `finally` always resets state.
   try {
-    state.submode = await getRareSubmode();
-    setModeTagFor(state.submode);
-    if (state.submode === 'pattern') {
+    ctl.state.submode = await getRareSubmode();
+    ctl.setModeTagFor(ctl.state.submode);
+    if (ctl.state.submode === 'pattern') {
       // Targeted query-by-name path (v0.9.1) — no full-inventory walk.
-      await runPatternQuery();
+      await ctl.runPatternQuery();
       return;
     }
     // Opportunistic, TTL-gated remote rare-list refresh (no-op if cache < 24h).
     void send({ type: 'rares:refresh', force: false });
-    const filters = readFilterValues(overlay.body);
-    const delayMs = Math.max(100, Math.min(5000, parseInt(filters['delayMs'] ?? '900', 10) || 900));
-    const sortKey = filters['sort'] ?? 'net_desc';
+    const filterVals = readFilterValues(overlay.body);
+    const delayMs = Math.max(
+      100,
+      Math.min(5000, parseInt(filterVals['delayMs'] ?? '900', 10) || 900),
+    );
+    const sortKey = filterVals['sort'] ?? 'net_desc';
 
     // "Max pages" is optional: blank → scan the whole inventory (collector breaks
     // on empty/short page), guarded by SCAN_SAFETY_CAP_PAGES. A positive number
     // caps the scan early, clamped to the safety limit.
-    const maxPagesRaw = (filters['maxPages'] ?? '').trim();
+    const maxPagesRaw = (filterVals['maxPages'] ?? '').trim();
     const maxPagesNum = parseInt(maxPagesRaw, 10);
     const maxPages =
       maxPagesRaw && maxPagesNum > 0
@@ -277,7 +181,7 @@ async function runScan(): Promise<void> {
     const collected = await collectCsMoney({
       maxPages,
       delayMs,
-      signal: state.aborted,
+      signal: ctl.state.aborted,
       onStatus: (msg) => {
         if (!overlay) return;
         updateScanBar(overlay.body, { info: msg });
@@ -287,19 +191,19 @@ async function runScan(): Promise<void> {
       },
     });
 
-    if (state.aborted.aborted) {
+    if (ctl.state.aborted.aborted) {
       setStatus(t('scan.stopped'), 'info');
       return;
     }
 
-    state.items = collected;
+    items = collected;
 
     // Debug-only: dump per-item sticker-overpay for offline formula calibration.
     // No UI change — gated behind localStorage['skinsight:debug'].
     if (isDebug()) dumpOverpaySample(collected);
 
     if (!overlay) return;
-    renderResults();
+    ctl.renderResults();
 
     // Enable the Regenerate button.
     const drawer = overlay.body.querySelector<HTMLElement>('details');
@@ -332,7 +236,7 @@ async function runScan(): Promise<void> {
       setStatus(t('scan.error', { msg: (e as Error)?.message ?? String(e) }), 'err');
     }
   } finally {
-    finish();
+    ctl.finish();
   }
 }
 
@@ -361,8 +265,8 @@ interface OverpayDumpRow {
   overpay: { stickers: number };
 }
 
-function dumpOverpaySample(items: CsMoneyItem[]): void {
-  const rows: OverpayDumpRow[] = items
+function dumpOverpaySample(collected: CsMoneyItem[]): void {
+  const rows: OverpayDumpRow[] = collected
     .filter((i) => i.overpayStickers > 0)
     .map((i) => ({
       fullName: i.name,
@@ -376,7 +280,7 @@ function dumpOverpaySample(items: CsMoneyItem[]): void {
     }));
   const json = JSON.stringify(rows, null, 2);
   debugLog(
-    `[Skinsight][debug] overpay dump — ${rows.length} item(s) with overpay.stickers > 0 (of ${items.length} collected)`,
+    `[Skinsight][debug] overpay dump — ${rows.length} item(s) with overpay.stickers > 0 (of ${collected.length} collected)`,
   );
   debugLog(json);
   (globalThis as unknown as { __skinsightOverpay?: unknown }).__skinsightOverpay = rows;
@@ -386,7 +290,7 @@ function dumpOverpaySample(items: CsMoneyItem[]): void {
   } catch {
     /* quota / disabled storage — the console log above still has the data */
   }
-  if (!rows.length && items.length) {
+  if (!rows.length && collected.length) {
     console.warn(
       '[Skinsight][debug] no items had overpay.stickers > 0 — the field name may differ. ' +
         'Check the "raw CS.Money item/sticker keys" log above and adjust the capture in csmoney.ts.',
@@ -408,9 +312,9 @@ function regenButton(): HTMLButtonElement | null {
  * replaced at runtime; the maintainer commits the downloaded file in a release.
  */
 async function regenerate(): Promise<void> {
-  if (!overlay || state.regenerating || state.running) return;
-  state.regenerating = true;
-  state.regenAborted = { aborted: false };
+  if (!overlay || regenerating || ctl.state.running) return;
+  regenerating = true;
+  regenAborted = { aborted: false };
   const t0 = Date.now();
   const elapsed = (): string => ((Date.now() - t0) / 1000).toFixed(0) + 's';
 
@@ -422,7 +326,7 @@ async function regenerate(): Promise<void> {
   const collected = await collectCsMoney({
     maxPages: REGEN_MAX_PAGES,
     delayMs: REGEN_DELAY_MS,
-    signal: state.regenAborted,
+    signal: regenAborted,
     // Structured page counter — no regex over the (localized) status text.
     onPage: () => {
       pagesSeen += 1;
@@ -433,7 +337,7 @@ async function regenerate(): Promise<void> {
     },
   });
 
-  if (state.regenAborted.aborted) {
+  if (regenAborted.aborted) {
     setStatus(t('regen.stopped', { p: pagesSeen, t: elapsed() }), 'info');
     finishRegen();
     return;
@@ -462,7 +366,7 @@ async function regenerate(): Promise<void> {
 }
 
 function finishRegen(): void {
-  state.regenerating = false;
+  regenerating = false;
   const btn = regenButton();
   if (btn) {
     btn.disabled = false;
@@ -470,14 +374,9 @@ function finishRegen(): void {
   }
 }
 
-function abort(): void {
-  state.aborted.aborted = true;
-  state.regenAborted.aborted = true;
-}
-
-function finish(): void {
-  state.running = false;
-  if (overlay) updateScanBar(overlay.body, { actionLabel: t('scan.scan') });
+function abortAll(): void {
+  ctl.abort();
+  regenAborted.aborted = true;
 }
 
 function mount(): void {
@@ -488,24 +387,24 @@ function mount(): void {
     modeLabel: 'Rare stickers',
     persistKey: PERSIST_KEY,
     // Close now hides (the shell minimizes itself); we only abort the scan.
-    onClose: abort,
+    onClose: abortAll,
   });
   overlay.body.innerHTML = bodyHtml();
   wireSteamButtons(overlay.body);
   setStatus(t('scan.ready'), 'info');
 
   overlay.body.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    if (t.closest('[data-role=scan-action]')) {
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-role=scan-action]')) {
       e.preventDefault();
-      if (state.running) abort();
+      if (ctl.state.running) ctl.abort();
       else void runScan();
       return;
     }
-    if (t.closest('[data-role=regen]')) {
+    if (target.closest('[data-role=regen]')) {
       e.preventDefault();
-      if (state.regenerating) {
-        state.regenAborted.aborted = true;
+      if (regenerating) {
+        regenAborted.aborted = true;
       } else {
         void regenerate();
       }
@@ -514,19 +413,9 @@ function mount(): void {
   });
 
   // Reactive filters: re-sort + re-render in place when the user changes a
-  // filter after a scan (no rescan). CS.Money is a React SPA, so — like
-  // PirateSwap — we listen on `document` in the CAPTURE phase scoped to our
-  // overlay: the host framework can swallow bubble-phase change/input events.
-  const onFilterEvent = (instant: boolean) => (e: Event) => {
-    const t = e.target as HTMLElement | null;
-    if (!t || !overlay) return;
-    if (!overlay.root.contains(t) || !t.matches?.('[data-filter]')) return;
-    if (!state.items.length) return;
-    scheduleFilterApply(instant);
-  };
-  // `<select>` → instant; text/number inputs → debounced.
-  document.addEventListener('change', onFilterEvent(true), true);
-  document.addEventListener('input', onFilterEvent(false), true);
+  // filter after a scan (no rescan). Capture-phase document listeners — see
+  // scan-controller.ts.
+  ctl.registerFilterListeners();
 }
 
 async function bootstrap(): Promise<void> {
@@ -536,9 +425,9 @@ async function bootstrap(): Promise<void> {
   await applyStoredLocale();
   await applyStoredProfitParams();
   mount();
-  void refreshModeTag();
+  void ctl.refreshModeTag();
   // Live-update the header tag when the popup flips the Rare sub-mode.
-  watchSettings(() => void refreshModeTag());
+  watchSettings(() => void ctl.refreshModeTag());
 }
 
 void bootstrap();
