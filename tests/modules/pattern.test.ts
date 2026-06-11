@@ -44,10 +44,14 @@ describe('detectPatternForSkin — case-hardened / art-position (seed-list)', ()
     expect(m?.tier).toBe(1);
   });
 
-  it('Desert Eagle seed 4 → Gold Pattern variant (tier null)', () => {
-    const m = detectPatternForSkin(skin('Desert Eagle | Heat Treated'), 4);
+  it('Desert Eagle seed 103 → Gold Gem variant (tier null)', () => {
+    const m = detectPatternForSkin(skin('Desert Eagle | Heat Treated'), 103);
     expect(m?.tier).toBeNull();
     expect(m?.tierLabel).toMatch(/gold/i);
+  });
+
+  it('Desert Eagle seed 4 (old broad gold list) → no match after the top-3 cut', () => {
+    expect(detectPatternForSkin(skin('Desert Eagle | Heat Treated'), 4)).toBeNull();
   });
 
   it('Galil Phoenix Blacklight seed 169 → T1', () => {
@@ -96,12 +100,16 @@ describe('detectPatternForSkin — fade (computed)', () => {
     expect(m?.tierLabel).toMatch(/100.*fade/i);
   });
 
-  it('prefers a site-provided fade % when present', () => {
-    const m = detectPatternForSkin(skin('AWP | Fade'), 1, 97.3);
-    expect(m?.fadePct).toBe(97.3);
+  it('prefers a site-provided fade % when present (above the tightened flag)', () => {
+    const m = detectPatternForSkin(skin('AWP | Fade'), 1, 99.9);
+    expect(m?.fadePct).toBe(99.9);
   });
 
-  it('below the 95% flag → no match', () => {
+  it('97.3% — common-fade territory — no longer flags after the top-10 cut', () => {
+    expect(detectPatternForSkin(skin('AWP | Fade'), 1, 97.3)).toBeNull();
+  });
+
+  it('below the flag → no match', () => {
     const m = detectPatternForSkin(skin('AWP | Fade'), 1, 80);
     expect(m).toBeNull();
   });
