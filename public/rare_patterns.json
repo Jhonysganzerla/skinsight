@@ -504,36 +504,54 @@
       "name": "AWP | PAW",
       "family": "art-position",
       "method": "seed-list",
-      "variants": {
-        "golden_cat": {
-          "label": "Golden Cat",
-          "seeds": [17, 19, 35, 41, 350, 531, 581, 644, 675, 744]
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Golden Cat T1",
+          "seeds": [41, 350]
         },
-        "double_cat": {
-          "label": "Double Cat",
-          "seeds": [107, 480, 899, 970]
+        {
+          "tier": 1,
+          "label": "Gold Grenade T1",
+          "seeds": [429, 926, 954]
         },
-        "cat_back": {
-          "label": "Cat In The Back",
-          "seeds": [58, 109, 444, 783, 799, 813, 851, 860]
+        {
+          "tier": 1,
+          "label": "Gas Mask T1",
+          "seeds": [29, 97, 685, 900]
         },
-        "stoner_420": {
-          "label": "Stoner Cat 420",
-          "seeds": [187, 306, 420, 788]
+        {
+          "tier": 1,
+          "label": "Cat Knife T1",
+          "seeds": [212, 628, 737]
         },
-        "gas_mask": {
-          "label": "Gas Mask",
-          "seeds": [29, 32, 62, 75, 80, 97, 120, 176, 185, 294, 458, 916, 992]
+        {
+          "tier": 1,
+          "label": "Stoner Cat T1",
+          "seeds": [420, 788]
         },
-        "golden_grenade": {
-          "label": "Golden Grenade",
-          "seeds": [
-            3, 4, 26, 38, 53, 63, 73, 78, 103, 122, 156, 158, 163, 182, 186, 216, 232, 234, 429,
-            926, 954
-          ]
+        {
+          "tier": 2,
+          "label": "Golden Cat T2",
+          "seeds": [19, 35, 177, 531, 581, 624, 644, 744]
+        },
+        {
+          "tier": 2,
+          "label": "Gas Mask T2",
+          "seeds": [62, 75, 120]
+        },
+        {
+          "tier": 2,
+          "label": "Cat Knife T2",
+          "seeds": [84, 339, 366, 472, 859, 864]
+        },
+        {
+          "tier": 2,
+          "label": "Stoner Cat T2",
+          "seeds": [187, 306]
         }
-      },
-      "source": "skin.land/blog/best-rare-awp-paw-patterns-in-cs2 (2026-06-10)"
+      ],
+      "source": "consensus 2026-06-11: csgoskins.gg/blog/awp-paw-guide-all-rare-seed-patterns x steamcommunity.com/sharedfiles/filedetails/?id=2791235404 (tost); hellcase.com copies csgoskins with paste errors, tie-break only. Kept T1/T2 agreement only; dropped: 675 (T2 vs T3 conflict), 369/415/710 (Steam-only), Gold Grenade T2 (sources don't separate T2 from T3), old variants double_cat/cat_back (no tier consensus)."
     },
     {
       "weapon": "Glock-18",
