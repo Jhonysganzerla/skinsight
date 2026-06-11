@@ -1,32 +1,93 @@
-# Skinsight
+# ⌖ Skinsight
 
-> See what others miss.
+> **See what others miss.**
 
-Skinsight is a CS2 **rare sticker scanner** that catches items where the
-stickers are worth more than the listing price. It also does cross-site
-price **arbitrage** as a secondary feature.
+[![CI](https://github.com/Jhonysganzerla/skinsight/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhonysganzerla/skinsight/actions/workflows/ci.yml)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-purple)](./LICENSE)
 
-- **Rare stickers** (primary) — finds items on SkinsMonkey, PirateSwap, and CS.Money whose stickers or charms are worth more than the listing.
-- **Arbitrage** (secondary) — scans SkinsMonkey listings and cross-checks real CSFloat prices to rank by profit.
-- **Possível lucro** — Rare cards on SkinsMonkey/PirateSwap show an estimated CS.Money sticker-overpay bonus (always labelled "(est.)").
-- **Rare patterns** — a Rare sub-toggle (Stickers ⇄ Patterns) that flags rare paint seeds on weapon skins: case-hardened blue gems, fades (% computed), and the Galil Blacklight, with a seal/tier + seed + verification link (knives/gloves excluded; no $ value — pattern overpay is fuzzy).
+Skinsight is a browser extension for **CS2 skin traders**. It is an active
+_opportunity scanner_ — it sweeps marketplace listings, cross-checks real
+prices and ranks what it finds — not a passive page decorator. Its primary
+job is catching items whose **stickers, charms or paint patterns are worth
+more than the listing price**.
 
-The UI is bilingual (English + Português-BR) with a language selector in the
-options page, and a one-time welcome tab on first install.
+## Features
 
-Manifest V3, TypeScript strict, Vite + `@crxjs/vite-plugin`.
+|     | Feature                       | What it does                                                                                                                                                                                                                                         |
+| --- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔎  | **Rare stickers** _(primary)_ | Scans SkinsMonkey, PirateSwap and CS.Money for items whose applied stickers/charms outvalue the listing, with a per-sticker price breakdown and estimated overpay bonus (always labelled "est.").                                                    |
+| 💎  | **Rare patterns**             | A Stickers ⇄ Patterns sub-toggle flags rare paint seeds on weapon skins — case-hardened blue gems, fades (% computed via the Valve seed algorithm), AWP PAW motifs, Galil Blacklight and more — with tier seal, seed number and a verification link. |
+| 📈  | **Arbitrage**                 | Scans SkinsMonkey listings, cross-checks live CSFloat prices in a shared rate-limited queue, and ranks results by expected profit.                                                                                                                   |
+| 🌐  | **Bilingual UI**              | English + Português (BR), selectable in the options page.                                                                                                                                                                                            |
+| 🔄  | **Live data**                 | The rare-sticker list and pattern bank refresh from this repository (24 h TTL), so seed fixes reach users without waiting for a store release.                                                                                                       |
 
-## Status
+Everything renders in a draggable in-page overlay with reactive filters,
+chunked/virtualized rendering for large result sets, and a popup with a
+"Today's hits" feed.
 
-In active development. See [`PLAN.md`](./PLAN.md) for the current phase and roadmap.
-The reference documents live at the repository's parent folder
-(`briefing-claude-code.md`, `plano-monetizar-jhony.md`, `mockup-ui-skinsight.html`,
-`pesquisa-apis-e-referencias.md`).
+## Install
 
-## Develop
+### From source (Chrome / Edge / Brave)
 
 ```bash
+git clone https://github.com/Jhonysganzerla/skinsight.git
+cd skinsight
 npm install
+npm run build
+```
+
+1. Open `chrome://extensions` and enable **Developer mode**
+2. Click **Load unpacked** and select the `dist/` folder
+3. Visit a supported site — the overlay mounts automatically
+
+**Firefox:** same flow via `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_.
+
+### Supported sites
+
+| Site                      | Mode                             |
+| ------------------------- | -------------------------------- |
+| skinsmonkey.com           | Rare (default) + Arbitrage       |
+| pirateswap.com            | Rare                             |
+| cs.money                  | Rare + rare-DB regenerator       |
+| csfloat.com               | Arbitrage price oracle           |
+| steamcommunity.com/market | Per-item Steam price (on-demand) |
+
+## Tech stack
+
+- **Manifest V3** — service worker as message hub, minimal permissions
+  (`storage` only, exact host list — no `<all_urls>`, no clipboard access)
+- **TypeScript strict** (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
+- **Vite** + [`@crxjs/vite-plugin`](https://github.com/crxjs/chrome-extension-tools) — HMR during development
+- **Vitest** — 235+ unit tests, including line-by-line parity tests for the
+  arbitrage scoring algorithm
+- **ESLint + Prettier + GitHub Actions** — lint, typecheck, format, test and
+  build gates on every push
+
+No frameworks, no backend, no accounts. All state lives in
+`chrome.storage.local`.
+
+```text
+src/
+├── background/       service worker — message router, rate-limit buckets, GC
+├── content/          per-site content scripts (overlay mount + scan loop)
+├── modules/
+│   ├── arbitrage/    SkinsMonkey scanner, CSFloat analyzer, scoring
+│   ├── rare/         sticker finder, pattern bank, shared scan controller
+│   ├── oracles/      Steam Market price (on-demand, throttled, cached)
+│   └── shared/       overlay shell, UI kit, i18n, storage, throttling
+├── popup/            toolbar popup — mode toggles, today's hits, donate
+├── options/          language selector
+└── welcome/          first-install onboarding tab
+```
+
+More detail in [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) and
+[`docs/API-NOTES.md`](./docs/API-NOTES.md).
+
+## Development
+
+```bash
 npm run dev          # vite dev server with HMR
 npm run build        # production build → dist/
 npm run pack         # build + zip → skinsight-<version>.zip
@@ -36,45 +97,37 @@ npm run format       # prettier --write
 npm test             # vitest
 ```
 
-## Load unpacked (Chrome / Edge / Brave)
-
-1. `npm run build`
-2. `chrome://extensions` → enable Developer mode
-3. _Load unpacked_ → select the `dist/` folder
-
-For Firefox: same flow via `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_.
-
-## Sites covered
-
-| Site                      | Mode(s)                           | Phase wired |
-| ------------------------- | --------------------------------- | ----------- |
-| skinsmonkey.com           | Rare (default) + Arbitrage        | v0.2 / v0.3 |
-| pirateswap.com            | Rare (always-on)                  | v0.3        |
-| cs.money                  | Rare (always-on) + DB regenerator | v0.3        |
-| csfloat.com               | Arbitrage oracle (always-on)      | v0.2        |
-| steamcommunity.com/market | Per-item Steam price (on-demand)  | v0.5        |
-
-> A Skinport oracle was prototyped in v0.6 and **dropped** in v0.6.1 — its
-> `/v1/items` endpoint sits behind a Cloudflare challenge that a content script
-> can't clear. Per-item Steam Market price covers the same need.
-
-UI text is localized — English + Português (BR) — via a runtime `t()` module;
-pick the language in the options page. Visual reference: `mockup-ui-skinsight.html`.
+Contributions are welcome — see [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md).
+The release smoke checklist lives in [`docs/SMOKE.md`](./docs/SMOKE.md) and the
+roadmap in [`PLAN.md`](./PLAN.md).
 
 ## Privacy
 
-No data collected, no telemetry, no remote backend. Full policy in [`PRIVACY.md`](./PRIVACY.md).
+**No data collected. No telemetry. No remote backend.**
+
+Skinsight talks only to the marketplaces you are already browsing, the Steam
+Market price endpoint, and this repository (to refresh the public rare-data
+files). Full policy in [`PRIVACY.md`](./PRIVACY.md).
+
+## Disclaimer
+
+Skinsight reads marketplace data through the same private endpoints the sites'
+own pages use, under your existing session. Those endpoints are undocumented
+and may change or be rate-limited at any time, and automated access may be
+against a marketplace's Terms of Service — **use at your own risk**. Skinsight
+is not affiliated with Valve, Steam or any marketplace; price estimates are
+informational and not financial advice.
 
 ## License
 
-Source-available under the **PolyForm Noncommercial 1.0.0** license — code is
-public for transparency and contributions, but commercial use requires a
-separate license from the maintainer. See [`LICENSE`](./LICENSE).
+Source-available under **PolyForm Noncommercial 1.0.0** — the code is public
+for transparency and contributions, but commercial use requires a separate
+license from the maintainer. See [`LICENSE`](./LICENSE).
 
-## Donate
+## Support the project
 
-If this saves you money, consider buying the maintainer a coffee:
+If Skinsight saves you money, consider buying the maintainer a coffee:
 
-- Ko-fi: <https://ko-fi.com/sganzerla>
-- Pix: open the popup → **Mostrar QR Pix** to scan, or **Copiar Pix** for the
-  full "copia e cola" (BR Code).
+- **Ko-fi:** <https://ko-fi.com/sganzerla>
+- **Pix (BR):** open the popup → **Mostrar QR Pix** to scan, or **Copiar Pix**
+  for the full "copia e cola" (BR Code)
