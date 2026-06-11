@@ -1,2060 +1,1076 @@
 {
- "schema_version": 1,
- "generated_at": "2026-06-10T13:10:30.887Z",
- "source_notes": "CS2 weapon-only rare paint-seed patterns for query-by-seed marketplace lookup. Knives and gloves excluded. Families: case-hardened (blue-gem seed tiers; AK-47/Five-SeveN/MAC-10 Case Hardened + Desert Eagle Heat Treated, the Armory-2024 case-hardened variant, incl. gold/purple variant seeds), fade (% computed from seed via Valve algorithm; high_fade_seeds = all seeds >=90%, method fade-calc), art-position (Galil Phoenix Blacklight). Sources: cs-tierlist (GODrums) generated JSON, csgobluegem.com / csgoskins.gg / sellyourskins / isitabluegem seed tables, npm csgo-fade-percentage-calculator v2.0.0. Re-swept for other weapon seed-overpay finishes: csgobluegem master blue-gem list confirms no weapon Case-Hardened/Heat-Treated beyond the four here; Hyper Beast/Asiimov-type skins excluded (seed irrelevant).",
- "families": [
-  "case-hardened",
-  "fade",
-  "art-position"
- ],
- "skins": [
-  {
-   "weapon": "AK-47",
-   "finish": "Case Hardened",
-   "name": "AK-47 | Case Hardened",
-   "family": "case-hardened",
-   "method": "seed-list",
-   "tiers": [
+  "schema_version": 1,
+  "generated_at": "2026-06-10T13:10:30.887Z",
+  "source_notes": "CS2 weapon-only rare paint-seed patterns for query-by-seed marketplace lookup. Knives and gloves excluded. Families: case-hardened (blue-gem seed tiers; AK-47/Five-SeveN/MAC-10 Case Hardened + Desert Eagle Heat Treated, the Armory-2024 case-hardened variant, incl. gold/purple variant seeds), fade (% computed from seed via Valve algorithm; high_fade_seeds = all seeds >=90%, method fade-calc), art-position (Galil Phoenix Blacklight). Sources: cs-tierlist (GODrums) generated JSON, csgobluegem.com / csgoskins.gg / sellyourskins / isitabluegem seed tables, npm csgo-fade-percentage-calculator v2.0.0. Re-swept for other weapon seed-overpay finishes: csgobluegem master blue-gem list confirms no weapon Case-Hardened/Heat-Treated beyond the four here; Hyper Beast/Asiimov-type skins excluded (seed irrelevant).",
+  "families": ["case-hardened", "fade", "art-position"],
+  "skins": [
     {
-     "tier": 1,
-     "label": "Blue Gem T1 (top)",
-     "seeds": [
-      151,
-      179,
-      321,
-      387,
-      661,
-      670,
-      955
-     ]
-    },
-    {
-     "tier": 2,
-     "label": "Blue Gem T2",
-     "seeds": [
-      4,
-      13,
-      168,
-      429,
-      592,
-      905
-     ]
-    },
-    {
-     "tier": 3,
-     "label": "Blue Gem T3",
-     "seeds": [
-      11,
-      74,
-      82,
-      92,
-      103,
-      112,
-      139,
-      147,
-      172,
-      189,
-      228,
-      236,
-      278,
-      310,
-      322,
-      363,
-      375,
-      426,
-      430,
-      434,
-      442,
-      450,
-      463,
-      497,
-      512,
-      555,
-      690,
-      695,
-      698,
-      708,
-      711,
-      713,
-      721,
-      733,
-      750,
-      760,
-      782,
-      791,
-      823,
-      828,
-      844,
-      849,
-      862,
-      868,
-      887,
-      917,
-      950,
-      961,
-      969,
-      978,
-      996
-     ]
+      "weapon": "AK-47",
+      "finish": "Case Hardened",
+      "name": "AK-47 | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [151, 179, 321, 387, 661, 670, 955]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [4, 13, 168, 429, 592, 905]
+        },
+        {
+          "tier": 3,
+          "label": "Blue Gem T3",
+          "seeds": [
+            11, 74, 82, 92, 103, 112, 139, 147, 172, 189, 228, 236, 278, 310, 322, 363, 375, 426,
+            430, 434, 442, 450, 463, 497, 512, 555, 690, 695, 698, 708, 711, 713, 721, 733, 750,
+            760, 782, 791, 823, 828, 844, 849, 862, 868, 887, 917, 950, 961, 969, 978, 996
+          ]
+        },
+        {
+          "tier": 4,
+          "label": "Blue Gem T4 (low)",
+          "seeds": [
+            2, 28, 32, 34, 65, 73, 126, 130, 169, 178, 182, 194, 200, 205, 209, 230, 242, 248, 256,
+            269, 296, 306, 325, 341, 344, 381, 397, 407, 418, 420, 428, 431, 447, 453, 456, 458,
+            468, 470, 479, 481, 493, 494, 507, 522, 525, 526, 532, 541, 557, 575, 577, 605, 622,
+            627, 648, 664, 681, 685, 689, 694, 715, 724, 770, 775, 788, 795, 798, 803, 809, 842,
+            847, 872, 878, 879, 888, 891, 922, 927, 935, 965, 985, 1000
+          ]
+        }
+      ],
+      "source": "csgoskins.gg/blog/ak-47-case-hardened-blue-gem-seed-patterns",
+      "variants": {
+        "gold": {
+          "label": "Gold Pattern",
+          "seeds": [219, 784]
+        }
+      }
     },
     {
-     "tier": 4,
-     "label": "Blue Gem T4 (low)",
-     "seeds": [
-      2,
-      28,
-      32,
-      34,
-      65,
-      73,
-      126,
-      130,
-      169,
-      178,
-      182,
-      194,
-      200,
-      205,
-      209,
-      230,
-      242,
-      248,
-      256,
-      269,
-      296,
-      306,
-      325,
-      341,
-      344,
-      381,
-      397,
-      407,
-      418,
-      420,
-      428,
-      431,
-      447,
-      453,
-      456,
-      458,
-      468,
-      470,
-      479,
-      481,
-      493,
-      494,
-      507,
-      522,
-      525,
-      526,
-      532,
-      541,
-      557,
-      575,
-      577,
-      605,
-      622,
-      627,
-      648,
-      664,
-      681,
-      685,
-      689,
-      694,
-      715,
-      724,
-      770,
-      775,
-      788,
-      795,
-      798,
-      803,
-      809,
-      842,
-      847,
-      872,
-      878,
-      879,
-      888,
-      891,
-      922,
-      927,
-      935,
-      965,
-      985,
-      1000
-     ]
-    }
-   ],
-   "source": "csgoskins.gg/blog/ak-47-case-hardened-blue-gem-seed-patterns",
-   "variants": {
-    "gold": {
-     "label": "Gold Pattern",
-     "seeds": [
-      219,
-      784
-     ]
-    }
-   }
-  },
-  {
-   "weapon": "Five-SeveN",
-   "finish": "Case Hardened",
-   "name": "Five-SeveN | Case Hardened",
-   "family": "case-hardened",
-   "method": "seed-list",
-   "tiers": [
-    {
-     "tier": 1,
-     "label": "Blue Gem T1 (top)",
-     "seeds": [
-      189,
-      278,
-      363,
-      532,
-      648,
-      689,
-      690,
-      872
-     ]
+      "weapon": "Five-SeveN",
+      "finish": "Case Hardened",
+      "name": "Five-SeveN | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [189, 278, 363, 532, 648, 689, 690, 872]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [25, 151, 177, 215, 321, 631, 670, 700, 724, 868, 875, 879, 888]
+        },
+        {
+          "tier": 3,
+          "label": "Blue Gem T3",
+          "seeds": [13, 28, 101, 103]
+        }
+      ],
+      "note": "T3 only partial in source",
+      "source": "sellyourskins.com/blog/five-seven-case-hardened-blue-gem-patterns-and-seeds; isitabluegem.com/discover/five-seven",
+      "variants": {
+        "gold": {
+          "label": "Gold Pattern",
+          "seeds": [691]
+        }
+      }
     },
     {
-     "tier": 2,
-     "label": "Blue Gem T2",
-     "seeds": [
-      25,
-      151,
-      177,
-      215,
-      321,
-      631,
-      670,
-      700,
-      724,
-      868,
-      875,
-      879,
-      888
-     ]
+      "weapon": "MAC-10",
+      "finish": "Case Hardened",
+      "name": "MAC-10 | Case Hardened",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [114, 222, 239, 349, 406, 503, 667]
+        },
+        {
+          "tier": 2,
+          "label": "Blue Gem T2",
+          "seeds": [80, 195, 199, 251, 292, 315, 345, 381, 400, 414, 475, 598, 807, 972]
+        }
+      ],
+      "note": "T1/T2 enumerated; lower tiers exist on csgobluegem.com but not fully listed in source",
+      "source": "csgoskins.gg/blog/mac-10-case-hardened-blue-gem-seed-patterns; hotspawn.com; csgobluegem.com/mac-10"
     },
     {
-     "tier": 3,
-     "label": "Blue Gem T3",
-     "seeds": [
-      13,
-      28,
-      101,
-      103
-     ]
-    }
-   ],
-   "note": "T3 only partial in source",
-   "source": "sellyourskins.com/blog/five-seven-case-hardened-blue-gem-patterns-and-seeds; isitabluegem.com/discover/five-seven",
-   "variants": {
-    "gold": {
-     "label": "Gold Pattern",
-     "seeds": [
-      691
-     ]
-    }
-   }
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Case Hardened",
-   "name": "MAC-10 | Case Hardened",
-   "family": "case-hardened",
-   "method": "seed-list",
-   "tiers": [
-    {
-     "tier": 1,
-     "label": "Blue Gem T1 (top)",
-     "seeds": [
-      114,
-      222,
-      239,
-      349,
-      406,
-      503,
-      667
-     ]
+      "weapon": "Desert Eagle",
+      "finish": "Heat Treated",
+      "name": "Desert Eagle | Heat Treated",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "note": "Armory 2024 Classified blue-gem skin (case-hardened look under 'Heat Treated' name). Blue gems = bright-blue body; also collectible gold and purple pattern variants. #1=490, #2-tier=148/69/704.",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blue Gem T1 (top)",
+          "seeds": [490, 148, 69]
+        }
+      ],
+      "variants": {
+        "purple": {
+          "label": "Purple Gem",
+          "seeds": [172, 599, 156]
+        },
+        "gold": {
+          "label": "Gold Gem",
+          "seeds": [103, 182, 74]
+        }
+      },
+      "source": "top-3 per gem (2026-06-10) — consensus of skin.land/blog/full-deagle-heat-treated-patterns-guide, cs.money/blog (deagle heat treated pattern guide) and skinlords.com; blue #490 is rank #1 in every guide"
     },
     {
-     "tier": 2,
-     "label": "Blue Gem T2",
-     "seeds": [
-      80,
-      195,
-      199,
-      251,
-      292,
-      315,
-      345,
-      381,
-      400,
-      414,
-      475,
-      598,
-      807,
-      972
-     ]
-    }
-   ],
-   "note": "T1/T2 enumerated; lower tiers exist on csgobluegem.com but not fully listed in source",
-   "source": "csgoskins.gg/blog/mac-10-case-hardened-blue-gem-seed-patterns; hotspawn.com; csgobluegem.com/mac-10"
-  },
-  {
-   "weapon": "Desert Eagle",
-   "finish": "Heat Treated",
-   "name": "Desert Eagle | Heat Treated",
-   "family": "case-hardened",
-   "method": "seed-list",
-   "note": "Armory 2024 Classified blue-gem skin (case-hardened look under 'Heat Treated' name). Blue gems = bright-blue body; also collectible gold and purple pattern variants. #1=490, #2-tier=148/69/704.",
-   "tiers": [
-    {
-     "tier": 1,
-     "label": "Blue Gem T1 (top)",
-     "seeds": [
-      490,
-      148,
-      69
-     ]
-    }
-   ],
-   "variants": {
-    "purple": {
-     "label": "Purple Gem",
-     "seeds": [
-      172,
-      599,
-      156
-     ]
-    },
-    "gold": {
-     "label": "Gold Gem",
-     "seeds": [
-      103,
-      182,
-      74
-     ]
-    }
-   },
-   "source": "top-3 per gem (2026-06-10) — consensus of skin.land/blog/full-deagle-heat-treated-patterns-guide, cs.money/blog (deagle heat treated pattern guide) and skinlords.com; blue #490 is rank #1 in every guide"
-  },
-  {
-   "weapon": "AWP",
-   "finish": "Fade",
-   "name": "AWP | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 412,
-   "thresholds": {
-    "flag_min_pct": 99.7,
-    "query_min_pct": 99.7
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Fade",
-   "name": "Glock-18 | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "M4A1-S",
-   "finish": "Fade",
-   "name": "M4A1-S | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 374,
-   "thresholds": {
-    "flag_min_pct": 99.7,
-    "query_min_pct": 99.7
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Fade",
-   "name": "MAC-10 | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "MP7",
-   "finish": "Fade",
-   "name": "MP7 | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 80,
-   "thresholds": {
-    "flag_min_pct": 99.3,
-    "query_min_pct": 99.3
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "R8 Revolver",
-   "finish": "Fade",
-   "name": "R8 Revolver | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "UMP-45",
-   "finish": "Fade",
-   "name": "UMP-45 | Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "AUG",
-   "finish": "Amber Fade",
-   "name": "AUG | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "Galil AR",
-   "finish": "Amber Fade",
-   "name": "Galil AR | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Amber Fade",
-   "name": "MAC-10 | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "P2000",
-   "finish": "Amber Fade",
-   "name": "P2000 | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "R8 Revolver",
-   "finish": "Amber Fade",
-   "name": "R8 Revolver | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "Sawed-Off",
-   "finish": "Amber Fade",
-   "name": "Sawed-Off | Amber Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
-   "max_pct_seed": 763,
-   "thresholds": {
-    "flag_min_pct": 99.8,
-    "query_min_pct": 99.8
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "SSG 08",
-   "finish": "Acid Fade",
-   "name": "SSG 08 | Acid Fade",
-   "family": "fade",
-   "method": "fade-calc",
-   "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
-   "source": "npm csgo-fade-percentage-calculator (AcidFadeCalculator)",
-   "max_pct_seed": 576,
-   "thresholds": {
-    "flag_min_pct": 99.4,
-    "query_min_pct": 99.4
-   },
-   "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
-  },
-  {
-   "weapon": "Galil AR",
-   "finish": "Phoenix Blacklight",
-   "name": "Galil AR | Phoenix Blacklight",
-   "family": "art-position",
-   "method": "seed-list",
-   "tiers": [
-    {
-     "tier": 1,
-     "label": "Blacklight T1",
-     "seeds": [
-      169,
-      289,
-      303,
-      419,
-      432,
-      475,
-      573,
-      619,
-      643,
-      729,
-      755,
-      893,
-      963,
-      978
-     ]
+      "weapon": "AWP",
+      "finish": "Fade",
+      "name": "AWP | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 412,
+      "thresholds": {
+        "flag_min_pct": 99.7,
+        "query_min_pct": 99.7
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
     },
     {
-     "tier": 2,
-     "label": "Blacklight T2",
-     "seeds": [
-      58,
-      69,
-      73,
-      224,
-      270,
-      322,
-      358,
-      406,
-      469,
-      622,
-      749,
-      798,
-      865,
-      886
-     ]
+      "weapon": "Glock-18",
+      "finish": "Fade",
+      "name": "Glock-18 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
     },
     {
-     "tier": 3,
-     "label": "Blacklight T3",
-     "seeds": [
-      211,
-      324,
-      915,
-      979
-     ]
+      "weapon": "M4A1-S",
+      "finish": "Fade",
+      "name": "M4A1-S | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 374,
+      "thresholds": {
+        "flag_min_pct": 99.7,
+        "query_min_pct": 99.7
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
     },
     {
-     "tier": 4,
-     "label": "Blacklight T4",
-     "seeds": [
-      819
-     ]
-    }
-   ],
-   "note": "Blacklight = phoenix positioned so gun appears all-black; SeanErren tierlist",
-   "source": "github.com/GODrums/cs-tierlist generated/phoenix_galil.json (orig: SeanErren steam guide 2352059734)"
-  },
-  {
-   "weapon": "SSG 08",
-   "finish": "Abyss",
-   "name": "SSG 08 | Abyss",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "white_scope": {
-     "label": "White Scope",
-     "seeds": [
-      54,
-      148,
-      167,
-      208,
-      669,
-      806,
-      911,
-      985
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "MP7",
-   "finish": "Amberline",
-   "name": "MP7 | Amberline",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_white": {
-     "label": "White Gem",
-     "seeds": [
-      350,
-      356,
-      382,
-      435,
-      581,
-      613,
-      890,
-      959
-     ]
-    },
-    "gem_gold": {
-     "label": "Gold Gem",
-     "seeds": [
-      153,
-      205,
-      218,
-      238,
-      322,
-      426,
-      504,
-      519,
-      711,
-      906
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Five-SeveN",
-   "finish": "Berries And Cherries",
-   "name": "Five-SeveN | Berries And Cherries",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_blue": {
-     "label": "Blue Gem",
-     "seeds": [
-      80
-     ]
-    },
-    "gem_red": {
-     "label": "Red Gem",
-     "seeds": [
-      182
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "AWP",
-   "finish": "Electric Hive",
-   "name": "AWP | Electric Hive",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "blue_hive": {
-     "label": "Blue Hive",
-     "seeds": [
-      23,
-      262,
-      273,
-      436,
-      853,
-      902
-     ]
-    },
-    "orange_hive": {
-     "label": "Orange Hive",
-     "seeds": [
-      42,
-      54,
-      253,
-      611,
-      697,
-      767
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Grinder",
-   "name": "Glock-18 | Grinder",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_black": {
-     "label": "Black Gem",
-     "seeds": [
-      384,
-      811,
-      907,
-      916
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Five-SeveN",
-   "finish": "Heat Treated",
-   "name": "Five-SeveN | Heat Treated",
-   "family": "case-hardened",
-   "method": "seed-list",
-   "variants": {
-    "gem_blue": {
-     "label": "Blue Gem",
-     "seeds": [
-      148,
-      704,
-      904
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Five-SeveN",
-   "finish": "Kami",
-   "name": "Five-SeveN | Kami",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "pussy": {
-     "label": "Pussy",
-     "seeds": [
-      590,
-      909
-     ]
-    },
-    "top": {
-     "label": "Top Pattern",
-     "seeds": [
-      662
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern + skin.land/blog/best-five-seven-kami-patterns (2026-06-10)"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Moonrise",
-   "name": "Glock-18 | Moonrise",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "star": {
-     "label": "Star",
-     "seeds": [
-      58,
-      59,
-      66,
-      90,
-      102,
-      224,
-      601,
-      628,
-      694,
-      706,
-      837,
-      864
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "AWP",
-   "finish": "PAW",
-   "name": "AWP | PAW",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "golden_cat": {
-     "label": "Golden Cat",
-     "seeds": [
-      17,
-      19,
-      35,
-      41,
-      350,
-      531,
-      581,
-      644,
-      675,
-      744
-     ]
-    },
-    "double_cat": {
-     "label": "Double Cat",
-     "seeds": [
-      107,
-      480,
-      899,
-      970
-     ]
-    },
-    "cat_back": {
-     "label": "Cat In The Back",
-     "seeds": [
-      58,
-      109,
-      444,
-      783,
-      799,
-      813,
-      851,
-      860
-     ]
-    },
-    "stoner_420": {
-     "label": "Stoner Cat 420",
-     "seeds": [
-      187,
-      306,
-      420,
-      788
-     ]
-    },
-    "gas_mask": {
-     "label": "Gas Mask",
-     "seeds": [
-      29,
-      32,
-      62,
-      75,
-      80,
-      97,
-      120,
-      176,
-      185,
-      294,
-      458,
-      916,
-      992
-     ]
-    },
-    "golden_grenade": {
-     "label": "Golden Grenade",
-     "seeds": [
-      3,
-      4,
-      26,
-      38,
-      53,
-      63,
-      73,
-      78,
-      103,
-      122,
-      156,
-      158,
-      163,
-      182,
-      186,
-      216,
-      232,
-      234,
-      429,
-      926,
-      954
-     ]
-    }
-   },
-   "source": "skin.land/blog/best-rare-awp-paw-patterns-in-cs2 (2026-06-10)"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Pink DDPAT",
-   "name": "Glock-18 | Pink DDPAT",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_pink": {
-     "label": "Pink Gem",
-     "seeds": [
-      255,
-      568,
-      589,
-      600,
-      741
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Galil AR",
-   "finish": "Sandstorm",
-   "name": "Galil AR | Sandstorm",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_purple": {
-     "label": "Purple Gem",
-     "seeds": [
-      178,
-      583,
-      739,
-      761
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Tec-9",
-   "finish": "Sandstorm",
-   "name": "Tec-9 | Sandstorm",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_purple": {
-     "label": "Purple Gem",
-     "seeds": [
-      70,
-      83,
-      328,
-      552,
-      583,
-      862
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Desert Eagle",
-   "finish": "Serpent Strike",
-   "name": "Desert Eagle | Serpent Strike",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_orange": {
-     "label": "Orange Gem",
-     "seeds": [
-      174,
-      425,
-      658,
-      757,
-      953
-     ]
-    },
-    "gem_black": {
-     "label": "Black Gem",
-     "seeds": [
-      225,
-      748
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Snow Splash",
-   "name": "MAC-10 | Snow Splash",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_white": {
-     "label": "White Gem",
-     "seeds": [
-      60,
-      222,
-      234,
-      309,
-      463,
-      675,
-      824,
-      828
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Trace Lock",
-   "name": "Glock-18 | Trace Lock",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "gem_white": {
-     "label": "White Gem",
-     "seeds": [
-      130,
-      390,
-      650,
-      679,
-      838
-     ]
-    }
-   },
-   "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
-  },
-  {
-   "weapon": "M4A1-S",
-   "finish": "Solitude",
-   "name": "M4A1-S | Solitude",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "orange_t1": {
-     "label": "Orange Sun T1",
-     "seeds": [
-      15,
-      56,
-      84,
-      138,
-      151,
-      170,
-      191,
-      195,
-      219,
-      236,
-      265,
-      278,
-      322,
-      339,
-      340,
-      529,
-      565,
-      634,
-      646,
-      690,
-      719,
-      741,
-      825,
-      849,
-      877,
-      887,
-      981
-     ]
-    },
-    "orange_t2": {
-     "label": "Orange Sun T2",
-     "seeds": [
-      47,
-      136,
-      156,
-      160,
-      163,
-      192,
-      244,
-      337,
-      351,
-      359,
-      368,
-      378,
-      472,
-      519,
-      619,
-      640,
-      708,
-      720,
-      759,
-      833,
-      839
-     ]
-    },
-    "golden": {
-     "label": "Golden Mountains",
-     "seeds": [
-      95,
-      154,
-      220,
-      304,
-      533
-     ]
-    },
-    "red_t1": {
-     "label": "Red Sun T1",
-     "seeds": [
-      73,
-      214,
-      248,
-      269,
-      276,
-      281,
-      312,
-      462,
-      506,
-      513,
-      531,
-      549,
-      568,
-      569,
-      579,
-      726,
-      729,
-      859,
-      920
-     ]
-    },
-    "red_t2": {
-     "label": "Red Sun T2",
-     "seeds": [
-      8,
-      50,
-      63,
-      65,
-      143,
-      144,
-      193,
-      211,
-      212,
-      246,
-      318,
-      342,
-      374,
-      376,
-      389,
-      393,
-      457,
-      488,
-      578,
-      623,
-      645,
-      702,
-      716,
-      749,
-      763,
-      798,
-      809,
-      832,
-      883,
-      917,
-      956,
-      993
-     ]
-    },
-    "yellow_t1": {
-     "label": "Yellow Sun T1",
-     "seeds": [
-      158,
-      284,
-      321,
-      525,
-      797,
-      895,
-      951
-     ]
-    },
-    "yellow_t2": {
-     "label": "Yellow Sun T2",
-     "seeds": [
-      0,
-      1,
-      67,
-      96,
-      114,
-      201,
-      260,
-      407,
-      433,
-      441,
-      489,
-      490,
-      562,
-      591,
-      643,
-      648,
-      668,
-      673,
-      725,
-      876,
-      878,
-      888,
-      964,
-      999
-     ]
-    },
-    "white_clouds": {
-     "label": "White Clouds",
-     "seeds": [
-      60,
-      117,
-      127,
-      148,
-      185,
-      202,
-      204,
-      209,
-      263,
-      287,
-      294,
-      386,
-      402,
-      414,
-      444,
-      483,
-      498,
-      510,
-      514,
-      542,
-      584,
-      587,
-      695,
-      696,
-      718,
-      772,
-      835,
-      856,
-      882,
-      900,
-      931,
-      953,
-      955,
-      990
-     ]
-    },
-    "blue_white_clouds": {
-     "label": "Blue/White Clouds",
-     "seeds": [
-      21,
-      23,
-      29,
-      70,
-      72,
-      75,
-      80,
-      115,
-      140,
-      152,
-      179,
-      183,
-      230,
-      271,
-      283,
-      290,
-      291,
-      335,
-      346,
-      361,
-      363,
-      417,
-      459,
-      491,
-      504,
-      515,
-      540,
-      551,
-      560,
-      572,
-      581,
-      582,
-      589,
-      605,
-      656,
-      666,
-      683,
-      685,
-      692,
-      693,
-      727,
-      738,
-      783,
-      799,
-      813,
-      842,
-      875,
-      879,
-      881,
-      903,
-      911,
-      914,
-      936,
-      937,
-      939,
-      940,
-      959,
-      969,
-      989,
-      996
-     ]
-    }
-   },
-   "source": "skin.land/blog/the-m4a1s-solitude-pattern-guide (2026-06-10)"
-  },
-  {
-   "weapon": "XM1014",
-   "finish": "Solitude",
-   "name": "XM1014 | Solitude",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "red_sun": {
-     "label": "Red Sun",
-     "seeds": [
-      95,
-      154,
-      220,
-      863,
-      871
-     ]
-    },
-    "red_sunrise": {
-     "label": "Red Sunrise",
-     "seeds": [
-      533
-     ]
-    },
-    "glowing": {
-     "label": "Glowing Mountains",
-     "seeds": [
-      180,
-      379,
-      652,
-      731,
-      743
-     ]
-    },
-    "waves": {
-     "label": "Waves",
-     "seeds": [
-      12,
-      650,
-      669
-     ]
-    },
-    "blue_mountains": {
-     "label": "Blue Mountains",
-     "seeds": [
-      33,
-      105,
-      135,
-      225,
-      437,
-      717,
-      815,
-      930,
-      948,
-      984,
-      997
-     ]
-    },
-    "green_mountains": {
-     "label": "Green Mountains",
-     "seeds": [
-      98,
-      320,
-      837,
-      901
-     ]
-    },
-    "white_sunrise": {
-     "label": "White Sunrise",
-     "seeds": [
-      134,
-      159
-     ]
-    }
-   },
-   "source": "skin.land/blog/the-best-xm1014-solitude-patterns-in-cs2 (2026-06-10)"
-  },
-  {
-   "weapon": "XM1014",
-   "finish": "XOXO",
-   "name": "XM1014 | XOXO",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "skull": {
-     "label": "Skull",
-     "seeds": [
-      135,
-      225,
-      547,
-      579,
-      766
-     ]
-    },
-    "skull_mohawk": {
-     "label": "Skull Mohawk",
-     "seeds": [
-      7,
-      178,
-      289,
-      307,
-      526,
-      546
-     ]
-    },
-    "pink_smiley": {
-     "label": "Pink Smiley",
-     "seeds": [
-      65,
-      326,
-      643,
-      659,
-      833
-     ]
-    },
-    "black_smiley": {
-     "label": "Black Smiley",
-     "seeds": [
-      110,
-      498,
-      549,
-      637
-     ]
-    },
-    "burn_it_down": {
-     "label": "Burn It Down",
-     "seeds": [
-      320,
-      345,
-      357,
-      369,
-      822
-     ]
-    },
-    "live_your_life": {
-     "label": "Live Your Life",
-     "seeds": [
-      19,
-      83,
-      94,
-      301,
-      347,
-      492,
-      764,
-      992
-     ]
-    },
-    "xxx": {
-     "label": "XXX",
-     "seeds": [
-      31,
-      394,
-      511,
-      532,
-      684,
-      702,
-      713,
-      791,
-      814
-     ]
-    },
-    "yeah_right": {
-     "label": "Yeah Right",
-     "seeds": [
-      235,
-      328,
-      652,
-      775,
-      919
-     ]
-    },
-    "punk": {
-     "label": "Punk",
-     "seeds": [
-      330,
-      352,
-      697,
-      708,
-      926
-     ]
-    }
-   },
-   "source": "skin.land/blog/best-rare-xm1014-xoxo-pattern-seeds-guide (2026-06-10)"
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Last Dive",
-   "name": "MAC-10 | Last Dive",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "centered_skull": {
-     "label": "Centered Skull",
-     "seeds": [
-      386
-     ]
-    },
-    "skull_helmet": {
-     "label": "Skull + Diving Helmet",
-     "seeds": [
-      407
-     ]
-    },
-    "shell_helmet_skull": {
-     "label": "Shell + Helmet + Skull",
-     "seeds": [
-      509
-     ]
-    },
-    "underwater_tree": {
-     "label": "Underwater Tree",
-     "seeds": [
-      748
-     ]
-    },
-    "seahorse": {
-     "label": "Seahorse",
-     "seeds": [
-      274,
-      452,
-      457,
-      648,
-      736
-     ]
-    },
-    "serpent": {
-     "label": "Serpent",
-     "seeds": [
-      301,
-      992
-     ]
-    }
-   },
-   "source": "skin.land/blog/full-mac-10-last-dive-pattern-guide (2026-06-10)"
-  },
-  {
-   "weapon": "Galil AR",
-   "finish": "Rainbow Spoon",
-   "name": "Galil AR | Rainbow Spoon",
-   "family": "color-gem",
-   "method": "seed-list",
-   "tiers": [
-    {
-     "tier": 1,
-     "label": "Fade Gem T1",
-     "seeds": [
-      0,
-      1,
-      3,
-      25,
-      44,
-      58,
-      106,
-      113,
-      116,
-      142,
-      148,
-      168,
-      175,
-      185,
-      201,
-      202,
-      204,
-      225,
-      245,
-      251,
-      253,
-      271,
-      279,
-      284,
-      297,
-      299
-     ]
+      "weapon": "MAC-10",
+      "finish": "Fade",
+      "name": "MAC-10 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
     },
     {
-     "tier": 2,
-     "label": "Fade Gem T1.5",
-     "seeds": [
-      7,
-      16,
-      48,
-      53,
-      54,
-      60,
-      69,
-      96,
-      108,
-      109,
-      111,
-      114,
-      117,
-      119,
-      125,
-      134,
-      145,
-      159,
-      169,
-      215,
-      222,
-      228,
-      233,
-      234,
-      237,
-      250,
-      259,
-      260,
-      263,
-      266,
-      267,
-      273,
-      275,
-      280,
-      288
-     ]
+      "weapon": "MP7",
+      "finish": "Fade",
+      "name": "MP7 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 80,
+      "thresholds": {
+        "flag_min_pct": 99.3,
+        "query_min_pct": 99.3
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "R8 Revolver",
+      "finish": "Fade",
+      "name": "R8 Revolver | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "UMP-45",
+      "finish": "Fade",
+      "name": "UMP-45 | Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (FadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "AUG",
+      "finish": "Amber Fade",
+      "name": "AUG | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Amber Fade",
+      "name": "Galil AR | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Amber Fade",
+      "name": "MAC-10 | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "P2000",
+      "finish": "Amber Fade",
+      "name": "P2000 | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "R8 Revolver",
+      "finish": "Amber Fade",
+      "name": "R8 Revolver | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "Sawed-Off",
+      "finish": "Amber Fade",
+      "name": "Sawed-Off | Amber Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AmberFadeCalculator)",
+      "max_pct_seed": 763,
+      "thresholds": {
+        "flag_min_pct": 99.8,
+        "query_min_pct": 99.8
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "SSG 08",
+      "finish": "Acid Fade",
+      "name": "SSG 08 | Acid Fade",
+      "family": "fade",
+      "method": "fade-calc",
+      "note": "Fade % computed at runtime from paint seed via csgo-fade-percentage-calculator. SM scan-and-detect: compute exact %, flag >= flag_min_pct, show the %. PS/CS.Money query-by-seed: query the >= query_min_pct seed list, generated from the lib at build time. max_pct_seed = the 100%/Absolute Max seed(s).",
+      "source": "npm csgo-fade-percentage-calculator (AcidFadeCalculator)",
+      "max_pct_seed": 576,
+      "thresholds": {
+        "flag_min_pct": 99.4,
+        "query_min_pct": 99.4
+      },
+      "threshold_rule": "top-10 seeds (2026-06-10): premium only near full fade"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Phoenix Blacklight",
+      "name": "Galil AR | Phoenix Blacklight",
+      "family": "art-position",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Blacklight T1",
+          "seeds": [169, 289, 303, 419, 432, 475, 573, 619, 643, 729, 755, 893, 963, 978]
+        },
+        {
+          "tier": 2,
+          "label": "Blacklight T2",
+          "seeds": [58, 69, 73, 224, 270, 322, 358, 406, 469, 622, 749, 798, 865, 886]
+        },
+        {
+          "tier": 3,
+          "label": "Blacklight T3",
+          "seeds": [211, 324, 915, 979]
+        },
+        {
+          "tier": 4,
+          "label": "Blacklight T4",
+          "seeds": [819]
+        }
+      ],
+      "note": "Blacklight = phoenix positioned so gun appears all-black; SeanErren tierlist",
+      "source": "github.com/GODrums/cs-tierlist generated/phoenix_galil.json (orig: SeanErren steam guide 2352059734)"
+    },
+    {
+      "weapon": "SSG 08",
+      "finish": "Abyss",
+      "name": "SSG 08 | Abyss",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "white_scope": {
+          "label": "White Scope",
+          "seeds": [54, 148, 167, 208, 669, 806, 911, 985]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "MP7",
+      "finish": "Amberline",
+      "name": "MP7 | Amberline",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [350, 356, 382, 435, 581, 613, 890, 959]
+        },
+        "gem_gold": {
+          "label": "Gold Gem",
+          "seeds": [153, 205, 218, 238, 322, 426, 504, 519, 711, 906]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Berries And Cherries",
+      "name": "Five-SeveN | Berries And Cherries",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_blue": {
+          "label": "Blue Gem",
+          "seeds": [80]
+        },
+        "gem_red": {
+          "label": "Red Gem",
+          "seeds": [182]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "AWP",
+      "finish": "Electric Hive",
+      "name": "AWP | Electric Hive",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "blue_hive": {
+          "label": "Blue Hive",
+          "seeds": [23, 262, 273, 436, 853, 902]
+        },
+        "orange_hive": {
+          "label": "Orange Hive",
+          "seeds": [42, 54, 253, 611, 697, 767]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Grinder",
+      "name": "Glock-18 | Grinder",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_black": {
+          "label": "Black Gem",
+          "seeds": [384, 811, 907, 916]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Heat Treated",
+      "name": "Five-SeveN | Heat Treated",
+      "family": "case-hardened",
+      "method": "seed-list",
+      "variants": {
+        "gem_blue": {
+          "label": "Blue Gem",
+          "seeds": [148, 704, 904]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Kami",
+      "name": "Five-SeveN | Kami",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "pussy": {
+          "label": "Pussy",
+          "seeds": [590, 909]
+        },
+        "top": {
+          "label": "Top Pattern",
+          "seeds": [662]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern + skin.land/blog/best-five-seven-kami-patterns (2026-06-10)"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Moonrise",
+      "name": "Glock-18 | Moonrise",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "star": {
+          "label": "Star",
+          "seeds": [58, 59, 66, 90, 102, 224, 601, 628, 694, 706, 837, 864]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "AWP",
+      "finish": "PAW",
+      "name": "AWP | PAW",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "golden_cat": {
+          "label": "Golden Cat",
+          "seeds": [17, 19, 35, 41, 350, 531, 581, 644, 675, 744]
+        },
+        "double_cat": {
+          "label": "Double Cat",
+          "seeds": [107, 480, 899, 970]
+        },
+        "cat_back": {
+          "label": "Cat In The Back",
+          "seeds": [58, 109, 444, 783, 799, 813, 851, 860]
+        },
+        "stoner_420": {
+          "label": "Stoner Cat 420",
+          "seeds": [187, 306, 420, 788]
+        },
+        "gas_mask": {
+          "label": "Gas Mask",
+          "seeds": [29, 32, 62, 75, 80, 97, 120, 176, 185, 294, 458, 916, 992]
+        },
+        "golden_grenade": {
+          "label": "Golden Grenade",
+          "seeds": [
+            3, 4, 26, 38, 53, 63, 73, 78, 103, 122, 156, 158, 163, 182, 186, 216, 232, 234, 429,
+            926, 954
+          ]
+        }
+      },
+      "source": "skin.land/blog/best-rare-awp-paw-patterns-in-cs2 (2026-06-10)"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Pink DDPAT",
+      "name": "Glock-18 | Pink DDPAT",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_pink": {
+          "label": "Pink Gem",
+          "seeds": [255, 568, 589, 600, 741]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Sandstorm",
+      "name": "Galil AR | Sandstorm",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_purple": {
+          "label": "Purple Gem",
+          "seeds": [178, 583, 739, 761]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Tec-9",
+      "finish": "Sandstorm",
+      "name": "Tec-9 | Sandstorm",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_purple": {
+          "label": "Purple Gem",
+          "seeds": [70, 83, 328, 552, 583, 862]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Desert Eagle",
+      "finish": "Serpent Strike",
+      "name": "Desert Eagle | Serpent Strike",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_orange": {
+          "label": "Orange Gem",
+          "seeds": [174, 425, 658, 757, 953]
+        },
+        "gem_black": {
+          "label": "Black Gem",
+          "seeds": [225, 748]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Snow Splash",
+      "name": "MAC-10 | Snow Splash",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [60, 222, 234, 309, 463, 675, 824, 828]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Trace Lock",
+      "name": "Glock-18 | Trace Lock",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "gem_white": {
+          "label": "White Gem",
+          "seeds": [130, 390, 650, 679, 838]
+        }
+      },
+      "source": "github.com/Helyux/cs2pattern cs2pattern/pattern.json"
+    },
+    {
+      "weapon": "M4A1-S",
+      "finish": "Solitude",
+      "name": "M4A1-S | Solitude",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "orange_t1": {
+          "label": "Orange Sun T1",
+          "seeds": [
+            15, 56, 84, 138, 151, 170, 191, 195, 219, 236, 265, 278, 322, 339, 340, 529, 565, 634,
+            646, 690, 719, 741, 825, 849, 877, 887, 981
+          ]
+        },
+        "orange_t2": {
+          "label": "Orange Sun T2",
+          "seeds": [
+            47, 136, 156, 160, 163, 192, 244, 337, 351, 359, 368, 378, 472, 519, 619, 640, 708, 720,
+            759, 833, 839
+          ]
+        },
+        "golden": {
+          "label": "Golden Mountains",
+          "seeds": [95, 154, 220, 304, 533]
+        },
+        "red_t1": {
+          "label": "Red Sun T1",
+          "seeds": [
+            73, 214, 248, 269, 276, 281, 312, 462, 506, 513, 531, 549, 568, 569, 579, 726, 729, 859,
+            920
+          ]
+        },
+        "red_t2": {
+          "label": "Red Sun T2",
+          "seeds": [
+            8, 50, 63, 65, 143, 144, 193, 211, 212, 246, 318, 342, 374, 376, 389, 393, 457, 488,
+            578, 623, 645, 702, 716, 749, 763, 798, 809, 832, 883, 917, 956, 993
+          ]
+        },
+        "yellow_t1": {
+          "label": "Yellow Sun T1",
+          "seeds": [158, 284, 321, 525, 797, 895, 951]
+        },
+        "yellow_t2": {
+          "label": "Yellow Sun T2",
+          "seeds": [
+            0, 1, 67, 96, 114, 201, 260, 407, 433, 441, 489, 490, 562, 591, 643, 648, 668, 673, 725,
+            876, 878, 888, 964, 999
+          ]
+        },
+        "white_clouds": {
+          "label": "White Clouds",
+          "seeds": [
+            60, 117, 127, 148, 185, 202, 204, 209, 263, 287, 294, 386, 402, 414, 444, 483, 498, 510,
+            514, 542, 584, 587, 695, 696, 718, 772, 835, 856, 882, 900, 931, 953, 955, 990
+          ]
+        },
+        "blue_white_clouds": {
+          "label": "Blue/White Clouds",
+          "seeds": [
+            21, 23, 29, 70, 72, 75, 80, 115, 140, 152, 179, 183, 230, 271, 283, 290, 291, 335, 346,
+            361, 363, 417, 459, 491, 504, 515, 540, 551, 560, 572, 581, 582, 589, 605, 656, 666,
+            683, 685, 692, 693, 727, 738, 783, 799, 813, 842, 875, 879, 881, 903, 911, 914, 936,
+            937, 939, 940, 959, 969, 989, 996
+          ]
+        }
+      },
+      "source": "skin.land/blog/the-m4a1s-solitude-pattern-guide (2026-06-10)"
+    },
+    {
+      "weapon": "XM1014",
+      "finish": "Solitude",
+      "name": "XM1014 | Solitude",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "red_sun": {
+          "label": "Red Sun",
+          "seeds": [95, 154, 220, 863, 871]
+        },
+        "red_sunrise": {
+          "label": "Red Sunrise",
+          "seeds": [533]
+        },
+        "glowing": {
+          "label": "Glowing Mountains",
+          "seeds": [180, 379, 652, 731, 743]
+        },
+        "waves": {
+          "label": "Waves",
+          "seeds": [12, 650, 669]
+        },
+        "blue_mountains": {
+          "label": "Blue Mountains",
+          "seeds": [33, 105, 135, 225, 437, 717, 815, 930, 948, 984, 997]
+        },
+        "green_mountains": {
+          "label": "Green Mountains",
+          "seeds": [98, 320, 837, 901]
+        },
+        "white_sunrise": {
+          "label": "White Sunrise",
+          "seeds": [134, 159]
+        }
+      },
+      "source": "skin.land/blog/the-best-xm1014-solitude-patterns-in-cs2 (2026-06-10)"
+    },
+    {
+      "weapon": "XM1014",
+      "finish": "XOXO",
+      "name": "XM1014 | XOXO",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "skull": {
+          "label": "Skull",
+          "seeds": [135, 225, 547, 579, 766]
+        },
+        "skull_mohawk": {
+          "label": "Skull Mohawk",
+          "seeds": [7, 178, 289, 307, 526, 546]
+        },
+        "pink_smiley": {
+          "label": "Pink Smiley",
+          "seeds": [65, 326, 643, 659, 833]
+        },
+        "black_smiley": {
+          "label": "Black Smiley",
+          "seeds": [110, 498, 549, 637]
+        },
+        "burn_it_down": {
+          "label": "Burn It Down",
+          "seeds": [320, 345, 357, 369, 822]
+        },
+        "live_your_life": {
+          "label": "Live Your Life",
+          "seeds": [19, 83, 94, 301, 347, 492, 764, 992]
+        },
+        "xxx": {
+          "label": "XXX",
+          "seeds": [31, 394, 511, 532, 684, 702, 713, 791, 814]
+        },
+        "yeah_right": {
+          "label": "Yeah Right",
+          "seeds": [235, 328, 652, 775, 919]
+        },
+        "punk": {
+          "label": "Punk",
+          "seeds": [330, 352, 697, 708, 926]
+        }
+      },
+      "source": "skin.land/blog/best-rare-xm1014-xoxo-pattern-seeds-guide (2026-06-10)"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Last Dive",
+      "name": "MAC-10 | Last Dive",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "centered_skull": {
+          "label": "Centered Skull",
+          "seeds": [386]
+        },
+        "skull_helmet": {
+          "label": "Skull + Diving Helmet",
+          "seeds": [407]
+        },
+        "shell_helmet_skull": {
+          "label": "Shell + Helmet + Skull",
+          "seeds": [509]
+        },
+        "underwater_tree": {
+          "label": "Underwater Tree",
+          "seeds": [748]
+        },
+        "seahorse": {
+          "label": "Seahorse",
+          "seeds": [274, 452, 457, 648, 736]
+        },
+        "serpent": {
+          "label": "Serpent",
+          "seeds": [301, 992]
+        }
+      },
+      "source": "skin.land/blog/full-mac-10-last-dive-pattern-guide (2026-06-10)"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Rainbow Spoon",
+      "name": "Galil AR | Rainbow Spoon",
+      "family": "color-gem",
+      "method": "seed-list",
+      "tiers": [
+        {
+          "tier": 1,
+          "label": "Fade Gem T1",
+          "seeds": [
+            0, 1, 3, 25, 44, 58, 106, 113, 116, 142, 148, 168, 175, 185, 201, 202, 204, 225, 245,
+            251, 253, 271, 279, 284, 297, 299
+          ]
+        },
+        {
+          "tier": 2,
+          "label": "Fade Gem T1.5",
+          "seeds": [
+            7, 16, 48, 53, 54, 60, 69, 96, 108, 109, 111, 114, 117, 119, 125, 134, 145, 159, 169,
+            215, 222, 228, 233, 234, 237, 250, 259, 260, 263, 266, 267, 273, 275, 280, 288
+          ]
+        }
+      ],
+      "variants": {
+        "gold_pink": {
+          "label": "Gold/Pink Gem",
+          "seeds": [101, 210, 238, 243, 246, 581, 801, 809, 973]
+        }
+      },
+      "source": "skin.land/blog/galil-ar-rainbow-spoon-patterns-guide (Lazarino's tiers, 2026-06-10)"
+    },
+    {
+      "weapon": "Glock-18",
+      "finish": "Coral Bloom",
+      "name": "Glock-18 | Coral Bloom",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "pink_gem": {
+          "label": "Pink Gem",
+          "seeds": [194, 559, 619]
+        },
+        "pink_top": {
+          "label": "Pink Top",
+          "seeds": [38, 39, 82, 213, 372, 574, 610, 678, 684, 837]
+        },
+        "pink_handle": {
+          "label": "Pink Handle",
+          "seeds": [10, 43, 114, 201, 349, 477, 673]
+        },
+        "few_flowers": {
+          "label": "Few Flowers",
+          "seeds": [9, 29, 86, 210, 244, 300, 386, 445, 527, 533, 604, 676, 801, 818, 931, 954]
+        },
+        "rare_floral": {
+          "label": "Rare Floral",
+          "seeds": [
+            67, 74, 84, 90, 94, 141, 214, 255, 267, 272, 291, 313, 446, 449, 454, 466, 470, 491,
+            508, 550, 841
+          ]
+        },
+        "pink_middle": {
+          "label": "Pink Middle",
+          "seeds": [136, 142, 162, 504, 528]
+        },
+        "flower_branch": {
+          "label": "Flower On A Branch",
+          "seeds": [150, 157, 240, 246, 318]
+        },
+        "pink_tip": {
+          "label": "Pink Tip",
+          "seeds": [148, 154, 277, 602, 633, 651, 793, 824, 890, 903, 979]
+        }
+      },
+      "source": "skin.land/blog/all-best-glock-18-coral-bloom-patterns (2026-06-10)"
+    },
+    {
+      "weapon": "Negev",
+      "finish": "Terrain",
+      "name": "Negev | Terrain",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Horizontal T1",
+          "seeds": [763]
+        },
+        "t2": {
+          "label": "Horizontal T2",
+          "seeds": [326]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598531656 (2026-06-10)"
+    },
+    {
+      "weapon": "M4A4",
+      "finish": "Converter",
+      "name": "M4A4 | Converter",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Top Pattern T1",
+          "seeds": [597]
+        },
+        "t2": {
+          "label": "Top Pattern T2",
+          "seeds": [108, 704, 944]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598725256 (2026-06-10)"
+    },
+    {
+      "weapon": "Galil AR",
+      "finish": "Cold Fusion",
+      "name": "Galil AR | Cold Fusion",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [711, 766, 777]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [25, 608, 769]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599427126 (2026-06-10)"
+    },
+    {
+      "weapon": "Five-SeveN",
+      "finish": "Forest Night",
+      "name": "Five-SeveN | Forest Night",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Look T1",
+          "seeds": [435, 542, 559, 939, 965]
+        },
+        "t2": {
+          "label": "Look T2",
+          "seeds": [250, 320, 572, 799, 903]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599435872 (2026-06-10)"
+    },
+    {
+      "weapon": "MAC-10",
+      "finish": "Oceanic",
+      "name": "MAC-10 | Oceanic",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [279]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [715]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601296847 (2026-06-10)"
+    },
+    {
+      "weapon": "P250",
+      "finish": "Ripple",
+      "name": "P250 | Ripple",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [541]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [275]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601603834 (2026-06-10)"
+    },
+    {
+      "weapon": "Sawed-Off",
+      "finish": "Runoff",
+      "name": "Sawed-Off | Runoff",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Blue Gem T1",
+          "seeds": [297]
+        },
+        "t2": {
+          "label": "Blue Gem T2",
+          "seeds": [651]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602144976 (2026-06-10)"
+    },
+    {
+      "weapon": "P2000",
+      "finish": "Oceanic",
+      "name": "P2000 | Oceanic",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Gem T1",
+          "seeds": [343, 857, 864]
+        },
+        "t2": {
+          "label": "Gem T2",
+          "seeds": [834]
+        },
+        "heart": {
+          "label": "Heart",
+          "seeds": [2, 875]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602198533 (2026-06-10)"
+    },
+    {
+      "weapon": "Nova",
+      "finish": "Rain Station",
+      "name": "Nova | Rain Station",
+      "family": "art-position",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Look T1",
+          "seeds": [194, 201, 273, 487, 558, 588, 911, 931, 970]
+        },
+        "t2": {
+          "label": "Look T2",
+          "seeds": [280, 320, 417, 488, 560, 703, 716, 973]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602220976 (2026-06-10)"
+    },
+    {
+      "weapon": "PP-Bizon",
+      "finish": "Cobalt Halftone",
+      "name": "PP-Bizon | Cobalt Halftone",
+      "family": "color-gem",
+      "method": "seed-list",
+      "variants": {
+        "t1": {
+          "label": "Cyan Gem T1",
+          "seeds": [470]
+        },
+        "t2": {
+          "label": "Cyan Gem T2",
+          "seeds": [62, 582]
+        }
+      },
+      "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602304841 (2026-06-10)"
     }
-   ],
-   "variants": {
-    "gold_pink": {
-     "label": "Gold/Pink Gem",
-     "seeds": [
-      101,
-      210,
-      238,
-      243,
-      246,
-      581,
-      801,
-      809,
-      973
-     ]
-    }
-   },
-   "source": "skin.land/blog/galil-ar-rainbow-spoon-patterns-guide (Lazarino's tiers, 2026-06-10)"
-  },
-  {
-   "weapon": "Glock-18",
-   "finish": "Coral Bloom",
-   "name": "Glock-18 | Coral Bloom",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "pink_gem": {
-     "label": "Pink Gem",
-     "seeds": [
-      194,
-      559,
-      619
-     ]
-    },
-    "pink_top": {
-     "label": "Pink Top",
-     "seeds": [
-      38,
-      39,
-      82,
-      213,
-      372,
-      574,
-      610,
-      678,
-      684,
-      837
-     ]
-    },
-    "pink_handle": {
-     "label": "Pink Handle",
-     "seeds": [
-      10,
-      43,
-      114,
-      201,
-      349,
-      477,
-      673
-     ]
-    },
-    "few_flowers": {
-     "label": "Few Flowers",
-     "seeds": [
-      9,
-      29,
-      86,
-      210,
-      244,
-      300,
-      386,
-      445,
-      527,
-      533,
-      604,
-      676,
-      801,
-      818,
-      931,
-      954
-     ]
-    },
-    "rare_floral": {
-     "label": "Rare Floral",
-     "seeds": [
-      67,
-      74,
-      84,
-      90,
-      94,
-      141,
-      214,
-      255,
-      267,
-      272,
-      291,
-      313,
-      446,
-      449,
-      454,
-      466,
-      470,
-      491,
-      508,
-      550,
-      841
-     ]
-    },
-    "pink_middle": {
-     "label": "Pink Middle",
-     "seeds": [
-      136,
-      142,
-      162,
-      504,
-      528
-     ]
-    },
-    "flower_branch": {
-     "label": "Flower On A Branch",
-     "seeds": [
-      150,
-      157,
-      240,
-      246,
-      318
-     ]
-    },
-    "pink_tip": {
-     "label": "Pink Tip",
-     "seeds": [
-      148,
-      154,
-      277,
-      602,
-      633,
-      651,
-      793,
-      824,
-      890,
-      903,
-      979
-     ]
-    }
-   },
-   "source": "skin.land/blog/all-best-glock-18-coral-bloom-patterns (2026-06-10)"
-  },
-  {
-   "weapon": "Negev",
-   "finish": "Terrain",
-   "name": "Negev | Terrain",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Horizontal T1",
-     "seeds": [
-      763
-     ]
-    },
-    "t2": {
-     "label": "Horizontal T2",
-     "seeds": [
-      326
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598531656 (2026-06-10)"
-  },
-  {
-   "weapon": "M4A4",
-   "finish": "Converter",
-   "name": "M4A4 | Converter",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Top Pattern T1",
-     "seeds": [
-      597
-     ]
-    },
-    "t2": {
-     "label": "Top Pattern T2",
-     "seeds": [
-      108,
-      704,
-      944
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3598725256 (2026-06-10)"
-  },
-  {
-   "weapon": "Galil AR",
-   "finish": "Cold Fusion",
-   "name": "Galil AR | Cold Fusion",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Gem T1",
-     "seeds": [
-      711,
-      766,
-      777
-     ]
-    },
-    "t2": {
-     "label": "Gem T2",
-     "seeds": [
-      25,
-      608,
-      769
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599427126 (2026-06-10)"
-  },
-  {
-   "weapon": "Five-SeveN",
-   "finish": "Forest Night",
-   "name": "Five-SeveN | Forest Night",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Look T1",
-     "seeds": [
-      435,
-      542,
-      559,
-      939,
-      965
-     ]
-    },
-    "t2": {
-     "label": "Look T2",
-     "seeds": [
-      250,
-      320,
-      572,
-      799,
-      903
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3599435872 (2026-06-10)"
-  },
-  {
-   "weapon": "MAC-10",
-   "finish": "Oceanic",
-   "name": "MAC-10 | Oceanic",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Gem T1",
-     "seeds": [
-      279
-     ]
-    },
-    "t2": {
-     "label": "Gem T2",
-     "seeds": [
-      715
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601296847 (2026-06-10)"
-  },
-  {
-   "weapon": "P250",
-   "finish": "Ripple",
-   "name": "P250 | Ripple",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Gem T1",
-     "seeds": [
-      541
-     ]
-    },
-    "t2": {
-     "label": "Gem T2",
-     "seeds": [
-      275
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3601603834 (2026-06-10)"
-  },
-  {
-   "weapon": "Sawed-Off",
-   "finish": "Runoff",
-   "name": "Sawed-Off | Runoff",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Blue Gem T1",
-     "seeds": [
-      297
-     ]
-    },
-    "t2": {
-     "label": "Blue Gem T2",
-     "seeds": [
-      651
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602144976 (2026-06-10)"
-  },
-  {
-   "weapon": "P2000",
-   "finish": "Oceanic",
-   "name": "P2000 | Oceanic",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Gem T1",
-     "seeds": [
-      343,
-      857,
-      864
-     ]
-    },
-    "t2": {
-     "label": "Gem T2",
-     "seeds": [
-      834
-     ]
-    },
-    "heart": {
-     "label": "Heart",
-     "seeds": [
-      2,
-      875
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602198533 (2026-06-10)"
-  },
-  {
-   "weapon": "Nova",
-   "finish": "Rain Station",
-   "name": "Nova | Rain Station",
-   "family": "art-position",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Look T1",
-     "seeds": [
-      194,
-      201,
-      273,
-      487,
-      558,
-      588,
-      911,
-      931,
-      970
-     ]
-    },
-    "t2": {
-     "label": "Look T2",
-     "seeds": [
-      280,
-      320,
-      417,
-      488,
-      560,
-      703,
-      716,
-      973
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602220976 (2026-06-10)"
-  },
-  {
-   "weapon": "PP-Bizon",
-   "finish": "Cobalt Halftone",
-   "name": "PP-Bizon | Cobalt Halftone",
-   "family": "color-gem",
-   "method": "seed-list",
-   "variants": {
-    "t1": {
-     "label": "Cyan Gem T1",
-     "seeds": [
-      470
-     ]
-    },
-    "t2": {
-     "label": "Cyan Gem T2",
-     "seeds": [
-      62,
-      582
-     ]
-    }
-   },
-   "source": "steamcommunity.com/sharedfiles/filedetails/?id=3602304841 (2026-06-10)"
-  }
- ],
- "generated_note": "Fade seed lists are NOT bundled (computed from the fade lib). Explicit seed lists only for case-hardened (AK/Five-SeveN/MAC-10/Deagle Heat Treated) + Galil Phoenix Blacklight."
+  ],
+  "generated_note": "Fade seed lists are NOT bundled (computed from the fade lib). Explicit seed lists only for case-hardened (AK/Five-SeveN/MAC-10/Deagle Heat Treated) + Galil Phoenix Blacklight."
 }
