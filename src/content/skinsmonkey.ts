@@ -15,11 +15,22 @@
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
   readFilterValues,
+  renderBanner,
   renderFilterGrid,
   renderScanBar,
   updateScanBar,
   type FilterField,
 } from '../modules/shared/ui';
+import { esc } from '../modules/shared/fmt';
+import {
+  agoLabel,
+  flagNew,
+  loadSnapshot,
+  resultKey,
+  saveSnapshot,
+  type ScanSnapshot,
+} from '../modules/shared/scan-memory';
+import { csvFilename, downloadTextFile, toCsv } from '../modules/shared/export';
 import { send } from '../modules/shared/messaging';
 import { t } from '../modules/shared/i18n';
 import {
@@ -197,7 +208,21 @@ function rareFilters(): FilterField[] {
         { value: 'priceDesc', label: t('sort.priceDesc') },
       ],
     },
+    {
+      id: 'show',
+      label: t('filter.show'),
+      type: 'select',
+      options: [
+        { value: 'all', label: t('filter.show.all') },
+        { value: 'new', label: t('filter.show.new') },
+      ],
+    },
   ];
+}
+
+/** True when the "Show" filter is set to new-only (v0.10 diff filter). */
+function onlyNewActive(): boolean {
+  return overlay ? readFilterValues(overlay.body)['show'] === 'new' : false;
 }
 
 /** Last collected match set — kept so reactive filters can re-apply +
@@ -218,9 +243,78 @@ const ctl = createRareController({
       list,
       results: rareResults,
       filterOpts: readRareFilterOpts(overlay.body),
+      onlyNew: onlyNewActive(),
     });
   },
 });
+
+/* ── Scan memory: snapshot restore + CSV export (v0.10) ───────────── */
+
+const SNAP_SCOPE = 'skinsmonkey:sticker';
+let pendingSnap: ScanSnapshot<RareResult> | null = null;
+
+/** Offer to restore the last sticker scan when the rare overlay mounts empty. */
+async function offerRestore(): Promise<void> {
+  if (!overlay || currentMode !== 'rare' || rareResults.length) return;
+  if ((await getRareSubmode()) !== 'sticker') return;
+  const snap = await loadSnapshot<RareResult>(SNAP_SCOPE);
+  if (!snap || snap.results.length === 0 || !overlay || currentMode !== 'rare') return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list || list.innerHTML.trim() !== '') return;
+  pendingSnap = snap;
+  list.innerHTML = renderBanner(
+    esc(t('snap.offer', { ago: agoLabel(snap.ts), n: snap.results.length })),
+    t('snap.restore'),
+  );
+}
+
+function restoreFromSnap(): void {
+  if (!pendingSnap || ctl.state.running) return;
+  rareResults = pendingSnap.results;
+  setStatus(t('snap.restored', { n: rareResults.length, ago: agoLabel(pendingSnap.ts) }), 'ok');
+  pendingSnap = null;
+  ctl.renderResults();
+}
+
+function exportCurrent(): void {
+  let rows: Array<Record<string, string | number | null | undefined>>;
+  let mode: string;
+  if (ctl.state.submode === 'pattern') {
+    mode = 'pattern';
+    rows = ctl.state.patternResults.map((r) => ({
+      name: r.marketHashName || r.name,
+      seed: r.paintSeed,
+      tier: r.tierLabel,
+      family: r.family,
+      fade_pct: r.fadePct,
+      price_usd: r.price,
+      new: r.isNew ? 1 : 0,
+      csfloat: r.link,
+      site: r.siteLink ?? '',
+    }));
+  } else {
+    mode = 'sticker';
+    if (!overlay) return;
+    const pool = onlyNewActive() ? rareResults.filter((r) => r.isNew) : rareResults;
+    rows = applyRareFilter(pool, readRareFilterOpts(overlay.body)).map((r) => ({
+      name: r.name,
+      listed_usd: r.price,
+      stickers_usd: Math.round(r.stickerSum * 100) / 100,
+      roi: Math.round(r.roi * 100) / 100,
+      profit_usd: Math.round(r.profit * 100) / 100,
+      overpay_est_usd: Math.round(r.csMoneyOverpayEst * 100) / 100,
+      new: r.isNew ? 1 : 0,
+      stickers: r.matches.map((m) => m.name).join(' | '),
+      inspect: r.inspectUrl,
+    }));
+  }
+  if (!rows.length) {
+    setStatus(t('export.empty'), 'info');
+    return;
+  }
+  downloadTextFile(csvFilename('skinsmonkey', mode), toCsv(rows));
+  setStatus(t('export.done', { n: rows.length }), 'ok');
+}
 
 function rareBodyHtml(): string {
   return [
@@ -281,6 +375,12 @@ async function runRareScan(): Promise<void> {
 
     rareResults = await findRareResults(items);
 
+    // Scan memory (v0.10): diff against the seen-set (NOVO badges), then
+    // snapshot so the scan survives a tab close. Both never throw.
+    await flagNew(SNAP_SCOPE, rareResults, resultKey);
+    void saveSnapshot(SNAP_SCOPE, rareResults);
+    pendingSnap = null;
+
     if (!overlay) return;
     ctl.renderResults();
     const filtered = applyRareFilter(rareResults, readRareFilterOpts(overlay.body));
@@ -337,6 +437,16 @@ function mount(mode: 'arbitrage' | 'rare'): void {
 
   overlay.body.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    if (mode === 'rare' && target.closest('[data-role=banner-cta]')) {
+      e.preventDefault();
+      restoreFromSnap();
+      return;
+    }
+    if (mode === 'rare' && target.closest('[data-role=export-csv]')) {
+      e.preventDefault();
+      exportCurrent();
+      return;
+    }
     const btn = target.closest<HTMLElement>('[data-role=scan-action]');
     if (!btn) return;
     e.preventDefault();
@@ -348,6 +458,9 @@ function mount(mode: 'arbitrage' | 'rare'): void {
       else void runRareScan();
     }
   });
+
+  // Offer to restore the last rare scan (v0.10) — only while the body is empty.
+  if (mode === 'rare') void offerRestore();
 }
 
 function unmount(): void {

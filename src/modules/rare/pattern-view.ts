@@ -15,7 +15,7 @@
  */
 import { esc, fmtUsd } from '../shared/fmt';
 import { t } from '../shared/i18n';
-import { renderChunked, renderResultsHeader } from '../shared/ui';
+import { exportButtonHtml, renderChunked, renderResultsHeader } from '../shared/ui';
 import { renderPatternCard } from './render-pattern';
 import type { PatternResult } from './types';
 
@@ -171,7 +171,7 @@ export function mountPatternView(container: HTMLElement, rows: PatternResult[]):
           ${sortOpt('priceAsc', t('sort.priceAsc'))}
           ${sortOpt('priceDesc', t('sort.priceDesc'))}
         </select>
-        <span class="sh-pt-count">${esc(t('pattern.count', { n: visible.length }))} · ${esc(fmtUsd(sumUsd))}</span>
+        <span class="sh-pt-count">${esc(t('pattern.count', { n: visible.length }))} · ${esc(fmtUsd(sumUsd))}${visible.length ? exportButtonHtml(t('export.csv')) : ''}</span>
       </div>
       <div data-role="pt-list"></div>
     `;

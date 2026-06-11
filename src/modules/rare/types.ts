@@ -33,6 +33,9 @@ export interface RareResult extends RareItem {
   stickerSum: number;
   profit: number;
   roi: number;
+  /** Set by shared/scan-memory.ts `flagNew()`: absent from the seen-set when
+   *  this scan completed → "NOVO" badge. Transient diff state (v0.10). */
+  isNew?: boolean;
   /**
    * Estimated CS.Money sticker overpay (USD) for this item — the "possível
    * lucro" bonus from reselling on CS.Money (v0.7). Always an estimate on
@@ -44,6 +47,8 @@ export interface RareResult extends RareItem {
 
 /** CS.Money-specific shape — different fields. */
 export interface CsMoneyItem {
+  /** Diff state — see RareResult.isNew. */
+  isNew?: boolean;
   id: string | number;
   name: string;
   /** Weapon thumbnail URL. Resolved via the v0.4 fallback chain
@@ -113,4 +118,6 @@ export interface PatternResult extends PatternInput {
   link: string;
   /** Search link back into the marketplace the item was found on (v0.9.1). */
   siteLink?: string;
+  /** Diff state — see RareResult.isNew. */
+  isNew?: boolean;
 }

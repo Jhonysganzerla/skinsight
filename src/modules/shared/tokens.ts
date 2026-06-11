@@ -237,6 +237,25 @@ export const OVERLAY_CSS = `
   font-size: 12.5px; font-weight: 600; margin-bottom: 3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* "NOVO" diff badge (v0.10) — marks results unseen before this scan. */
+.sh-new {
+  font-size: 9px; font-weight: 800; letter-spacing: .5px;
+  color: #07090f; background: linear-gradient(90deg,#34d399,#22d3ee);
+  border-radius: 5px; padding: 1px 5px; margin-right: 6px;
+  vertical-align: middle; text-transform: uppercase;
+  animation: sh-new-pop .25s ease-out both;
+}
+@keyframes sh-new-pop { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+
+/* CSV export button in the results header (v0.10). */
+.sh-export-btn {
+  all: unset; cursor: pointer; font-size: 10px; font-weight: 700;
+  color: var(--accent); margin-left: 10px; letter-spacing: .5px;
+  border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.sh-export-btn:hover { color: var(--cyan); border-color: var(--border-strong); background: rgba(34,211,238,.07); }
+
 /* Wear/float badge next to the name (FN/MW/FT/WW/BS) — class-only since v0.9. */
 .sh-wear {
   font-size: 9.5px; font-weight: 700; letter-spacing: .3px;

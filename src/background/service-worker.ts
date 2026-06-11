@@ -33,6 +33,7 @@ import {
   refreshRareRemote,
 } from '../modules/rare/remote';
 import { getSteamPrice, steamQuota, runSteamPriceGc } from '../modules/oracles/steam';
+import { runScanMemoryGc } from '../modules/shared/scan-memory';
 
 const CSFLOAT_URL = 'https://csfloat.com/';
 
@@ -165,12 +166,14 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
 chrome.runtime.onStartup.addListener(() => {
   void runHitsGc();
   void runSteamPriceGc();
+  void runScanMemoryGc();
   void refreshRareRemote(false);
   void refreshPatternsRemote(false);
 });
 chrome.runtime.onInstalled.addListener((details) => {
   void runHitsGc();
   void runSteamPriceGc();
+  void runScanMemoryGc();
   // Pull the live rare list once on install/update (force, since a fresh
   // install has no cache and an update may ship behind the published list).
   void refreshRareRemote(true);

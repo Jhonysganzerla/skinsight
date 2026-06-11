@@ -17,7 +17,14 @@
  * overlay root.
  */
 import type { OverlayHandle } from '../shared/overlay';
-import { readFilterValues, renderChunked, renderResultsHeader, updateScanBar } from '../shared/ui';
+import {
+  exportButtonHtml,
+  readFilterValues,
+  renderChunked,
+  renderResultsHeader,
+  updateScanBar,
+} from '../shared/ui';
+import { flagNew, resultKey } from '../shared/scan-memory';
 import { renderVirtualList } from '../shared/virtual-list';
 import { applyRareFilter, type RareFilterOpts, type RareSortKey } from './finder';
 import { renderRareCard } from './render';
@@ -125,11 +132,14 @@ export function renderRareList(opts: {
   list: HTMLElement;
   results: RareResult[];
   filterOpts: RareFilterOpts;
+  /** Diff filter (v0.10): keep only results flagged isNew by flagNew(). */
+  onlyNew?: boolean;
   log?(msg: string): void;
 }): RareRenderHandle | null {
   const { overlay, list, results, filterOpts, log } = opts;
   const t0 = performance.now();
-  const filtered = applyRareFilter(results, filterOpts);
+  const pool = opts.onlyNew ? results.filter((r) => r.isNew) : results;
+  const filtered = applyRareFilter(pool, filterOpts);
   log?.(
     `renderRareList sort=${filterOpts.sort ?? 'roi'} maxPrice=${filterOpts.maxPrice ?? '∅'} ` +
       `results=${results.length} → filtered=${filtered.length} ` +
@@ -137,7 +147,11 @@ export function renderRareList(opts: {
       `path=${filtered.length > VIRT_THRESHOLD ? 'virtual' : 'chunked'}`,
   );
 
-  const header = renderResultsHeader(t('results.header.detected'), t('results.worth'));
+  const header = renderResultsHeader(
+    t('results.header.detected'),
+    t('results.worth'),
+    filtered.length ? exportButtonHtml(t('export.csv')) : '',
+  );
   if (!filtered.length) {
     list.innerHTML = header + emptyHtml();
     return null;
@@ -259,6 +273,9 @@ export function createRareController(opts: RareControllerOpts): RareController {
       ...r,
       siteLink: siteSearchUrl(site, r.marketHashName),
     }));
+    // Diff badge (v0.10): mark hits unseen by previous pattern queries on this
+    // site. First query is a silent baseline — see scan-memory.flagNew.
+    await flagNew(`${site}:pattern`, state.patternResults, resultKey);
     log?.(
       `pattern query: done — ${rep.results.length} hits, failed=${rep.failedSkins}, ` +
         `noHash=${rep.noHashcodeSkins}, throttled=${rep.throttled}, aborted=${rep.aborted}`,

@@ -37,11 +37,12 @@ export function renderPatternCard(r: PatternResult): string {
     .map((c) => `<span class="sh-meta-chip">${esc(c)}</span>`)
     .join('');
   const wearBadge = wear ? `<span class="sh-wear">${esc(wear)}</span>` : '';
+  const newBadge = r.isNew ? `<span class="sh-new">${esc(t('badge.new'))}</span>` : '';
   return `
     <div class="sh-item-card${variantCls(r)}" data-item-id="${esc(r.id)}">
       <div class="sh-item-thumb">${thumb}</div>
       <div class="sh-item-info">
-        <div class="sh-item-name">${wearBadge}${esc(shortExterior(r.name || '—'))}</div>
+        <div class="sh-item-name">${newBadge}${wearBadge}${esc(shortExterior(r.name || '—'))}</div>
         <div class="sh-item-meta">${chips}</div>
       </div>
       <div class="sh-item-action">

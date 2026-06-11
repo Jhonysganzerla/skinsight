@@ -14,13 +14,24 @@
  */
 import { createOverlay, type OverlayHandle } from '../modules/shared/overlay';
 import {
+  exportButtonHtml,
   readFilterValues,
+  renderBanner,
   renderFilterGrid,
   renderResultsHeader,
   renderScanBar,
   updateScanBar,
   type FilterField,
 } from '../modules/shared/ui';
+import {
+  agoLabel,
+  flagNew,
+  loadSnapshot,
+  resultKey,
+  saveSnapshot,
+  type ScanSnapshot,
+} from '../modules/shared/scan-memory';
+import { csvFilename, downloadTextFile, toCsv } from '../modules/shared/export';
 import { buildRareReport, collectCsMoney } from '../modules/rare/csmoney';
 import { renderCsMoneyCard } from '../modules/rare/render';
 import { createRareController } from '../modules/rare/scan-controller';
@@ -62,7 +73,21 @@ function filters(): FilterField[] {
         { value: 'count_desc', label: t('sort.countDesc') },
       ],
     },
+    {
+      id: 'show',
+      label: t('filter.show'),
+      type: 'select',
+      options: [
+        { value: 'all', label: t('filter.show.all') },
+        { value: 'new', label: t('filter.show.new') },
+      ],
+    },
   ];
+}
+
+/** True when the "Show" filter is set to new-only (v0.10 diff filter). */
+function onlyNewActive(): boolean {
+  return overlay ? readFilterValues(overlay.body)['show'] === 'new' : false;
 }
 
 /** Safety cap for any deep scan (regenerate + normal scan). The collector stops
@@ -102,9 +127,14 @@ const ctl = createRareController({
     if (!overlay) return;
     const filterVals = readFilterValues(overlay.body);
     const sortKey = filterVals['sort'] ?? 'net_desc';
-    const sorted = sortItems(items, sortKey);
+    const pool = onlyNewActive() ? items.filter((i) => i.isNew) : items;
+    const sorted = sortItems(pool, sortKey);
     list.innerHTML =
-      renderResultsHeader(t('results.header.stickers'), t('results.net')) +
+      renderResultsHeader(
+        t('results.header.stickers'),
+        t('results.net'),
+        sorted.length ? exportButtonHtml(t('export.csv')) : '',
+      ) +
       (sorted.length
         ? sorted.map(renderCsMoneyCard).join('')
         : `<div class="sh-empty">
@@ -114,6 +144,74 @@ const ctl = createRareController({
           </div>`);
   },
 });
+
+/* ── Scan memory: snapshot restore + CSV export (v0.10) ───────────── */
+
+const SNAP_SCOPE = 'csmoney:sticker';
+let pendingSnap: ScanSnapshot<CsMoneyItem> | null = null;
+
+/** Offer to restore the last sticker scan when the overlay mounts empty. */
+async function offerRestore(): Promise<void> {
+  if (!overlay || items.length) return;
+  if ((await getRareSubmode()) !== 'sticker') return;
+  const snap = await loadSnapshot<CsMoneyItem>(SNAP_SCOPE);
+  if (!snap || snap.results.length === 0 || !overlay) return;
+  const list = overlay.body.querySelector<HTMLElement>('[data-role=results]');
+  if (!list || list.innerHTML.trim() !== '') return;
+  pendingSnap = snap;
+  list.innerHTML = renderBanner(
+    esc(t('snap.offer', { ago: agoLabel(snap.ts), n: snap.results.length })),
+    t('snap.restore'),
+  );
+}
+
+function restoreFromSnap(): void {
+  if (!pendingSnap || ctl.state.running) return;
+  items = pendingSnap.results;
+  setStatus(t('snap.restored', { n: items.length, ago: agoLabel(pendingSnap.ts) }), 'ok');
+  pendingSnap = null;
+  ctl.renderResults();
+  // Regenerate stays disabled — the deep DB walk needs a fresh collect.
+}
+
+function exportCurrent(): void {
+  let rows: Array<Record<string, string | number | null | undefined>>;
+  let mode: string;
+  if (ctl.state.submode === 'pattern') {
+    mode = 'pattern';
+    rows = ctl.state.patternResults.map((r) => ({
+      name: r.marketHashName || r.name,
+      seed: r.paintSeed,
+      tier: r.tierLabel,
+      family: r.family,
+      fade_pct: r.fadePct,
+      price_usd: r.price,
+      new: r.isNew ? 1 : 0,
+      csfloat: r.link,
+      site: r.siteLink ?? '',
+    }));
+  } else {
+    mode = 'sticker';
+    if (!overlay) return;
+    const sortKey = readFilterValues(overlay.body)['sort'] ?? 'net_desc';
+    const pool = onlyNewActive() ? items.filter((i) => i.isNew) : items;
+    rows = sortItems(pool, sortKey).map((i) => ({
+      name: i.name,
+      listed_usd: Math.round(i.weaponPriceUsd * 100) / 100,
+      stickers_usd: Math.round(i.stickersTotalUsd * 100) / 100,
+      net_usd: Math.round(i.netUsd * 100) / 100,
+      sticker_count: i.stickers.length,
+      new: i.isNew ? 1 : 0,
+      stickers: i.stickers.map((s) => s.name).join(' | '),
+    }));
+  }
+  if (!rows.length) {
+    setStatus(t('export.empty'), 'info');
+    return;
+  }
+  downloadTextFile(csvFilename('csmoney', mode), toCsv(rows));
+  setStatus(t('export.done', { n: rows.length }), 'ok');
+}
 
 function regenerateBlockHtml(disabled: boolean): string {
   return `
@@ -197,6 +295,12 @@ async function runScan(): Promise<void> {
     }
 
     items = collected;
+
+    // Scan memory (v0.10): diff against the seen-set (NOVO badges), then
+    // snapshot so the scan survives a tab close. Both never throw.
+    await flagNew(SNAP_SCOPE, items, resultKey);
+    void saveSnapshot(SNAP_SCOPE, items);
+    pendingSnap = null;
 
     // Debug-only: dump per-item sticker-overpay for offline formula calibration.
     // No UI change — gated behind localStorage['skinsight:debug'].
@@ -395,6 +499,16 @@ function mount(): void {
 
   overlay.body.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    if (target.closest('[data-role=banner-cta]')) {
+      e.preventDefault();
+      restoreFromSnap();
+      return;
+    }
+    if (target.closest('[data-role=export-csv]')) {
+      e.preventDefault();
+      exportCurrent();
+      return;
+    }
     if (target.closest('[data-role=scan-action]')) {
       e.preventDefault();
       if (ctl.state.running) ctl.abort();
@@ -416,6 +530,9 @@ function mount(): void {
   // filter after a scan (no rescan). Capture-phase document listeners — see
   // scan-controller.ts.
   ctl.registerFilterListeners();
+
+  // Offer to restore the last scan (v0.10) — only while the body is empty.
+  void offerRestore();
 }
 
 async function bootstrap(): Promise<void> {
